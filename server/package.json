@@ -1,0 +1,38 @@
+{
+  "name": "dsa-package-tracker-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon"
+  },
+  "author": "Romeo Nutifafa Folie",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "knex": "^3.1.0",
+    "pg": "^8.13.1",
+    "pg-promise": "^11.10.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/knex": "^0.15.2",
+    "@types/node": "^22.10.10",
+    "@types/pg": "^8.11.11",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src"
+    ],
+    "ext": "ts,json",
+    "ignore": [
+      "src/**/*.test.ts"
+    ],
+    "exec": "ts-node ./src/index.ts"
+  }
+}
