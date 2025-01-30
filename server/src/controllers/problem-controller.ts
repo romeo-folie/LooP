@@ -2,12 +2,14 @@ import { RequestHandler, Response } from 'express';
 import { db } from '../db';
 import { validationResult } from 'express-validator';
 import { AuthenticatedRequest } from '../types/authenticated-request';
+import logger from '../logging/winston-config';
 
 
 export const createProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn(`Problem creation failed due to validation errors: ${JSON.stringify(errors.array())}`);
       res.status(400).json({ errors: errors.array() });
       return;
     }
@@ -16,9 +18,12 @@ export const createProblem: RequestHandler = async (req: AuthenticatedRequest, r
     const userId = req.authUser?.userId;
 
     if (!userId) {
+      logger.warn(`Unauthorized problem creation attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`);
 
     const [newProblem] = await db('problems')
       .insert({
@@ -30,11 +35,6 @@ export const createProblem: RequestHandler = async (req: AuthenticatedRequest, r
         notes
       })
       .returning(['problem_id', 'user_id', 'name', 'difficulty', 'tags', 'date_solved', 'notes', 'created_at']);
-
-    if (!date_solved) {
-      res.status(201).json({ message: 'Problem created successfully', problem: newProblem });
-      return;
-    }
 
     const reminderIntervals = [3, 7, 15];
     const reminders = reminderIntervals.map((interval) => {
@@ -51,15 +51,14 @@ export const createProblem: RequestHandler = async (req: AuthenticatedRequest, r
 
     await db('reminders').insert(reminders);
 
+    logger.info(`Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.id}`);
+
     res.status(201).json({
       message: 'Problem created successfully with scheduled reminders',
       problem: newProblem
     });
   } catch (error: unknown) {
-    console.error(
-      'Create problem error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Problem creation error for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -69,9 +68,12 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
     const userId = req.authUser?.userId; 
 
     if (!userId) {
+      logger.warn(`Unauthorized problem request attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Fetching problems for User ID: ${userId}`);
 
     // Extract optional query parameters
     const { difficulty, tags, date_solved } = req.query;
@@ -100,12 +102,11 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
       'created_at'
     );
 
+    logger.info(`Successfully fetched ${problems.length} problems for User ID: ${userId}`);
+
     res.status(200).json({ problems });
   } catch (error: unknown) {
-    console.error(
-      'Get problems error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Error fetching problems for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -117,9 +118,12 @@ export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, 
     const { problem_id } = req.params;
 
     if (!userId) {
+      logger.warn(`Unauthorized problem request attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Fetching problem ID: ${problem_id} for User ID: ${userId}`);
 
     // Fetch the problem belonging to the authenticated user
     const problem = await db('problems')
@@ -133,10 +137,7 @@ export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, 
 
     res.status(200).json({ problem });
   } catch (error: unknown) {
-    console.error(
-      'Get problem by ID error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Error fetching problem ID: ${req.params.problem_id} for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -145,6 +146,7 @@ export const updateProblem: RequestHandler = async (req: AuthenticatedRequest, r
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn(`Problem update failed due to validation errors: ${JSON.stringify(errors.array())}`);
       res.status(400).json({ errors: errors.array() });
       return;
     }
@@ -154,15 +156,19 @@ export const updateProblem: RequestHandler = async (req: AuthenticatedRequest, r
     const { name, difficulty, tags, date_solved, notes } = req.body;
 
     if (!userId) {
+      logger.warn(`Unauthorized problem update attempt for ID: ${userId} from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Updating transaction ID: ${problem_id} for User ID: ${userId}`);
 
     const existingProblem = await db('problems')
       .where({ problem_id, user_id: userId })
       .first();
 
     if (!existingProblem) {
+      logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
       res.status(404).json({ error: 'Problem not found' });
       return;
     }
@@ -187,15 +193,15 @@ export const updateProblem: RequestHandler = async (req: AuthenticatedRequest, r
         'updated_at'
       ]);
 
+    logger.info(`Problem ID: ${problem_id} successfully updated for User ID: ${userId}`);
+
+
     res.status(200).json({
       message: 'Problem updated successfully',
       problem: updatedProblem
     });
   } catch (error: unknown) {
-    console.error(
-      'Update problem error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Transaction update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -206,6 +212,7 @@ export const deleteProblem: RequestHandler = async (req: AuthenticatedRequest, r
     const { problem_id } = req.params;
 
     if (!userId) {
+      logger.warn(`Unauthorized problem deletion attempt for ID: ${problem_id} from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -216,6 +223,7 @@ export const deleteProblem: RequestHandler = async (req: AuthenticatedRequest, r
       .first();
 
     if (!existingProblem) {
+      logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
       res.status(404).json({ error: 'Problem not found' });
       return;
     }
@@ -226,12 +234,11 @@ export const deleteProblem: RequestHandler = async (req: AuthenticatedRequest, r
     // Delete the problem
     await db('problems').where({ problem_id }).del();
 
+    logger.info(`Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`);
+
     res.status(200).json({ message: 'Problem deleted successfully' });
   } catch (error: unknown) {
-    console.error(
-      'Delete problem error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
