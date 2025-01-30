@@ -28,7 +28,7 @@ export const loginValidation: ValidationChain[] = [
     .withMessage('Password is required')
 ];
 
-export const validateProblem = [
+export const validateProblemCreation = [
   body('name')
     .trim()
     .notEmpty()
@@ -49,18 +49,12 @@ export const validateProblem = [
     .withMessage('Each tag must be a string'),
 
   body('date_solved')
-    .optional()
+    .exists({ checkFalsy: true })
     .isISO8601()
-    .toDate()
-    .withMessage('Invalid date format, must be YYYY-MM-DD'),
-
-  body('notes')
-    .optional()
-    .isString()
-    .withMessage('Notes must be a string')
+    .withMessage('Invalid date format, must be YYYY-MM-DD')
 ];
 
-export const validateProblemUpdate = [
+export const validateProblemUpdate: ValidationChain[] = [
   body('name')
     .optional()
     .trim()
@@ -92,4 +86,24 @@ export const validateProblemUpdate = [
     .optional()
     .isString()
     .withMessage('Notes must be a string')
+];
+
+export const validateReminderCreation: ValidationChain[] = [
+  body('due_datetime')
+    .exists({ checkFalsy: true })
+    .withMessage('due_datetime is required')
+    .isISO8601()
+    .withMessage('Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)')
+];
+
+export const validateReminderUpdate: ValidationChain[] = [
+  body('due_datetime')
+    .optional()
+    .isISO8601()
+    .withMessage('Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)'),
+
+  body('is_completed')
+    .optional()
+    .isBoolean()
+    .withMessage('is_completed must be a boolean')
 ];

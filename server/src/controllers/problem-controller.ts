@@ -37,12 +37,17 @@ export const createProblem: RequestHandler = async (req: AuthenticatedRequest, r
     }
 
     const reminderIntervals = [3, 7, 15];
-    const reminders = reminderIntervals.map((interval) => ({
-      problem_id: newProblem.problem_id,
-      user_id: userId,
-      due_date: new Date(new Date(date_solved).setDate(new Date(date_solved).getDate() + interval)),
-      interval
-    }));
+    const reminders = reminderIntervals.map((interval) => {
+      const dueDate = new Date(date_solved);
+      dueDate.setDate(dueDate.getDate() + interval);
+      dueDate.setHours(9, 0, 0, 0); // Set to 09:00 AM
+
+      return {
+        problem_id: newProblem.problem_id,
+        user_id: userId,
+        due_datetime: dueDate.toISOString()
+      };
+    });
 
     await db('reminders').insert(reminders);
 

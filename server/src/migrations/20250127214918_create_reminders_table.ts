@@ -17,8 +17,7 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('users')
       .onDelete('CASCADE'); // Optionally cascade if a user is deleted
 
-    table.date('due_date').notNullable();
-    table.integer('interval').notNullable();
+    table.timestamp('due_datetime').notNullable();
 
     // Optional columns to track sending and completion status
     table.boolean('is_sent').defaultTo(false);
