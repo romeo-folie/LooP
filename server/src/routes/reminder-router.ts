@@ -11,5 +11,4 @@ router.post('/:problem_id', authenticateJWT, validateReminderCreation, createRem
 router.put('/:reminder_id', authenticateJWT, validateReminderUpdate, updateReminder);
 router.delete('/:reminder_id', authenticateJWT, deleteReminder);
 
-
 export default router;
