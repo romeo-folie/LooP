@@ -15,7 +15,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.specificType('tags', 'text[]');
 
-    table.date('date_solved').notNullable();
+    table.date('date_solved');
     table.text('notes');
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
     table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now());

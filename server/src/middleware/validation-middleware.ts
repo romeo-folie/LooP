@@ -27,3 +27,69 @@ export const loginValidation: ValidationChain[] = [
     .notEmpty()
     .withMessage('Password is required')
 ];
+
+export const validateProblem = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Problem name is required'),
+
+  body('difficulty')
+    .isIn(['Easy', 'Medium', 'Hard'])
+    .withMessage('Difficulty must be one of: Easy, Medium, Hard'),
+
+  body('tags')
+    .optional()
+    .isArray()
+    .withMessage('Tags must be an array of strings'),
+
+  body('tags.*')
+    .optional()
+    .isString()
+    .withMessage('Each tag must be a string'),
+
+  body('date_solved')
+    .optional()
+    .isISO8601()
+    .toDate()
+    .withMessage('Invalid date format, must be YYYY-MM-DD'),
+
+  body('notes')
+    .optional()
+    .isString()
+    .withMessage('Notes must be a string')
+];
+
+export const validateProblemUpdate = [
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Problem name cannot be empty'),
+
+  body('difficulty')
+    .optional()
+    .isIn(['Easy', 'Medium', 'Hard'])
+    .withMessage('Difficulty must be one of: Easy, Medium, Hard'),
+
+  body('tags')
+    .optional()
+    .isArray()
+    .withMessage('Tags must be an array of strings'),
+
+  body('tags.*')
+    .optional()
+    .isString()
+    .withMessage('Each tag must be a string'),
+
+  body('date_solved')
+    .optional()
+    .isISO8601()
+    .toDate()
+    .withMessage('Invalid date format, must be YYYY-MM-DD'),
+
+  body('notes')
+    .optional()
+    .isString()
+    .withMessage('Notes must be a string')
+];
