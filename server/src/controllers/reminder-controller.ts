@@ -2,6 +2,7 @@ import { Response, RequestHandler } from 'express';
 import { AuthenticatedRequest } from '../types/authenticated-request';
 import { db } from '../db';
 import { validationResult } from 'express-validator';
+import logger from '../logging/winston-config';
 
 export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -9,9 +10,12 @@ export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRe
     const { problem_id } = req.params;
 
     if (!userId) {
+      logger.warn(`Unauthorized reminders request attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Fetching reminders for Problem ID ${problem_id} - User ID: ${userId}`);
 
     // Ensure the problem exists and belongs to the authenticated user
     const problem = await db('problems')
@@ -19,6 +23,7 @@ export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRe
       .first();
 
     if (!problem) {
+      logger.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
       res.status(404).json({ error: 'Problem not found' });
       return;
     }
@@ -28,12 +33,11 @@ export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRe
       .where({ problem_id, user_id: userId })
       .select('reminder_id', 'due_date', 'is_sent', 'sent_at', 'is_completed', 'completed_at', 'created_at');
 
+    logger.info(`Successfully fetched ${reminders.length} reminders - User ID: ${userId}`);
+
     res.status(200).json({ reminders });
   } catch (error: unknown) {
-    console.error(
-      'Get reminders by problem ID error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Error fetching reminders for Problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -44,9 +48,12 @@ export const getReminderById: RequestHandler = async (req: AuthenticatedRequest,
     const { reminder_id } = req.params;
 
     if (!userId) {
+      logger.warn(`Unauthorized reminder request attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+
+    logger.info(`Fetching reminder ID: ${reminder_id} - User ID: ${userId}`);
 
     // Fetch the reminder belonging to the authenticated user
     const reminder = await db('reminders')
@@ -54,16 +61,16 @@ export const getReminderById: RequestHandler = async (req: AuthenticatedRequest,
       .first();
 
     if (!reminder) {
+      logger.warn(`Reminder ID: ${reminder_id} not found - User ID: ${userId}`);
       res.status(404).json({ error: 'Reminder not found' });
       return;
     }
 
+    logger.info(`Successfully fetched Reminder ID ${reminder_id} - User ID: ${userId}`);
+
     res.status(200).json({ reminder });
   } catch (error: unknown) {
-    console.error(
-      'Get reminder by ID error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Error fetching reminder ID: ${req.params.reminder_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -72,6 +79,7 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn(`Reminder creation failed due to validation errors: ${JSON.stringify(errors.array())}`);
       res.status(400).json({ errors: errors.array() });
       return;
     }
@@ -81,6 +89,7 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
     const { due_datetime } = req.body;
 
     if (!userId) {
+      logger.warn(`Unauthorized reminder creation attempt from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -90,9 +99,12 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
       .first();
 
     if (!existingProblem) {
+      logger.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
       res.status(404).json({ error: 'Problem not found' });
       return;
     }
+
+    logger.info(`Creating reminder for User ID: ${userId} - ${JSON.stringify(req.body)}`);
 
     const [newReminder] = await db('reminders')
       .insert({
@@ -111,15 +123,14 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
         'created_at'
       ]);
 
+    logger.info(`Reminder created successfully Reminder ID: ${newReminder.id} - User ID: ${userId}`);
+
     res.status(201).json({
       message: 'Reminder created successfully',
       reminder: newReminder
     });
   } catch (error: unknown) {
-    console.error(
-      'Create reminder error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Reminder creation error for Problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -128,6 +139,7 @@ export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, 
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn(`Reminder update failed due to validation errors: ${JSON.stringify(errors.array())}`);
       res.status(400).json({ errors: errors.array() });
       return;
     }
@@ -137,6 +149,7 @@ export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, 
     const { due_datetime, is_completed } = req.body;
 
     if (!userId) {
+      logger.warn(`Unauthorized reminder update attempt for ID: ${userId} from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -146,6 +159,7 @@ export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, 
       .first();
 
     if (!existingReminder) {
+      logger.warn(`Reminder ID: ${reminder_id} not found for User ID: ${userId}`);
       res.status(404).json({ error: 'Reminder not found' });
       return;
     }
@@ -171,15 +185,14 @@ export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, 
         'updated_at'
       ]);
 
+    logger.info(`Reminder ID: ${reminder_id} successfully updated - User ID: ${userId}`);
+
     res.status(200).json({
       message: 'Reminder updated successfully',
       reminder: updatedReminder
     });
   } catch (error: unknown) {
-    console.error(
-      'Update reminder error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Reminder update error for ID: ${req.params.reminder_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -190,6 +203,7 @@ export const deleteReminder: RequestHandler = async (req: AuthenticatedRequest, 
     const { reminder_id } = req.params;
 
     if (!userId) {
+      logger.warn(`Unauthorized deletion attempt reminder ID: ${reminder_id} from IP: ${req.ip}`);
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
@@ -200,6 +214,7 @@ export const deleteReminder: RequestHandler = async (req: AuthenticatedRequest, 
       .first();
 
     if (!existingReminder) {
+      logger.warn(`Reminder ID: ${reminder_id} not found - User ID: ${userId}`);
       res.status(404).json({ error: 'Reminder not found' });
       return;
     }
@@ -207,12 +222,11 @@ export const deleteReminder: RequestHandler = async (req: AuthenticatedRequest, 
     // Delete the reminder
     await db('reminders').where({ reminder_id }).del();
 
+    logger.info(`Reminder ID: ${reminder_id} successfully deleted - User ID: ${userId}`);
+
     res.status(200).json({ message: 'Reminder deleted successfully' });
   } catch (error: unknown) {
-    console.error(
-      'Delete reminder error:',
-      error instanceof Error ? error.message : error
-    );
+    logger.error(`Reminder deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

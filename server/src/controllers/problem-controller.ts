@@ -131,13 +131,16 @@ export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, 
       .first();
 
     if (!problem) {
+      logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
       res.status(404).json({ error: 'Problem not found' });
       return;
     }
 
+    logger.info(`Successfully fetched Problem ID ${problem_id} for User ID: ${userId}`);
+
     res.status(200).json({ problem });
   } catch (error: unknown) {
-    logger.error(`Error fetching problem ID: ${req.params.problem_id} for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
+    logger.error(`Error fetching problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -195,13 +198,12 @@ export const updateProblem: RequestHandler = async (req: AuthenticatedRequest, r
 
     logger.info(`Problem ID: ${problem_id} successfully updated for User ID: ${userId}`);
 
-
     res.status(200).json({
       message: 'Problem updated successfully',
       problem: updatedProblem
     });
   } catch (error: unknown) {
-    logger.error(`Transaction update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
+    logger.error(`Problem update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
