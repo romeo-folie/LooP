@@ -11,5 +11,4 @@ router.get('/:problem_id', authenticateJWT, getProblemById);
 router.put('/:problem_id', authenticateJWT, validateProblemUpdate, updateProblem);
 router.delete('/:problem_id', authenticateJWT, deleteProblem);
 
-
 export default router;
