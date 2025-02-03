@@ -107,3 +107,27 @@ export const validateReminderUpdate: ValidationChain[] = [
     .isBoolean()
     .withMessage('is_completed must be a boolean')
 ];
+
+export const validateSubscription: ValidationChain[] = [
+  body('endpoint')
+    .isString()
+    .notEmpty()
+    .withMessage('Endpoint is required'),
+
+  body('public_key')
+    .isString()
+    .notEmpty()
+    .withMessage('Public key is required'),
+
+  body('auth')
+    .isString()
+    .notEmpty()
+    .withMessage('Auth key is required')
+];
+
+export const validateSubscriptionDeletion: ValidationChain[] = [
+  body('endpoint')
+    .isString()
+    .notEmpty()
+    .withMessage('Endpoint is required for subscription deletion')
+];
