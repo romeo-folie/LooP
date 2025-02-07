@@ -1,5 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -9,13 +16,21 @@ function Auth() {
     <div className="bg-background text-foreground flex items-center justify-center h-screen w-screen">
       <Tabs defaultValue="sign-in" className="w-[400px]">
         <TabsList className="grid w-full grid-cols-2 h-12">
-          <TabsTrigger value="sign-in" className="py-2">Sign In</TabsTrigger>
-          <TabsTrigger value="sign-up" className="py-2">Sign Up</TabsTrigger>
+          <TabsTrigger value="sign-in" className="py-2">
+            Sign In
+          </TabsTrigger>
+          <TabsTrigger value="sign-up" className="py-2">
+            Sign Up
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="sign-in">
           <form>
             <Card className="mt-4">
-              <CardContent className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-3xl">Welcome Back</CardTitle>
+                <CardDescription>Please enter your details</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="grid w-full items-center gap-4">
                   <div className="flex flex-col space-y-2.5">
                     <Label htmlFor="name">Email</Label>
@@ -66,16 +81,26 @@ function Auth() {
                   </svg>
                   GitHub
                 </Button>
+                <a
+                  href="#"
+                  className="ml-auto text-sm underline-offset-2 hover:underline"
+                >
+                  Forgot your password?
+                </a>
               </CardFooter>
             </Card>
           </form>
         </TabsContent>
         <TabsContent value="sign-up">
-        <form>
+          <form>
             <Card className="mt-4">
-              <CardContent className="mt-6">
+            <CardHeader>
+                <CardTitle className="text-3xl">Welcome</CardTitle>
+                <CardDescription>Create a new account</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="grid w-full items-center gap-4">
-                <div className="flex flex-col space-y-2.5">
+                  <div className="flex flex-col space-y-2.5">
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
