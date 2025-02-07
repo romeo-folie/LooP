@@ -1,18 +1,15 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import Auth from "./pages/Auth"
 import { Toaster } from "@/components/ui/toaster"
+import { Routes, Route } from "react-router-dom";
 
-
-interface AppProps {
-  children?: React.ReactNode
-};
-
-const App: React.FC<AppProps> = ({children}) => {
+const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      {children}
+      <Routes>
+        <Route path="/" element={<Auth />}/>
+      </Routes>
       <Toaster />
-      <Auth />
     </ThemeProvider>
   )
 }
