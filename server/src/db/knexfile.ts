@@ -31,14 +31,17 @@ const config: {[key: string]: Knex.Config } = {
     },
   },
 
-  // test: {
-  //   ...BASE_CONFIG,
-  //   connection: {
-  //     database: 'my_db',
-  //     user:     'username',
-  //     password: 'password'
-  //   },
-  // },
+  test: {
+    client: 'sqlite3',
+    connection: {
+      filename: ':memory:',
+    },
+    useNullAsDefault: true,
+    migrations: {
+      directory: path.resolve(__dirname, '../migrations'),
+      extension: 'ts',
+    },
+  },
 
   // production: {
   //   ...BASE_CONFIG,
