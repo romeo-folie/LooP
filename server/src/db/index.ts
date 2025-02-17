@@ -5,7 +5,7 @@ import knexConfig from './knexfile';
 
 dotenv.config();
 
-const environment = process.env.NODE_ENV || 'development';
+const environment = process.env.NODE_ENV as string;
 
 const pgp = pgPromise();
 export const postgres = pgp({
