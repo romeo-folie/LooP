@@ -13,8 +13,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-
-
 describe('authentication tests', () => {
 
   describe('user registration', () => {
@@ -66,6 +64,51 @@ describe('authentication tests', () => {
       expect(response.body.message).toBe('Email already in use');
     });
 
+  });
+
+
+  describe('user login', () => {
+    it('should return 401 for wrong password', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'testuser@example.com', password: 'testPassw0rd!' });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Invalid credentials');
+    });
+
+    it('should return 401 if user does not exist', async () => { 
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'testuser@wrongmail.com', password: 'testPassw0rd!' });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Invalid credentials');
+    });
+
+    it('should return 400 for missing fields', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: '', });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('errors');
+      expect(response.body.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ msg: 'Invalid email address' }),
+          expect.objectContaining({ msg: 'Password is required' }),
+        ])
+      );
+    }); 
+
+    it('should log user in if they exist and the credentials are valid', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'testuser@example.com', password: 'testPassw0rD%' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Login successful');
+    });
   });
 
 });
