@@ -76,7 +76,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
         email: existingUser.email
       },
       process.env.JWT_SECRET as string,
-      { expiresIn: '3h' }
+      { expiresIn: '1h' }
     );
 
     const refreshToken = jwt.sign(
@@ -134,7 +134,7 @@ export const refreshToken: RequestHandler = async (req: Request, res: Response) 
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, email: decoded.email },
       process.env.JWT_SECRET as string,
-      { expiresIn: '3h' }
+      { expiresIn: '1h' }
     );
 
     logger.info(`Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`);
