@@ -22,7 +22,17 @@ export const registerValidation: ValidationChain[] = [
 
 export const loginValidation: ValidationChain[] = [
   body("email").isEmail().withMessage("Invalid email address"),
-  body("password").notEmpty().withMessage("Password is required"),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long")
+    .matches(/\d/)
+    .withMessage("Password must contain at least one number")
+    .matches(/[A-Z]/)
+    .withMessage("Password must contain at least one uppercase letter")
+    .matches(/[!@#$%^&*(),.?":{}|<>]/)
+    .withMessage("Password must contain at least one symbol"),
 ];
 
 export const validateProblemCreation = [
