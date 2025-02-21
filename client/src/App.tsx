@@ -7,7 +7,7 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Routes>
-        <Route path="/" element={<Auth />}/>
+        <Route path="/auth" element={<Auth />}/>
       </Routes>
       <Toaster />
     </ThemeProvider>

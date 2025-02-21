@@ -1,5 +1,5 @@
 import { Label } from "@radix-ui/react-label";
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -15,15 +15,51 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "@/hooks/use-toast";
 import PasswordInput from "./password-input";
-import { Loader2  } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { AxiosError } from 'axios';
+import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { apiClient, APIErrorResponse } from "@/config/axios.config";
+
+// expected response structure
+interface SignupResponse {
+  message: string;
+}
 
 const signupSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    name: z
+      .string({
+        required_error: "Name is required",
+        invalid_type_error: "Name must be a string",
+      })
+      .min(2, "Name must be at least 2 characters"),
+    email: z
+      .string({ required_error: "Email is required" })
+      .email("Invalid email address"),
+    password: z
+      .string()
+      .min(6, "Password must be at least 6 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/\d/, "Password must contain at least one digit")
+      .regex(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "Password must contain at least one special character (@$!%*?&)"
+      ),
     confirmPassword: z.string(),
   })
+  .refine(
+    (data) => {
+      const { name, email, password } = data;
+      return (
+        !password.includes(name) && !password.includes(email.split("@")[0])
+      );
+    },
+    {
+      message: "Password should not be based on personal information",
+      path: ["password"],
+    }
+  )
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
@@ -31,31 +67,39 @@ const signupSchema = z
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
-const SignupForm: React.FC = () => {
+const signupUser = async (userData: SignupFormValues): Promise<SignupResponse> => {
+  const response = await apiClient.post("/api/auth/register", userData);
+  return response.data;
+};
 
+const SignupForm: React.FC = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
   });
 
-  const onSubmit = async (data: SignupFormValues) => {
-    try {
-      console.log("Submitting Signup Form:", data);
+  const navigate = useNavigate();
 
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
+  const mutation = useMutation<SignupResponse, AxiosError<APIErrorResponse>, SignupFormValues>({
+    mutationFn: signupUser,
+    onSuccess: () => {
       toast({ title: "Success", description: "Account created successfully!" });
-    } catch (error: unknown) {
+      setTimeout(() => navigate("/auth?tab=sign-in"), 1600);
+    },
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Signup failed",
+        description: error.response?.data?.message || "Signup failed",
         variant: "destructive",
       });
-    }
+    },
+  });
+
+  const onSubmit = (data: SignupFormValues) => {
+    mutation.mutate(data);
   };
 
   return (
@@ -92,15 +136,29 @@ const SignupForm: React.FC = () => {
                 <p className="text-red-500 text-sm">{errors.email.message}</p>
               )}
             </div>
-            <PasswordInput name="password" register={register} error={errors.password?.message}/>
-            <PasswordInput name="confirmPassword" label="Confirm Password" register={register} error={errors.confirmPassword?.message}/>
+            <PasswordInput
+              name="password"
+              register={register}
+              error={errors.password?.message}
+            />
+            <PasswordInput
+              name="confirmPassword"
+              id="confirmPassword"
+              label="Confirm Password"
+              register={register}
+              error={errors.confirmPassword?.message}
+            />
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={mutation.isPending}
               className="w-full"
               size="lg"
             >
-              {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "Sign Up"}
+              {mutation.isPending ? (
+                <Loader2 className="animate-spin mr-2" />
+              ) : (
+                "Sign Up"
+              )}
             </Button>
 
             <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">

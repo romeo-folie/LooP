@@ -37,7 +37,7 @@ const PasswordInput: React.FC<Props> = ({ label, register, error, ...props }) =>
           {showPassword ? <EyeClosed /> : <Eye />}
         </Button>
       </div>
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
 };

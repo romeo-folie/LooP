@@ -14,8 +14,12 @@ import { Button } from "@/components/ui/button";
 import InputOTPForm from "@/components/otp";
 import { toast } from "@/hooks/use-toast";
 import SignupForm from "@/components/signup-form";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [forgotPassword, setForgotPassword] = useState(false);
   const [providingOTP, setProvidingOTP] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
@@ -25,9 +29,16 @@ const Auth = () => {
     setProvidingOTP(false);
   }
 
+  const searchParams = new URLSearchParams(location.search);
+  const activeTab = searchParams.get("tab") || "sign-in";
+
+  const handleTabChange = (value: string) => {
+    navigate(`/auth?tab=${value}`, { replace: true });
+  };
+
   return (
     <div className="bg-background text-foreground flex items-center justify-center h-screen w-screen">
-      <Tabs defaultValue="sign-in" className="w-[400px]">
+      <Tabs className="w-[400px]" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 h-12">
           <TabsTrigger value="sign-in" className="py-2">
             Sign In
