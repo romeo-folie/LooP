@@ -77,7 +77,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
         email: existingUser.email
       },
       process.env.JWT_SECRET as string,
-      { expiresIn: '1h' }
+      { expiresIn: '30m' }
     );
 
     const refreshToken = jwt.sign(
@@ -91,10 +91,17 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
 
     logger.info(`Login successful for ${email} from IP: ${req.ip}`);
 
+    // Set token in HTTP-only cookie
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // set secure: true in prod w/ HTTPS
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+
     res.status(200).json({
       message: 'Login successful',
       token,
-      refreshToken
     });
   } catch (error: unknown) {
     logger.error(`Login error for ${req.body?.email || 'unknown user'}: ${error instanceof Error ? error.message : error}`);
@@ -104,7 +111,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
 
 export const refreshToken: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refresh_token;
 
     logger.info(`Refresh token request received from IP: ${req.ip}`);
 
@@ -135,7 +142,7 @@ export const refreshToken: RequestHandler = async (req: Request, res: Response) 
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, email: decoded.email },
       process.env.JWT_SECRET as string,
-      { expiresIn: '1h' }
+      { expiresIn: '30m' }
     );
 
     logger.info(`Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`);
@@ -278,7 +285,7 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
     const token = jwt.sign(
       { userId, email: userEmail },
       process.env.JWT_SECRET as string,
-      { expiresIn: '1h' }
+      { expiresIn: '30m' }
     );
 
     // Set token in HTTP-only cookie
@@ -288,10 +295,27 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
     //   sameSite: 'strict'
     // });
 
-    // Redirect or respond
     res.json({  message: 'OAuth success', token })
   } catch (error) {
     logger.error('GitHub OAuth Callback Error', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export const logout: RequestHandler = (req: Request, res: Response) => {
+  try {
+    // Clear the refresh token cookie
+    // Match the name & options used when setting the cookie
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',  // or true in production (HTTPS)
+      sameSite: 'strict'
+    });
+
+    logger.info(`User logged out - refresh token cookie cleared`);
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error: unknown) {
+    logger.error('Logout error', error instanceof Error ? error.message : error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
