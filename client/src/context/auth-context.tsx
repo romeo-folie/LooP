@@ -7,13 +7,16 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 interface AuthContextType {
   accessToken: string | null;
   login: (token: string) => void;
   logout: () => Promise<void>;
+  localLogout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+      await axios.post(`${SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
     } catch (error: unknown) {
       console.warn("Logout API call failed, but continuing logout.", error instanceof Error ? error.message : error);
     }
@@ -70,17 +73,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshToken = useCallback(async () => {
     try {
       const response = await axios.post(
-        "/api/auth/refresh-token",
+        `${SERVER_URL}/api/auth/refresh-token`,
         {},
         { withCredentials: true }
       );
-      const newToken = response.data.access_token;
+      const newToken = response.data.token;
       setAccessToken(newToken);
+      if (window.location.pathname.startsWith("/auth")) {
+        navigate("/");
+      }
     } catch (error: unknown) {
       console.log("No valid refresh token or refresh failed => staying logged out", error instanceof Error ? error.message : error);
       setAccessToken(null);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
@@ -120,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     accessToken,
     login,
     logout,
+    localLogout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

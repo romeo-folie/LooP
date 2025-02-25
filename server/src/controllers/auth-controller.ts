@@ -97,7 +97,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
       secure: process.env.NODE_ENV === 'production', // set secure: true in prod w/ HTTPS
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
+    });
 
     res.status(200).json({
       message: 'Login successful',

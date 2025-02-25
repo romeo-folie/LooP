@@ -5,7 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 const app: Application = express();
-const corsOptions = { origin: process.env.CLIENT_URL as string }
+const corsOptions = { origin: process.env.CLIENT_URL as string, credentials: true, allowedHeaders: "Content-Type, Authorization" }
 
 app.use(cookieParser());
 app.use(express.json());

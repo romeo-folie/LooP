@@ -16,10 +16,10 @@ import { useForm } from "react-hook-form";
 import { toast } from "@/hooks/use-toast";
 import PasswordInput from "./password-input";
 import { Loader2 } from "lucide-react";
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosInstance } from 'axios';
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { apiClient, APIErrorResponse } from "@/config/axios.config";
+import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
 
 // expected response structure
 interface SignupResponse {
@@ -52,11 +52,11 @@ const signupSchema = z
     (data) => {
       const { name, email, password } = data;
       return (
-        !password.includes(name) && !password.includes(email.split("@")[0])
+        !password.includes(name) && !password.includes(email.split("@")[0]) && password !== "P@s$w0rd"
       );
     },
     {
-      message: "Password should not be based on personal information",
+      message: "Password should not be based on personal information or hint",
       path: ["password"],
     }
   )
@@ -67,12 +67,14 @@ const signupSchema = z
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
-const signupUser = async (userData: SignupFormValues): Promise<SignupResponse> => {
-  const response = await apiClient.post("/api/auth/register", userData);
+const signupUser = async (userCredentials: SignupFormValues, apiClient: AxiosInstance): Promise<SignupResponse> => {
+  const response = await apiClient.post("/api/auth/register", userCredentials);
   return response.data;
 };
 
 const SignupForm: React.FC = () => {
+  const apiClient = useAxios();
+
   const {
     register,
     handleSubmit,
@@ -84,7 +86,7 @@ const SignupForm: React.FC = () => {
   const navigate = useNavigate();
 
   const mutation = useMutation<SignupResponse, AxiosError<APIErrorResponse>, SignupFormValues>({
-    mutationFn: signupUser,
+    mutationFn: (userCredentials: SignupFormValues) => signupUser(userCredentials, apiClient),
     onSuccess: () => {
       toast({ title: "Success", description: "Account created successfully!" });
       setTimeout(() => navigate("/auth?tab=sign-in"), 1600);
