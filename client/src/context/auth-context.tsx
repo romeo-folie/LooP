@@ -42,36 +42,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate("/auth?tab=sign-in");
   }, [navigate]);
 
-  useEffect(() => {
-    bc.onmessage = (event) => {
-      if (event.data?.type === "LOGOUT") {
-        console.log("Logout broadcast received. Logging out in this tab.");
-        localLogout();
-      }
-    };
-
-    return () => {
-      bc.close();
-    };
-  }, [bc, localLogout]);
-
-  const logout = useCallback(async () => {
-    try {
-      await axios.post(`${SERVER_URL}/api/auth/logout`, {}, { withCredentials: true });
-    } catch (error: unknown) {
-      console.warn("Logout API call failed, but continuing logout.", error instanceof Error ? error.message : error);
-    }
-
-    localLogout();
-    bc.postMessage({ type: "LOGOUT" }); // notify other tabs
-  }, [bc, localLogout]);
-
-
-  const login = (token: string) => {
-    setAccessToken(token);
-  };
-
-
   const refreshToken = useCallback(async () => {
     try {
       const response = await axios.post(
@@ -83,19 +53,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newToken) {
         setAccessToken(newToken);
       }
+      if (window.location.pathname.startsWith("/auth")) {
+        navigate("/");
+      }
     } catch (error: unknown) {
-      console.log("No valid refresh token or refresh failed => staying logged out", error instanceof Error ? error.message : error);
+      console.log(
+        "No valid refresh token or refresh failed => staying logged out",
+        error instanceof Error ? error.message : error
+      );
       setAccessToken(null);
     } finally {
       setIsAuthLoading(false);
     }
-  }, []);
+  }, [navigate]);
+
+  useEffect(() => {
+    bc.onmessage = (event) => {
+      if (event.data?.type === "LOGOUT") {
+        localLogout();
+      }
+
+      if (event.data?.type === "LOGIN") {
+        refreshToken();
+      }
+    };
+  }, [bc, localLogout, navigate, refreshToken]);
+
+  const logout = useCallback(async () => {
+    try {
+      await axios.post(
+        `${SERVER_URL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+    } catch (error: unknown) {
+      console.warn(
+        "Logout API call failed, but continuing logout.",
+        error instanceof Error ? error.message : error
+      );
+    } finally {
+      localLogout();
+      bc.postMessage({ type: "LOGOUT" });
+    }
+  }, [bc, localLogout]);
+
+  const login = (token: string) => {
+    setAccessToken(token);
+    bc.postMessage({ type: "LOGIN" });
+  };
 
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
     refreshToken();
   }, [refreshToken]);
-
 
   useEffect(() => {
     if (!accessToken) return;
@@ -123,7 +133,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => clearTimeout(timeoutId);
   }, [accessToken, refreshToken]);
-
 
   const value: AuthContextType = {
     accessToken,
