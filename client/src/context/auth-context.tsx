@@ -14,6 +14,7 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 interface AuthContextType {
   accessToken: string | null;
+  isAuthLoading: boolean;
   login: (token: string) => void;
   logout: () => Promise<void>;
   localLogout: () => void;
@@ -31,6 +32,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const navigate = useNavigate();
 
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
@@ -78,15 +80,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { withCredentials: true }
       );
       const newToken = response.data.token;
-      setAccessToken(newToken);
-      if (window.location.pathname.startsWith("/auth")) {
-        navigate("/");
+      if (newToken) {
+        setAccessToken(newToken);
       }
     } catch (error: unknown) {
       console.log("No valid refresh token or refresh failed => staying logged out", error instanceof Error ? error.message : error);
       setAccessToken(null);
+    } finally {
+      setIsAuthLoading(false);
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
@@ -124,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value: AuthContextType = {
     accessToken,
+    isAuthLoading,
     login,
     logout,
     localLogout,
