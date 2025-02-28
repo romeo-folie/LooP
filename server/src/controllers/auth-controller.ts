@@ -94,9 +94,9 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     // Set token in HTTP-only cookie
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // set secure: true in prod w/ HTTPS
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
@@ -191,7 +191,7 @@ export const getProfile: RequestHandler = async (req: AuthenticatedRequest, res:
 
 export const getUserIdentity: RequestHandler = async (req: Request, res: Response) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = 'http://localhost:5999/auth/github/callback';
+  const redirectUri = `${process.env.SERVER_URL}/api/auth/github/callback`;
   const scope = 'read:user user:email';
 
   // GitHub OAuth authorize endpoint
@@ -236,7 +236,6 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
       headers: { Authorization: `token ${accessToken}` }
     });
     const githubUser = userProfileResp.data; 
-    // Example: { id, login, name, avatar_url, ... }
 
     // Fetch user’s email(s)
     const emailsResp = await axios.get('https://api.github.com/user/emails', {
@@ -281,21 +280,23 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
       logger.info(`New user created via GitHub: ${userEmail}`);
     }
 
-    // Generate JWT
-    const token = jwt.sign(
-      { userId, email: userEmail },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '30m' }
+    const refreshToken = jwt.sign(
+      {
+        userId: existingUser.user_id,
+        email: existingUser.email
+      },
+      process.env.REFRESH_SECRET as string,
+      { expiresIn: '7d' } 
     );
 
-    // Set token in HTTP-only cookie
-    // res.cookie('access_token', token, {
-    //   httpOnly: true,
-    //   secure: false, // set secure: true in prod w/ HTTPS
-    //   sameSite: 'strict'
-    // });
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
-    res.json({  message: 'OAuth success', token })
+    res.redirect(`${process.env.CLIENT_URL}/auth/github/success`);
   } catch (error) {
     logger.error('GitHub OAuth Callback Error', { error });
     res.status(500).json({ error: 'Internal server error' });
@@ -304,11 +305,9 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
 
 export const logout: RequestHandler = (req: Request, res: Response) => {
   try {
-    // Clear the refresh token cookie
-    // Match the name & options used when setting the cookie
     res.clearCookie('refresh_token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',  // or true in production (HTTPS)
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
     });
 

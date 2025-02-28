@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshToken = useCallback(async () => {
     try {
+      setIsAuthLoading(true);
       const response = await axios.post(
         `${SERVER_URL}/api/auth/refresh-token`,
         {},
@@ -78,6 +79,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
   }, [bc, localLogout, navigate, refreshToken]);
+
+  useEffect(() => {
+    // If redirected from GitHub OAuth login
+    if (location.pathname.includes("/auth/github/success")) {
+      refreshToken().then(() => navigate("/"));
+    }
+  }, [refreshToken, navigate]);
 
   const logout = useCallback(async () => {
     try {
