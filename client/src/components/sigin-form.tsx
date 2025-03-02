@@ -1,5 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import { Label } from "@radix-ui/react-label";
+import { Label } from "./ui/label";
 import React from "react";
 import { Button } from "./ui/button";
 import {
@@ -13,7 +13,7 @@ import {
 import { Input } from "./ui/input";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, User } from "@/context/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
@@ -24,9 +24,12 @@ import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
+
+
 interface SigninResponse {
   message: string;
   token: string;
+  user: User;
 }
 
 const signInSchema = z.object({
@@ -89,8 +92,17 @@ const SigninForm: React.FC = () => {
         return;
       }
 
+      if (!data.user) {
+        toast({
+          title: "Error",
+          description: "No user returned from server",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Save token in memory (AuthContext)
-      login(data.token);
+      login(data.token, data.user);
 
       toast({ title: "Success", description: "Signed in successfully!" });
       // Navigate to a protected page

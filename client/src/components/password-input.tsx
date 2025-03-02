@@ -1,4 +1,4 @@
-import { Label } from "@radix-ui/react-label";
+import { Label } from "./ui/label";
 import { Eye, EyeClosed } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
