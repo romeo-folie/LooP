@@ -1,51 +1,53 @@
-import { Request, Response, RequestHandler } from 'express';
-import { validationResult } from 'express-validator';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import axios from 'axios';
-import dotenv from 'dotenv';
-import { db } from '../db';
-import { AuthenticatedRequest } from '../types/authenticated-request';
-import logger from '../logging/winston-config';
+import { Request, Response, RequestHandler } from "express";
+import { validationResult } from "express-validator";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import axios from "axios";
+import dotenv from "dotenv";
+import { db } from "../db";
+import { AuthenticatedRequest } from "../types/authenticated-request";
+import logger from "../logging/winston-config";
 dotenv.config();
 
 export const register: RequestHandler = async (req: Request, res: Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
-    return 
+    return;
   }
 
   try {
     const { name, email, password } = req.body;
 
-    const existingUser = await db('users').where({ email }).first();
+    const existingUser = await db("users").where({ email }).first();
     if (existingUser) {
-      res.status(400).json({ message: 'Email already in use' });
-      return
+      res.status(400).json({ message: "Email already in use" });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [newUser] = await db('users')
+    const [newUser] = await db("users")
       .insert({
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
       })
-      .returning(['user_id', 'name', 'email', 'created_at']);
-      
+      .returning(["user_id", "name", "email", "created_at"]);
+
     logger.info(`New user registered: ${email}`);
 
     res.status(201).json({
-      message: 'User registered successfully',
-      user: newUser
+      message: "User registered successfully",
+      user: newUser,
     });
   } catch (error: unknown) {
-    logger.error(`Register Error: ${error instanceof Error ? error.message : error}`)
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error(
+      `Register Error: ${error instanceof Error ? error.message : error}`
+    );
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export const login: RequestHandler = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -58,58 +60,70 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const existingUser = await db('users').where({ email }).first();
+    const existingUser = await db("users").where({ email }).first();
     if (!existingUser) {
       logger.warn(`Login failed: User not found - ${email}`);
-      res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
     const isMatch = await bcrypt.compare(password, existingUser.password);
     if (!isMatch) {
-      res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
     const token = jwt.sign(
       {
         userId: existingUser.user_id,
-        email: existingUser.email
+        email: existingUser.email,
       },
       process.env.JWT_SECRET as string,
-      { expiresIn: '30m' }
+      { expiresIn: "30m" }
     );
 
     const refreshToken = jwt.sign(
       {
         userId: existingUser.user_id,
-        email: existingUser.email
+        email: existingUser.email,
       },
       process.env.REFRESH_SECRET as string,
-      { expiresIn: '7d' } 
+      { expiresIn: "7d" }
     );
 
     logger.info(`Login successful for ${email} from IP: ${req.ip}`);
 
     // Set token in HTTP-only cookie
-    res.cookie('refresh_token', refreshToken, {
+    res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
-      message: 'Login successful',
+      message: "Login successful",
       token,
+      user: {
+        user_id: existingUser.user_id,
+        name: existingUser.name,
+        email: existingUser.email,
+      },
     });
   } catch (error: unknown) {
-    logger.error(`Login error for ${req.body?.email || 'unknown user'}: ${error instanceof Error ? error.message : error}`);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error(
+      `Login error for ${req.body?.email || "unknown user"}: ${
+        error instanceof Error ? error.message : error
+      }`
+    );
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-export const refreshToken: RequestHandler = async (req: Request, res: Response) => {
+export const refreshToken: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const refreshToken = req.cookies?.refresh_token;
 
@@ -117,24 +131,29 @@ export const refreshToken: RequestHandler = async (req: Request, res: Response) 
 
     if (!refreshToken) {
       logger.warn(`Refresh token request missing token from IP: ${req.ip}`);
-      res.status(400).json({ error: 'Refresh token is required' });
+      res.status(400).json({ error: "Refresh token is required" });
       return;
     }
 
     let decoded;
     try {
-      decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET as string) as { userId: string; email: string };
+      decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_SECRET as string
+      ) as { userId: string; email: string };
     } catch (err) {
       logger.warn(`Invalid or expired refresh token from IP: ${req.ip}`);
-      res.status(403).json({ error: 'Invalid or expired refresh token' });
+      res.status(403).json({ error: "Invalid or expired refresh token" });
       return;
     }
 
     // Find the user
-    const user = await db('users').where({ email: decoded.email }).first();
+    const user = await db("users").where({ email: decoded.email }).first();
     if (!user) {
-      logger.warn(`Refresh token failed: User not found - User ID: ${decoded.userId}`);
-      res.status(403).json({ error: 'Invalid or expired refresh token' });
+      logger.warn(
+        `Refresh token failed: User not found - User ID: ${decoded.userId}`
+      );
+      res.status(403).json({ error: "Invalid or expired refresh token" });
       return;
     }
 
@@ -142,140 +161,165 @@ export const refreshToken: RequestHandler = async (req: Request, res: Response) 
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, email: decoded.email },
       process.env.JWT_SECRET as string,
-      { expiresIn: '30m' }
+      { expiresIn: "30m" }
     );
 
-    logger.info(`Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`);
+    logger.info(
+      `Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`
+    );
 
     res.status(200).json({
-      message: 'Token refreshed successfully',
-      token: newAccessToken
+      message: "Token refreshed successfully",
+      token: newAccessToken,
     });
   } catch (error: unknown) {
-    logger.error(`Refresh token error from IP: ${req.ip} - ${error instanceof Error ? error.message : error}`);
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error(
+      `Refresh token error from IP: ${req.ip} - ${
+        error instanceof Error ? error.message : error
+      }`
+    );
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const getProfile: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
+export const getProfile: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
-    logger.info(`Profile fetch request received for User ID: ${req.authUser?.userId} from IP: ${req.ip}`);
+    logger.info(
+      `Profile fetch request received for User ID: ${req.authUser?.userId} from IP: ${req.ip}`
+    );
 
     if (!req.authUser?.userId) {
       logger.warn(`Unauthorized profile access attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: 'Unauthorized' });
-      return
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
     const { userId } = req.authUser;
 
-    const user = await db('users')
-      .select('user_id', 'name', 'email', 'created_at')
+    const user = await db("users")
+      .select("user_id", "name", "email", "created_at")
       .where({ user_id: userId })
       .first();
 
     if (!user) {
       logger.warn(`Profile fetch failed: User not found - User ID: ${userId}`);
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
       return;
     }
 
-    logger.info(`Profile retrieved successfully for User ID: ${userId} from IP: ${req.ip}`);
+    logger.info(
+      `Profile retrieved successfully for User ID: ${userId} from IP: ${req.ip}`
+    );
 
     res.status(200).json({ user });
   } catch (error: unknown) {
-    logger.error(`Profile fetch error for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error(
+      `Profile fetch error for User ID: ${req.authUser?.userId || "unknown"}: ${
+        error instanceof Error ? error.message : error
+      }`
+    );
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const getUserIdentity: RequestHandler = async (req: Request, res: Response) => {
+export const getUserIdentity: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const redirectUri = `${process.env.SERVER_URL}/api/auth/github/callback`;
-  const scope = 'read:user user:email';
+  const scope = "read:user user:email";
 
   // GitHub OAuth authorize endpoint
   const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
 
-  logger.info('Redirecting to GitHub OAuth', { clientId });
+  logger.info("Redirecting to GitHub OAuth", { clientId });
   res.redirect(githubAuthUrl);
 };
 
-export const getAccessToken: RequestHandler = async (req: Request, res: Response) => {
+export const getAccessToken: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { code } = req.query;
 
     if (!code) {
-      logger.warn('No code returned from GitHub');
-      res.status(400).json({ error: 'Missing code parameter' });
-      return
+      logger.warn("No code returned from GitHub");
+      res.status(400).json({ error: "Missing code parameter" });
+      return;
     }
 
     // Exchange code for access token
     const tokenResponse = await axios.post(
-      'https://github.com/login/oauth/access_token',
+      "https://github.com/login/oauth/access_token",
       {
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code
+        code,
       },
       {
-        headers: { Accept: 'application/json' }
+        headers: { Accept: "application/json" },
       }
     );
 
     const accessToken = tokenResponse.data.access_token;
     if (!accessToken) {
-      logger.error('No access token received from GitHub');
-      res.status(500).json({ error: 'Failed to obtain access token' });
-      return
+      logger.error("No access token received from GitHub");
+      res.status(500).json({ error: "Failed to obtain access token" });
+      return;
     }
 
     // Fetch user profile from GitHub
-    const userProfileResp = await axios.get('https://api.github.com/user', {
-      headers: { Authorization: `token ${accessToken}` }
+    const userProfileResp = await axios.get("https://api.github.com/user", {
+      headers: { Authorization: `token ${accessToken}` },
     });
-    const githubUser = userProfileResp.data; 
+    const githubUser = userProfileResp.data;
 
     // Fetch user’s email(s)
-    const emailsResp = await axios.get('https://api.github.com/user/emails', {
-      headers: { Authorization: `token ${accessToken}` }
+    const emailsResp = await axios.get("https://api.github.com/user/emails", {
+      headers: { Authorization: `token ${accessToken}` },
     });
     const emails = emailsResp.data;
     const primaryEmailObj = emails.find((obj: any) => obj.primary) || emails[0];
     const userEmail = primaryEmailObj ? primaryEmailObj.email : null;
 
     // Check if user exists
-    let existingUser = await db('users').where({ email: userEmail }).first();
+    let existingUser = await db("users").where({ email: userEmail }).first();
 
     let userId: number;
     if (existingUser) {
       // Possibly update provider fields if user was local
       userId = existingUser.user_id;
-      if (!existingUser.provider || existingUser.provider === 'local') {
-        await db('users')
+      if (!existingUser.provider || existingUser.provider === "local") {
+        await db("users")
           .where({ user_id: userId })
           .update({
-            provider: 'github',
+            provider: "github",
             provider_id: String(githubUser.id),
-            updated_at: new Date()
+            updated_at: new Date(),
           });
-        logger.info(`Updated existing user with GitHub provider info: ${userId}`);
+        logger.info(
+          `Updated existing user with GitHub provider info: ${userId}`
+        );
       }
       logger.info(`Existing user logged in via GitHub: ${userEmail}`);
     } else {
       // Create a new user
-      const displayName = githubUser.name || githubUser.login || 'GitHub User';
-      const [newUser] = await db('users')
+      const displayName = githubUser.name || githubUser.login || "GitHub User";
+      const [newUser] = await db("users")
         .insert({
           name: displayName,
           email: userEmail || `user-${githubUser.id}@github.local`,
-          password: '', // no local password needed for OAuth
-          provider: 'github',
+          password: "", // no local password needed for OAuth
+          provider: "github",
           provider_id: String(githubUser.id),
-          created_at: new Date()
+          created_at: new Date(),
         })
-        .returning(['user_id']);
+        .returning(["user_id"]);
       userId = newUser.user_id;
       logger.info(`New user created via GitHub: ${userEmail}`);
     }
@@ -283,38 +327,48 @@ export const getAccessToken: RequestHandler = async (req: Request, res: Response
     const refreshToken = jwt.sign(
       {
         userId: existingUser.user_id,
-        email: existingUser.email
+        email: existingUser.email,
       },
       process.env.REFRESH_SECRET as string,
-      { expiresIn: '7d' } 
+      { expiresIn: "7d" }
     );
 
-    res.cookie('refresh_token', refreshToken, {
+    res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.redirect(`${process.env.CLIENT_URL}/auth/github/success`);
-  } catch (error) {
-    logger.error('GitHub OAuth Callback Error', { error });
-    res.status(500).json({ error: 'Internal server error' });
+    // make a new query to get all the user's details
+    const user = { user_id: existingUser.user_id, name: existingUser.name, email: existingUser.email };
+
+    const encodedUser = encodeURIComponent(JSON.stringify(user));
+
+    res.redirect(
+      `${process.env.CLIENT_URL}/auth/github/success?user=${encodedUser}`
+    );
+  } catch (error: unknown) {
+    logger.error("GitHub OAuth Callback Error: ", error instanceof Error ? error.message : error);
+    res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const logout: RequestHandler = (req: Request, res: Response) => {
   try {
-    res.clearCookie('refresh_token', {
+    res.clearCookie("refresh_token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
     logger.info(`User logged out - refresh token cookie cleared`);
-    res.status(200).json({ message: 'Logged out successfully' });
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error: unknown) {
-    logger.error('Logout error', error instanceof Error ? error.message : error);
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error(
+      "Logout error",
+      error instanceof Error ? error.message : error
+    );
+    res.status(500).json({ error: "Internal server error" });
   }
 };

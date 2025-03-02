@@ -11,11 +11,17 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
-
+export interface User {
+  user_id: string;
+  name: string;
+  email: string;
+}
 interface AuthContextType {
   accessToken: string | null;
   isAuthLoading: boolean;
-  login: (token: string) => void;
+  user: User | null;
+  userName: string | null;
+  login: (token: string, user: User) => void;
   logout: () => Promise<void>;
   localLogout: () => void;
 }
@@ -32,13 +38,24 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const navigate = useNavigate();
 
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
 
+  const getUserNameFromLocalStorage = useCallback(() => {
+    const storedName = localStorage.getItem("userName");
+    if (storedName) {
+      setUserName(storedName);
+    }
+  }, []);
+
   const localLogout = useCallback(() => {
     setAccessToken(null);
+    setUserName(null);
+    localStorage.removeItem("userName");
     navigate("/auth?tab=sign-in");
   }, [navigate]);
 
@@ -63,6 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         error instanceof Error ? error.message : error
       );
       setAccessToken(null);
+      setUser(null);
+      setUserName(null);
+      localStorage.removeItem("userName");
     } finally {
       setIsAuthLoading(false);
     }
@@ -83,9 +103,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // If redirected from GitHub OAuth login
     if (location.pathname.includes("/auth/github/success")) {
-      refreshToken().then(() => navigate("/"));
+      const params = new URLSearchParams(location.search);
+      const encodedUser = params.get("user");
+
+      if (encodedUser) {
+        try {
+          const decoded = decodeURIComponent(encodedUser);
+          const userObj = JSON.parse(decoded);
+          setUser(userObj);
+          setUserName(userObj.name);
+          localStorage.setItem("userName", userObj.name);
+        } catch (error) {
+          console.error("Failed to parse GitHub user data", error);
+        }
+      }
+      refreshToken().then(() => {
+        navigate("/");
+      });
+      bc.postMessage({ type: "LOGIN" });
     }
-  }, [refreshToken, navigate]);
+  }, [refreshToken, navigate, bc]);
 
   const logout = useCallback(async () => {
     try {
@@ -105,15 +142,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [bc, localLogout]);
 
-  const login = (token: string) => {
+  const login = (token: string, user: User) => {
     setAccessToken(token);
+    setUser(user);
+    setUserName(user.name);
+    localStorage.setItem("userName", user.name);
     bc.postMessage({ type: "LOGIN" });
   };
 
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
     refreshToken();
-  }, [refreshToken]);
+    getUserNameFromLocalStorage();
+  }, [refreshToken, getUserNameFromLocalStorage]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -145,6 +186,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     accessToken,
     isAuthLoading,
+    user,
+    userName,
     login,
     logout,
     localLogout,
