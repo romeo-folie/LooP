@@ -24,6 +24,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import NewProblemDialog from "@/components/new-problem-form";
 
 const problems = Array.from({ length: 23 }, (_, i) => ({
   id: i + 1,
@@ -42,6 +43,7 @@ const difficultyColors: Record<string, string> = {
 export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
@@ -111,13 +113,17 @@ export default function ProblemsDashboard() {
     currentPage * problemsPerPage
   );
 
+  const handleNewProblemSubmit = (problem: { name: string; difficulty: string; tags: string[]; dateSolved: Date | null; notes: string }) => {
+    console.log("New Problem Submitted:", problem);
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header Section (Title & New Button) */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Problems</h1>
         <Button
-          onClick={() => navigate("/problems/new")}
+          onClick={() => setIsDialogOpen(true)}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
@@ -204,6 +210,9 @@ export default function ProblemsDashboard() {
           </Button>
         </div>
       </div>
+
+       {/* New Problem Dialog */}
+       <NewProblemDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} onSubmit={handleNewProblemSubmit} />
 
       {/* Problems List */}
       <div className="border rounded-md">
