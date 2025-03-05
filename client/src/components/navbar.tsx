@@ -10,6 +10,7 @@ import {
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
 import { Moon, Sun } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const { userName, logout } = useAuth();
@@ -24,7 +25,7 @@ export default function Navbar() {
         border-grid sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
       "
     >
-      <div className="text-xl font-bold">DSA Tracker</div>
+      <Link to="/" className="text-xl font-bold text-inherit cursor-pointer select-none">DSA Tracker</Link>
 
       <nav className="flex items-center space-x-4">
         <Toggle
@@ -41,7 +42,7 @@ export default function Navbar() {
             <Button variant="ghost" className="p-0 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
-                  {userName?.charAt(0).toUpperCase()}
+                  {userName?.charAt(0).toUpperCase() ?? 'U'}
                 </AvatarFallback>
               </Avatar>
             </Button>
