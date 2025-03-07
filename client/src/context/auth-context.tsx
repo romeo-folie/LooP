@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsAuthLoading(true);
       const response = await axios.post(
-        `${SERVER_URL}/api/auth/refresh-token`,
+        `${SERVER_URL}/auth/refresh-token`,
         {},
         { withCredentials: true }
       );
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await axios.post(
-        `${SERVER_URL}/api/auth/logout`,
+        `${SERVER_URL}/auth/logout`,
         {},
         { withCredentials: true }
       );

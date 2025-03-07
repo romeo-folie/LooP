@@ -24,8 +24,6 @@ import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
-
-
 interface SigninResponse {
   message: string;
   token: string;
@@ -52,14 +50,14 @@ const signInUser = async (
   apiClient: AxiosInstance
 ) => {
   // Calls your sign-in endpoint
-  const response = await apiClient.post("/api/auth/login", userCredentials, {
+  const response = await apiClient.post("/auth/login", userCredentials, {
     withCredentials: true,
   });
   return response.data;
 };
 
 const handleGithubLogin = () => {
-  window.location.href = `${SERVER_URL}/api/auth/github`;
+  window.location.href = `${SERVER_URL}/auth/github`;
 };
 
 const SigninForm: React.FC = () => {

@@ -68,7 +68,7 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const signupUser = async (userCredentials: SignupFormValues, apiClient: AxiosInstance): Promise<SignupResponse> => {
-  const response = await apiClient.post("/api/auth/register", userCredentials);
+  const response = await apiClient.post("/auth/register", userCredentials);
   return response.data;
 };
 

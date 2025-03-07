@@ -5,9 +5,9 @@ import { createProblem, getProblemById, getProblems, updateProblem, deleteProble
 
 const router: Router = Router();
 
-router.get('/problems', authenticateJWT, getProblems);
+router.get('/', authenticateJWT, getProblems);
 router.get('/:problem_id', authenticateJWT, getProblemById);
-router.post('/problems', authenticateJWT, validateProblemCreation, createProblem);
+router.post('/', authenticateJWT, validateProblemCreation, createProblem);
 router.put('/:problem_id', authenticateJWT, validateProblemUpdate, updateProblem);
 router.delete('/:problem_id', authenticateJWT, deleteProblem);
 

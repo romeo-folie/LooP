@@ -31,6 +31,7 @@ import {
   CommandList,
   CommandEmpty,
 } from "@/components/ui/command";
+import { Problem } from "@/pages/ProblemDashboard";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 const initialTagOptions = [
@@ -44,13 +45,7 @@ const initialTagOptions = [
 interface NewProblemDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (problem: {
-    name: string;
-    difficulty: string;
-    tags: string[];
-    dateSolved: Date | undefined;
-    notes: string;
-  }) => void;
+  onSubmit: (problem: Problem) => void;
 }
 
 export default function NewProblemDialog({
@@ -61,11 +56,11 @@ export default function NewProblemDialog({
   const [tagOptions, setTagOptions] = useState(initialTagOptions);
   const [inputValue, setInputValue] = useState("");
   const [isTagOpen, setIsTagOpen] = useState(false);
-  const [newProblem, setNewProblem] = useState({
+  const [newProblem, setNewProblem] = useState<Problem>({
     name: "",
     difficulty: "",
     tags: [] as string[],
-    dateSolved: undefined as Date | undefined,
+    date_solved: undefined as Date | undefined,
     notes: "",
   });
 
@@ -119,7 +114,7 @@ export default function NewProblemDialog({
       name: "",
       difficulty: "",
       tags: [],
-      dateSolved: undefined,
+      date_solved: undefined,
       notes: "",
     });
     onOpenChange(false);
@@ -234,8 +229,8 @@ export default function NewProblemDialog({
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full h-10">
-                {newProblem.dateSolved
-                  ? format(newProblem.dateSolved, "PPP")
+                {newProblem.date_solved
+                  ? format(newProblem.date_solved, "PPP")
                   : "Date Solved"}{" "}
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
@@ -243,9 +238,9 @@ export default function NewProblemDialog({
             <PopoverContent>
               <Calendar
                 mode="single"
-                selected={newProblem.dateSolved}
+                selected={newProblem.date_solved}
                 onSelect={(date) =>
-                  setNewProblem({ ...newProblem, dateSolved: date })
+                  setNewProblem({ ...newProblem, date_solved: date })
                 }
               />
             </PopoverContent>
