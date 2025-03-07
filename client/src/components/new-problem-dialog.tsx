@@ -48,7 +48,7 @@ interface NewProblemDialogProps {
     name: string;
     difficulty: string;
     tags: string[];
-    dateSolved: Date | null;
+    dateSolved: Date | undefined;
     notes: string;
   }) => void;
 }
@@ -65,7 +65,7 @@ export default function NewProblemDialog({
     name: "",
     difficulty: "",
     tags: [] as string[],
-    dateSolved: null as Date | null,
+    dateSolved: undefined as Date | undefined,
     notes: "",
   });
 
@@ -119,7 +119,7 @@ export default function NewProblemDialog({
       name: "",
       difficulty: "",
       tags: [],
-      dateSolved: null,
+      dateSolved: undefined,
       notes: "",
     });
     onOpenChange(false);
@@ -171,7 +171,10 @@ export default function NewProblemDialog({
 
           {/* Tags Multi-Select (With Custom Entry) */}
           <div className="space-y-2">
-            <Popover open={isTagOpen} onOpenChange={setIsTagOpen}>
+            <Popover open={isTagOpen} onOpenChange={() => {
+              setIsTagOpen((prev) => !prev);
+              handleDropdownOpen(true);
+              }}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full">
                   {newProblem.tags.length > 0

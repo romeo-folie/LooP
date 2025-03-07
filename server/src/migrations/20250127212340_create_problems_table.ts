@@ -11,7 +11,7 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete('CASCADE'); // optional cascade on user deletion
 
     table.string('name', 255).notNullable();
-    table.string('difficulty', 50).notNullable();
+    table.enu('difficulty', ['Easy', 'Medium', 'Hard']);
 
     table.specificType('tags', 'text[]');
 

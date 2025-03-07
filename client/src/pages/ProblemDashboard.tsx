@@ -92,7 +92,7 @@ export default function ProblemsDashboard() {
     setSearch("");
     setSelectedDifficulty(null);
     setSelectedTag(null);
-    setSelectedDate(null);
+    setSelectedDate(new Date());
     setCurrentPage(1);
     navigate("/problems"); // Reset query params
   };
@@ -117,7 +117,7 @@ export default function ProblemsDashboard() {
     name: string;
     difficulty: string;
     tags: string[];
-    dateSolved: Date | null;
+    dateSolved: Date | undefined;
     notes: string;
   }) => {
     console.log("New Problem Submitted:", problem);
