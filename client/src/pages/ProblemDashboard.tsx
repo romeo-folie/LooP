@@ -24,7 +24,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import NewProblemDialog from "@/components/new-problem-form";
+import NewProblemDialog from "@/components/new-problem-dialog";
 
 const problems = Array.from({ length: 23 }, (_, i) => ({
   id: i + 1,
@@ -49,7 +49,7 @@ export default function ProblemsDashboard() {
     null
   );
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const [currentPage, setCurrentPage] = useState(1);
   const problemsPerPage = 10;
@@ -61,7 +61,7 @@ export default function ProblemsDashboard() {
     setSelectedDifficulty(params.get("difficulty") || null);
     setSelectedTag(params.get("tag") || null);
     setSelectedDate(
-      params.get("dueDate") ? parseISO(params.get("dueDate")!) : null
+      params.get("dueDate") ? parseISO(params.get("dueDate")!) : undefined
     );
     setCurrentPage(Number(params.get("page")) || 1);
   }, [location.search]);
@@ -113,7 +113,13 @@ export default function ProblemsDashboard() {
     currentPage * problemsPerPage
   );
 
-  const handleNewProblemSubmit = (problem: { name: string; difficulty: string; tags: string[]; dateSolved: Date | null; notes: string }) => {
+  const handleNewProblemSubmit = (problem: {
+    name: string;
+    difficulty: string;
+    tags: string[];
+    dateSolved: Date | null;
+    notes: string;
+  }) => {
     console.log("New Problem Submitted:", problem);
   };
 
@@ -211,78 +217,93 @@ export default function ProblemsDashboard() {
         </div>
       </div>
 
-       {/* New Problem Dialog */}
-       <NewProblemDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} onSubmit={handleNewProblemSubmit} />
+      {/* New Problem Dialog */}
+      <NewProblemDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleNewProblemSubmit}
+      />
 
       {/* Problems List */}
-      <div className="border rounded-md">
-        {paginatedProblems.map((problem) => (
-          <div
-            key={problem.id}
-            className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition"
-          >
-            {/* Clickable Problem Title */}
-            <span
-              className="cursor-pointer text-sm font-medium hover:underline"
-              onClick={() => navigate(`/problems/${problem.id}`)}
-            >
-              {problem.title}
-            </span>
-
-            <div className="flex items-center gap-4">
-              {/* Difficulty Badge */}
-              <Badge
-                className={`${difficultyColors[problem.difficulty]} text-white`}
+      {paginatedProblems.length ? (
+        <>
+          <div className="border rounded-md">
+            {paginatedProblems.map((problem) => (
+              <div
+                key={problem.id}
+                className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition"
               >
-                {problem.difficulty}
-              </Badge>
+                {/* Clickable Problem Title */}
+                <span
+                  className="cursor-pointer text-sm font-medium hover:underline"
+                  onClick={() => navigate(`/problems/${problem.id}`)}
+                >
+                  {problem.title}
+                </span>
 
-              {/* More Options Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => console.log("Add reminder for", problem.id)}
+                <div className="flex items-center gap-4">
+                  {/* Difficulty Badge */}
+                  <Badge
+                    className={`${
+                      difficultyColors[problem.difficulty]
+                    } text-white`}
                   >
-                    Add Reminder
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-red-600"
-                    onClick={() => console.log("Delete", problem.id)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                    {problem.difficulty}
+                  </Badge>
+
+                  {/* More Options Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          console.log("Add reminder for", problem.id)
+                        }
+                      >
+                        Add Reminder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => console.log("Delete", problem.id)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
-          <Button
-            variant="outline"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => prev - 1)}
-          >
-            <ArrowLeft className="h-4 w-4" /> Prev
-          </Button>
-          <span className="text-sm font-medium">
-            {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => prev + 1)}
-          >
-            Next <ArrowRight className="h-4 w-4" />
-          </Button>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
+              <Button
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+              >
+                <ArrowLeft className="h-4 w-4" /> Prev
+              </Button>
+              <span className="text-sm font-medium">
+                {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+              >
+                Next <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="border rounded-md p-4 text-center text-gray-500">
+          No problems found
         </div>
       )}
     </div>
