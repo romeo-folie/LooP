@@ -21,7 +21,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge, ChevronDown, X } from "lucide-react";
+import { ChevronDown, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -31,7 +31,12 @@ import {
   CommandList,
   CommandEmpty,
 } from "@/components/ui/command";
-import { Problem } from "@/pages/ProblemDashboard";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
+import { AxiosError, AxiosInstance } from "axios";
+
+import type { Problem, ProblemResponse } from "@/pages/ProblemDashboard";
+import { Badge } from "./ui/badge";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 const initialTagOptions = [
@@ -45,14 +50,28 @@ const initialTagOptions = [
 interface NewProblemDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (problem: Problem) => void;
 }
+
+interface NewProblemResponse {
+  message: string;
+  problem: ProblemResponse;
+}
+
+const createNewProblem = async (problem: Problem, apiClient: AxiosInstance) => {
+  const { data } = await apiClient.post("/problems", {
+    ...problem,
+    date_solved: problem.date_solved,
+  });
+  return data;
+};
 
 export default function NewProblemDialog({
   isOpen,
   onOpenChange,
-  onSubmit,
 }: NewProblemDialogProps) {
+  const apiClient = useAxios();
+  const queryClient = useQueryClient();
+
   const [tagOptions, setTagOptions] = useState(initialTagOptions);
   const [inputValue, setInputValue] = useState("");
   const [isTagOpen, setIsTagOpen] = useState(false);
@@ -108,8 +127,20 @@ export default function NewProblemDialog({
     }));
   };
 
-  const handleSubmit = () => {
-    onSubmit(newProblem);
+  const mutation = useMutation<
+    NewProblemResponse,
+    AxiosError<APIErrorResponse>,
+    Problem
+  >({
+    mutationFn: (problem: Problem) => createNewProblem(problem, apiClient),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] }); // Refresh problem list
+      onOpenChange(false); // Close modal
+      resetForm(); // Reset form fields
+    },
+  });
+
+  const resetForm = () => {
     setNewProblem({
       name: "",
       difficulty: "",
@@ -117,7 +148,10 @@ export default function NewProblemDialog({
       date_solved: undefined,
       notes: "",
     });
-    onOpenChange(false);
+  };
+
+  const handleSubmit = () => {
+    mutation.mutate(newProblem);
   };
 
   return (
@@ -166,10 +200,13 @@ export default function NewProblemDialog({
 
           {/* Tags Multi-Select (With Custom Entry) */}
           <div className="space-y-2">
-            <Popover open={isTagOpen} onOpenChange={() => {
-              setIsTagOpen((prev) => !prev);
-              handleDropdownOpen(true);
-              }}>
+            <Popover
+              open={isTagOpen}
+              onOpenChange={() => {
+                setIsTagOpen((prev) => !prev);
+                handleDropdownOpen(true);
+              }}
+            >
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full">
                   {newProblem.tags.length > 0
@@ -178,7 +215,11 @@ export default function NewProblemDialog({
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="center" className="w-full" style={{ width: dropdownWidth ? `${dropdownWidth}px` : "auto" }}>
+              <PopoverContent
+                align="center"
+                className="w-full"
+                style={{ width: dropdownWidth ? `${dropdownWidth}px` : "auto" }}
+              >
                 <Command>
                   <CommandInput
                     placeholder="Search or add a tag..."
@@ -256,8 +297,16 @@ export default function NewProblemDialog({
           />
 
           {/* Submit Button */}
-          <Button className="w-full" onClick={handleSubmit}>
-            Add Problem
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className="animate-spin mr-2" />
+            ) : (
+              "Add Problem"
+            )}
           </Button>
         </div>
       </DialogContent>

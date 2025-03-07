@@ -29,8 +29,9 @@ import { AxiosInstance } from "axios";
 import { useAxios } from "@/hooks/use-axios";
 import { useQuery } from "@tanstack/react-query";
 import LoadingScreen from "@/components/loading-screen";
+import { toast } from "@/hooks/use-toast";
 
-interface ProblemResponse {
+export interface ProblemResponse {
   problem_id: number;
   user_id: number;
   name: string;
@@ -38,6 +39,7 @@ interface ProblemResponse {
   tags: string[];
   date_solved: Date;
   notes: string | null;
+  created_at: Date;
 }
 
 export interface Problem {
@@ -84,7 +86,10 @@ export default function ProblemsDashboard() {
   });
 
   if (isError) {
-    console.log("Error fetching problems:", error);
+    console.log("Error fetching problems: ", error instanceof Error ? error.message : error);
+    const message =
+      error?.message || "Error fetching problems. Reload the page";
+    toast({ title: "Error", description: message, variant: "destructive" });
   }
 
   const problems: ProblemResponse[] = data?.problems ?? [];
@@ -138,7 +143,7 @@ export default function ProblemsDashboard() {
       problem.name.toLowerCase().includes(search.toLowerCase()) &&
       (!selectedDifficulty || problem.difficulty === selectedDifficulty) &&
       (!selectedTag || problem.tags.includes(selectedTag)) &&
-      (!selectedDate || new Date(problem.date_solved).toISOString().split('T')[0] === format(selectedDate, "yyyy-MM-dd"))
+      (!selectedDate ||  format(new Date(problem.date_solved!), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
     );
   });
 
@@ -259,7 +264,6 @@ export default function ProblemsDashboard() {
           <NewProblemDialog
             isOpen={isDialogOpen}
             onOpenChange={setIsDialogOpen}
-            onSubmit={handleNewProblemSubmit}
           />
 
           {/* Problems List */}
