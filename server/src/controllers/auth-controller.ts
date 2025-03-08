@@ -7,6 +7,9 @@ import dotenv from "dotenv";
 import { db } from "../db";
 import { AuthenticatedRequest } from "../types/authenticated-request";
 import logger from "../logging/winston-config";
+import resend from "../utils/resend";
+import crypto from 'crypto';
+
 dotenv.config();
 
 export const register: RequestHandler = async (req: Request, res: Response) => {
@@ -353,6 +356,119 @@ export const getAccessToken: RequestHandler = async (
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const forgotPassword: RequestHandler = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      logger.warn('Forgot password attempt without email');
+      res.status(400).json({ error: 'Email is required' });
+      return;
+    }
+
+    // 1. Check if user exists
+    const user = await db('users').where({ email }).first();
+    if (!user) {
+      logger.warn(`Forgot password request for non-existent email: ${email}`);
+      res.status(200).json({ message: 'If the email exists, an OTP has been sent.' });
+      return;
+    }
+
+    // 2. Generate a 6-digit OTP
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otpCode).digest('hex');
+
+    // 3. Store hashed OTP and expiration (valid for 10 minutes)
+    await db('password_reset_tokens').insert({
+      user_id: user.user_id,
+      otp_hash: hashedOtp,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    });
+
+    // 4. Send OTP Email via Resend
+    const emailSent = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL as string,
+      to: user.email,
+      subject: 'Your Password Reset OTP',
+      html: `
+        <p>Hello ${user.name},</p>
+        <p>Your password reset OTP is: <strong>${otpCode}</strong></p>
+        <p>This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+        <p>If you did not request this, please ignore this email.</p>
+      `,
+    });
+
+    if (emailSent) {
+      logger.info(`Password reset OTP sent to ${user.email}`);
+    } else {
+      logger.error(`Failed to send OTP email to ${user.email}`);
+    }
+
+    res.status(200).json({ message: 'If the email exists, an OTP has been sent.' });
+  } catch (error) {
+    logger.error('Forgot password error', { error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+export const verifyOtp: RequestHandler = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+  
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400).json({ error: 'Email and OTP are required' });
+      return;
+    }
+
+    // 1. Find user
+    const user = await db('users').where({ email }).first();
+    if (!user) {
+      res.status(400).json({ error: 'Invalid email or OTP' });
+      return;
+    }
+
+    // 2. Fetch the latest OTP for this user
+    const otpRecord = await db('password_reset_tokens')
+      .where({ user_id: user.user_id })
+      .orderBy('created_at', 'desc')
+      .first();
+
+    if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+      res.status(400).json({ error: 'OTP expired or invalid' });
+      return;
+    }
+
+    // 3. Hash the provided OTP and compare
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    if (hashedOtp !== otpRecord.otp_hash) {
+      res.status(400).json({ error: 'Invalid OTP' });
+      return;
+    }
+
+    // 4. OTP is valid - Remove it from the DB
+    await db('password_reset_tokens').where({ user_id: user.user_id }).del();
+
+    res.status(200).json({ message: 'OTP verified successfully', userId: user.user_id });
+  } catch (error) {
+    logger.error('OTP verification error', { error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 export const logout: RequestHandler = (req: Request, res: Response) => {
   try {

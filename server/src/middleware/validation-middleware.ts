@@ -124,3 +124,27 @@ export const validateSubscriptionDeletion: ValidationChain[] = [
     .notEmpty()
     .withMessage("Endpoint is required for subscription deletion"),
 ];
+
+export const forgotPasswordValidator: ValidationChain[] = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('A valid email is required')
+    .normalizeEmail()
+];
+
+export const verifyOtpValidator: ValidationChain[] = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('A valid email is required')
+    .normalizeEmail(),
+
+  body('otp')
+    .trim()
+    .isNumeric()
+    .withMessage('OTP must be a numeric value')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('OTP must be exactly 6 digits')
+];
+
