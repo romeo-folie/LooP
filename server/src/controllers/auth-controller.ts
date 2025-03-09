@@ -1,5 +1,4 @@
 import { Request, Response, RequestHandler } from "express";
-import { validationResult } from "express-validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
@@ -13,12 +12,6 @@ import crypto from 'crypto';
 dotenv.config();
 
 export const register: RequestHandler = async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() });
-    return;
-  }
-
   try {
     const { name, email, password } = req.body;
 
@@ -53,13 +46,6 @@ export const register: RequestHandler = async (req: Request, res: Response) => {
 };
 
 export const login: RequestHandler = async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    logger.warn(`Login failed: Invalid input from ${req.ip}`);
-    res.status(400).json({ errors: errors.array() });
-    return;
-  }
-
   try {
     const { email, password } = req.body;
 
@@ -358,12 +344,6 @@ export const getAccessToken: RequestHandler = async (
 };
 
 export const forgotPassword: RequestHandler = async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() });
-    return;
-  }
-
   try {
     const { email } = req.body;
 
@@ -420,12 +400,6 @@ export const forgotPassword: RequestHandler = async (req: Request, res: Response
 
 
 export const verifyOtp: RequestHandler = async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() });
-    return;
-  }
-  
   try {
     const { email, otp } = req.body;
 

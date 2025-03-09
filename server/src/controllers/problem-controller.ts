@@ -1,19 +1,11 @@
 import { RequestHandler, Response } from 'express';
 import { db } from '../db';
-import { validationResult } from 'express-validator';
 import { AuthenticatedRequest } from '../types/authenticated-request';
 import logger from '../logging/winston-config';
 
 
 export const createProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Problem creation failed due to validation errors: ${JSON.stringify(errors.array())}`);
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const { name, difficulty, tags, date_solved, notes } = req.body;
     const userId = req.authUser?.userId;
 
@@ -111,7 +103,6 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
   }
 };
 
-
 export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.authUser?.userId;
@@ -147,13 +138,6 @@ export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, 
 
 export const updateProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Problem update failed due to validation errors: ${JSON.stringify(errors.array())}`);
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
     const { name, difficulty, tags, date_solved, notes } = req.body;

@@ -154,10 +154,6 @@ export default function ProblemsDashboard() {
     currentPage * problemsPerPage
   );
 
-  const handleNewProblemSubmit = (problem: Problem) => {
-    console.log("New Problem Submitted:", problem);
-  };
-
   return (
     <>
       {isLoading ? (

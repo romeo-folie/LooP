@@ -1,5 +1,4 @@
 import { RequestHandler, Response } from "express";
-import { validationResult } from "express-validator";
 import { AuthenticatedRequest } from "../types/authenticated-request";
 import { db } from "../db";
 import logger from "../logging/winston-config";
@@ -7,14 +6,6 @@ import logger from "../logging/winston-config";
 
 export const createSubscription: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // 1. Validate request body
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Subscription validation failed for user ${req.authUser?.userId}`, { errors: errors.array() });
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const userId = req.authUser?.userId;
     const { endpoint, public_key, auth } = req.body;
 
@@ -62,14 +53,6 @@ export const createSubscription: RequestHandler = async (req: AuthenticatedReque
 
 export const deleteSubscription: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // 1. Validate request body
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Subscription deletion validation failed for user ${req.authUser?.userId}`, { errors: errors.array() });
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const userId = req.authUser?.userId;
     const { endpoint } = req.body;
 

@@ -1,7 +1,6 @@
 import { Response, RequestHandler } from 'express';
 import { AuthenticatedRequest } from '../types/authenticated-request';
 import { db } from '../db';
-import { validationResult } from 'express-validator';
 import logger from '../logging/winston-config';
 
 export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
@@ -77,13 +76,6 @@ export const getReminderById: RequestHandler = async (req: AuthenticatedRequest,
 
 export const createReminder: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Reminder creation failed due to validation errors: ${JSON.stringify(errors.array())}`);
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
     const { due_datetime } = req.body;
@@ -137,13 +129,6 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
 
 export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(`Reminder update failed due to validation errors: ${JSON.stringify(errors.array())}`);
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
     const { due_datetime, is_completed } = req.body;

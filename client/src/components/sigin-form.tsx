@@ -49,7 +49,6 @@ const signInUser = async (
   userCredentials: SignInFormValues,
   apiClient: AxiosInstance
 ) => {
-  // Calls your sign-in endpoint
   const response = await apiClient.post("/auth/login", userCredentials, {
     withCredentials: true,
   });
