@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 
 export interface APIErrorResponse {
-  message: string;
+  message?: string;
+  error?: string;
 }
 
 export function useAxios(): AxiosInstance {

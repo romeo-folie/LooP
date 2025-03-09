@@ -49,9 +49,7 @@ const signInUser = async (
   userCredentials: SignInFormValues,
   apiClient: AxiosInstance
 ) => {
-  const response = await apiClient.post("/auth/login", userCredentials, {
-    withCredentials: true,
-  });
+  const response = await apiClient.post("/auth/login", userCredentials);
   return response.data;
 };
 
@@ -107,9 +105,8 @@ const SigninForm: React.FC = () => {
     },
     onError: (error) => {
       // Check for server error message
-      console.log("Error ", error instanceof Error ? error.message : error);
-      const message =
-        error.response?.data?.message || "Sign in failed, please try again.";
+      const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Sign in failed, please try again.";
+      console.log("Error ", message);
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
@@ -191,9 +188,9 @@ const SigninForm: React.FC = () => {
         <Button
           variant="link"
           className="ml-auto"
-          // onClick={
-          //   () => setForgotPassword(true)
-          // }
+          onClick={
+            () => navigate('/auth/forgot-password')
+          }
         >
           Forgot your password?
         </Button>

@@ -1,9 +1,8 @@
 "use client";
 
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +11,6 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -20,6 +18,15 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/auth-context";
+import { useMutation } from "@tanstack/react-query";
+import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
+import {
+  ForgotPasswordFormValues,
+  ForgotPasswordResponse,
+} from "./forgot-password-form";
+import { AxiosError } from "axios";
 
 const FormSchema = z.object({
   pin: z.string().min(6, {
@@ -27,11 +34,11 @@ const FormSchema = z.object({
   }),
 });
 
-interface Props {
-  onOTPSubmit: (event: React.FormEvent) => void;
-}
+const InputOTPForm: React.FC = () => {
+  const navigate = useNavigate();
+  const apiClient = useAxios();
+  const { email } = useAuth();
 
-const InputOTPForm: React.FC<Props> = ({ onOTPSubmit }) => {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -40,6 +47,7 @@ const InputOTPForm: React.FC<Props> = ({ onOTPSubmit }) => {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    navigate("/auth/password-reset");
     toast({
       title: "You submitted the following values:",
       description: (
@@ -49,6 +57,40 @@ const InputOTPForm: React.FC<Props> = ({ onOTPSubmit }) => {
       ),
     });
   }
+
+  const resendOtpMutation = useMutation<
+    ForgotPasswordResponse,
+    AxiosError<APIErrorResponse>,
+    ForgotPasswordFormValues
+  >({
+    mutationFn: async (emailData: ForgotPasswordFormValues) => {
+      const { data } = await apiClient.post("/auth/forgot-password", emailData);
+      return data;
+    },
+    onSuccess: ({ message }) => {
+      toast({
+        title: "Success",
+        description: message,
+      });
+    },
+    onError: (error) => {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to resend OTP";
+      console.log("Error ", message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleResendClick = () => {
+    resendOtpMutation.mutate({ email: email! });
+  };
 
   const pinValue = form.watch("pin");
 
@@ -74,19 +116,26 @@ const InputOTPForm: React.FC<Props> = ({ onOTPSubmit }) => {
                 </InputOTP>
               </FormControl>
               <FormDescription className="flex justify-center">
-                <Button variant="link">Resend OTP</Button>
+                <Button variant="link" onClick={handleResendClick}>
+                  Resend OTP
+                </Button>
               </FormDescription>
               {/* <FormMessage>Entered wrong OTP value</FormMessage> */}
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" size="lg" disabled={pinValue.length !== 6}>
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={pinValue.length !== 6}
+        >
           Submit
         </Button>
       </form>
     </Form>
   );
-}
+};
 
 export default InputOTPForm;

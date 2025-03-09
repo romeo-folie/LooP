@@ -3,11 +3,14 @@ import React from "react";
 import { Button } from "./ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
+import { useNavigate } from "react-router-dom";
 
 const PasswordResetForm: React.FC = () => {
+  const navigate = useNavigate();
+  
   return (
     <form>
-      <Card className="mt-4">
+      <Card>
         <CardHeader>
           <CardTitle className="text-3xl">Reset Password</CardTitle>
           <CardDescription>
@@ -37,10 +40,9 @@ const PasswordResetForm: React.FC = () => {
             <Button
               className="w-full"
               size="lg"
-              // onClick={() => {
-                // setForgotPassword(false);
-                // setProvidingOTP(true);
-              // }}
+              onClick={() => {
+                navigate('/auth');
+              }}
             >
               Submit
             </Button>

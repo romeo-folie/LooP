@@ -22,6 +22,8 @@ interface AuthContextType {
   user: User | null;
   userName: string | null;
   login: (token: string, user: User) => void;
+  email: string | null;
+  saveEmail: (email: string) => void;
   logout: () => Promise<void>;
   localLogout: () => void;
 }
@@ -41,6 +43,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const storedEmail = localStorage.getItem("forgotPasswordEmail");
+  const [email, setEmail] = useState<string | null>(storedEmail);
+
   const navigate = useNavigate();
 
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
@@ -150,6 +156,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     bc.postMessage({ type: "LOGIN" });
   };
 
+  const saveEmail = (email: string) => {
+    localStorage.setItem("forgotPasswordEmail", email);
+    setEmail(email);
+  };
+
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
     refreshToken();
@@ -190,6 +201,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     userName,
     login,
     logout,
+    email,
+    saveEmail,
     localLogout,
   };
 

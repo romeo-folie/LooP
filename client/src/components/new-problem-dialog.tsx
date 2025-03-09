@@ -37,6 +37,7 @@ import { AxiosError, AxiosInstance } from "axios";
 
 import type { Problem, ProblemResponse } from "@/pages/ProblemDashboard";
 import { Badge } from "./ui/badge";
+import { toast } from "@/hooks/use-toast";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 const initialTagOptions = [
@@ -58,10 +59,7 @@ interface NewProblemResponse {
 }
 
 const createNewProblem = async (problem: Problem, apiClient: AxiosInstance) => {
-  const { data } = await apiClient.post("/problems", {
-    ...problem,
-    date_solved: problem.date_solved,
-  });
+  const { data } = await apiClient.post("/problems", problem);
   return data;
 };
 
@@ -137,6 +135,17 @@ export default function NewProblemDialog({
       queryClient.invalidateQueries({ queryKey: ["problems"] }); // Refresh problem list
       onOpenChange(false); // Close modal
       resetForm(); // Reset form fields
+    },
+    onError: (error) => {
+      onOpenChange(false);
+      resetForm();
+      const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Failed to add new problem";
+      console.log("Error ", message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     },
   });
 
