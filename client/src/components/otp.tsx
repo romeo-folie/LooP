@@ -27,36 +27,65 @@ import {
   ForgotPasswordResponse,
 } from "./forgot-password-form";
 import { AxiosError } from "axios";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
+interface VerifyOtpResponse {
+  message: string;
+  password_reset_token: string;
+}
 const FormSchema = z.object({
   pin: z.string().min(6, {
     message: "Your one-time password must be 6 characters.",
   }),
 });
 
+type FormSchemaValues = z.infer<typeof FormSchema>;
+
+type RequestValues = FormSchemaValues & { email: string | null };
+
 const InputOTPForm: React.FC = () => {
+  const [otpError, setOtpError] = useState<string | null>(null);
   const navigate = useNavigate();
   const apiClient = useAxios();
-  const { email } = useAuth();
+  const { email, savePasswordResetToken } = useAuth();
 
-  const form = useForm<z.infer<typeof FormSchema>>({
+  const form = useForm<RequestValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       pin: "",
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    navigate("/auth/password-reset");
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-  }
+  const mutation = useMutation<
+    VerifyOtpResponse,
+    AxiosError<APIErrorResponse>,
+    RequestValues
+  >({
+    mutationFn: async (otpData: RequestValues) => {
+      const { data } = await apiClient.post("/auth/verify-otp", otpData);
+      return data;
+    },
+    onSuccess: ({ message, password_reset_token }) => {
+      savePasswordResetToken(password_reset_token);
+      toast({ title: "Success", description: message });
+      navigate("/auth/password-reset");
+    },
+    onError: (error) => {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "OTP Verification Failed";
+      setOtpError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const onSubmit = (otpData: RequestValues) => {
+    otpData = Object.assign(otpData, { email });
+    mutation.mutate(otpData);
+  };
 
   const resendOtpMutation = useMutation<
     ForgotPasswordResponse,
@@ -79,7 +108,6 @@ const InputOTPForm: React.FC = () => {
         error.response?.data?.error ||
         error.message ||
         "Failed to resend OTP";
-      console.log("Error ", message);
       toast({
         title: "Error",
         description: message,
@@ -89,6 +117,8 @@ const InputOTPForm: React.FC = () => {
   });
 
   const handleResendClick = () => {
+    form.reset({ pin: "" });
+    setOtpError(null);
     resendOtpMutation.mutate({ email: email! });
   };
 
@@ -116,11 +146,15 @@ const InputOTPForm: React.FC = () => {
                 </InputOTP>
               </FormControl>
               <FormDescription className="flex justify-center">
-                <Button variant="link" onClick={handleResendClick}>
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={handleResendClick}
+                >
                   Resend OTP
                 </Button>
               </FormDescription>
-              {/* <FormMessage>Entered wrong OTP value</FormMessage> */}
+              {otpError && <FormMessage>{otpError}</FormMessage>}
             </FormItem>
           )}
         />
@@ -129,9 +163,13 @@ const InputOTPForm: React.FC = () => {
           type="submit"
           className="w-full"
           size="lg"
-          disabled={pinValue.length !== 6}
+          disabled={pinValue.length !== 6 || mutation.isPending}
         >
-          Submit
+          {mutation.isPending ? (
+            <Loader2 className="animate-spin mr-2" />
+          ) : (
+            "Submit"
+          )}
         </Button>
       </form>
     </Form>

@@ -401,9 +401,10 @@ export const forgotPassword: RequestHandler = async (req: Request, res: Response
 
 export const verifyOtp: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const { email, otp } = req.body;
+    const { email, pin } = req.body;
 
-    if (!email || !otp) {
+    if (!email || !pin) {
+      logger.warn('OTP verification attempt without email or pin');
       res.status(400).json({ error: 'Email and OTP are required' });
       return;
     }
@@ -427,7 +428,7 @@ export const verifyOtp: RequestHandler = async (req: Request, res: Response) => 
     }
 
     // 3. Hash the provided OTP and compare
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    const hashedOtp = crypto.createHash('sha256').update(pin).digest('hex');
     if (hashedOtp !== otpRecord.otp_hash) {
       res.status(400).json({ error: 'Invalid OTP' });
       return;
@@ -436,9 +437,62 @@ export const verifyOtp: RequestHandler = async (req: Request, res: Response) => 
     // 4. OTP is valid - Remove it from the DB
     await db('password_reset_tokens').where({ user_id: user.user_id }).del();
 
-    res.status(200).json({ message: 'OTP verified successfully', userId: user.user_id });
+    // 5. Generate a temporary password reset token (valid for 15 minutes)
+    const passwordResetToken = jwt.sign(
+      { userId: user.user_id, email: user.email },
+      process.env.RESET_PASSWORD_SECRET as string,
+      { expiresIn: '15m' }
+    );
+
+    logger.info(`OTP verified for ${user.email}. Temporary reset token generated.`);
+
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      password_reset_token: passwordResetToken
+    });
   } catch (error) {
     logger.error('OTP verification error', { error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+export const resetPassword: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    const { password_reset_token, new_password } = req.body;
+
+    if (!password_reset_token || !new_password) {
+      logger.warn('Password reset attempt without password_reset_token or new_password');
+      res.status(400).json({ error: 'Token and new password are required' });
+      return;
+    }
+
+    // 1. Verify the reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(password_reset_token, process.env.RESET_PASSWORD_SECRET as string);
+    } catch (error) {
+      logger.warn('Invalid or expired password reset token');
+      res.status(403).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    const { userId, email } = decoded as { userId: number; email: string };
+
+    // 2. Hash the new password securely
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // 3. Update password in the database
+    await db('users').where({ user_id: userId, email }).update({
+      password: hashedPassword,
+      updated_at: new Date()
+    });
+
+    logger.info(`Password reset successfully for ${email}`);
+
+    res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    logger.error('Password reset error', { error });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

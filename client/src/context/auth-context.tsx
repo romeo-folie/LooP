@@ -18,12 +18,14 @@ export interface User {
 }
 interface AuthContextType {
   accessToken: string | null;
+  passwordResetToken: string | null;
   isAuthLoading: boolean;
   user: User | null;
   userName: string | null;
   login: (token: string, user: User) => void;
   email: string | null;
   saveEmail: (email: string) => void;
+  savePasswordResetToken: (token: string | null) => void;
   logout: () => Promise<void>;
   localLogout: () => void;
 }
@@ -40,6 +42,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [passwordResetToken, setPasswordResetToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -161,6 +164,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setEmail(email);
   };
 
+  const savePasswordResetToken = (token: string | null) => {
+    setPasswordResetToken(token);
+  }
+
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
     refreshToken();
@@ -195,15 +202,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [accessToken, refreshToken]);
 
   const value: AuthContextType = {
+    user,
+    email,
+    userName,
     accessToken,
     isAuthLoading,
-    user,
-    userName,
+    passwordResetToken,
     login,
     logout,
-    email,
     saveEmail,
     localLogout,
+    savePasswordResetToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

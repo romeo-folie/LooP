@@ -140,11 +140,29 @@ export const verifyOtpValidator: ValidationChain[] = [
     .withMessage('A valid email is required')
     .normalizeEmail(),
 
-  body('otp')
+  body('pin')
     .trim()
-    .isNumeric()
-    .withMessage('OTP must be a numeric value')
     .isLength({ min: 6, max: 6 })
     .withMessage('OTP must be exactly 6 digits')
+];
+
+export const resetPasswordValidator: ValidationChain[] = [
+  body('password_reset_token')
+    .trim()
+    .notEmpty()
+    .withMessage('Password reset token is required'),
+
+  body('new_password')
+    .trim()
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+    .matches(/[A-Z]/)
+    .withMessage('Password must contain at least one uppercase letter')
+    .matches(/[a-z]/)
+    .withMessage('Password must contain at least one lowercase letter')
+    .matches(/\d/)
+    .withMessage('Password must contain at least one number')
+    .matches(/[@$!%*?&#]/)
+    .withMessage('Password must contain at least one special character (@$!%*?&#)')
 ];
 

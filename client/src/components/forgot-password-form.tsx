@@ -57,7 +57,6 @@ const ForgotPasswordForm: React.FC = () => {
     },
     onError: (error) => {
       const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Failed to send OTP";
-      console.log("Error ", message);
       toast({
         title: "Error",
         description: message,

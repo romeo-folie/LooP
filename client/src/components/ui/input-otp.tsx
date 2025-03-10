@@ -29,6 +29,7 @@ const InputOTPGroup = React.forwardRef<
 InputOTPGroup.displayName = "InputOTPGroup"
 
 const InputOTPSlot = React.forwardRef<
+// @TODO: Lookup
   React.ElementRef<"div">,
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {

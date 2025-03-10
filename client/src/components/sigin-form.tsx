@@ -106,7 +106,6 @@ const SigninForm: React.FC = () => {
     onError: (error) => {
       // Check for server error message
       const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Sign in failed, please try again.";
-      console.log("Error ", message);
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
