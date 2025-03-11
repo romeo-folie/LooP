@@ -57,7 +57,6 @@ const difficultyColors: Record<string, string> = {
 };
 
 const fetchProblems = async (apiClient: AxiosInstance) => {
-  if (!apiClient) throw new Error("Axios instance not initialized");
   const { data } = await apiClient.get("/problems");
   return data;
 };
@@ -79,10 +78,9 @@ export default function ProblemsDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const problemsPerPage = 10;
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["problems"],
     queryFn: () => fetchProblems(apiClient),
-    enabled: !!apiClient,
   });
 
   if (isError) {

@@ -12,7 +12,7 @@ export default function ProtectedRoute() {
   if (!accessToken) {
     // If user isn't logged in, redirect to sign-in
     return (
-      <Navigate to="/auth?tab=sign-in" state={{ from: location }} replace />
+      <Navigate to="/auth" state={{ from: location }} replace />
     );
   }
 

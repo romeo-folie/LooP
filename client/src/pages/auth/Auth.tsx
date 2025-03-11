@@ -3,6 +3,7 @@ import SignupForm from "@/components/signup-form";
 import { useNavigate, useLocation } from "react-router-dom";
 import SigninForm from "@/components/sigin-form";
 import { useEffect } from "react";
+import Container from "@/components/container";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="bg-background text-foreground flex items-center justify-center h-screen w-screen">
+    <Container>
         <Tabs
           className="w-[400px]"
           value={activeTab}
@@ -41,7 +42,7 @@ const Auth = () => {
             <SignupForm />
           </TabsContent>
         </Tabs>
-    </div>
+    </Container>
   );
 };
 

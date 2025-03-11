@@ -83,11 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
       }
-    } catch (error: unknown) {
-      console.log(
-        "No valid refresh token or refresh failed => staying logged out",
-        error instanceof Error ? error.message : error
-      );
+    } catch {
       setAccessToken(null);
       setUser(null);
       setUserName(null);

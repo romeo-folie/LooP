@@ -7,10 +7,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import InputOTPForm from "@/components/otp";
+import Container from "@/components/container";
 
 const VerifyOtp: React.FC = () => {
   return (
-    <div className="bg-background text-foreground flex items-center justify-center h-screen w-screen">
+    <Container>
       <Card>
           <CardHeader>
             <CardTitle className="text-3xl">One Time Password</CardTitle>
@@ -22,7 +23,7 @@ const VerifyOtp: React.FC = () => {
             <InputOTPForm />
           </CardContent>
         </Card>
-    </div>
+    </Container>
   )
 }
 
