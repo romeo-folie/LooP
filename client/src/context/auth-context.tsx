@@ -7,8 +7,9 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/utils";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
@@ -83,7 +84,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
       }
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "failed to refresh token"
+      logger.error(message);
       setAccessToken(null);
       setUser(null);
       setUserName(null);
@@ -118,8 +121,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(userObj);
           setUserName(userObj.name);
           localStorage.setItem("userName", userObj.name);
-        } catch (error) {
-          console.error("Failed to parse GitHub user data", error);
+        } catch (error: unknown) {
+          const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Failed to parse GitHub user data"
+          logger.error(message);
         }
       }
       refreshToken().then(() => {
@@ -137,10 +141,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { withCredentials: true }
       );
     } catch (error: unknown) {
-      console.warn(
-        "Logout API call failed, but continuing logout.",
-        error instanceof Error ? error.message : error
-      );
+      const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Logout API call failed, but continuing logout"
+      logger.error(message);
     } finally {
       localLogout();
       bc.postMessage({ type: "LOGOUT" });

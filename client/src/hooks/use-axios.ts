@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
+import { logger } from "@/lib/utils";
 
 export interface APIErrorResponse {
   message?: string;
@@ -18,6 +19,7 @@ export function useAxios(): AxiosInstance {
     });
 
     instance.interceptors.request.use((config) => {
+      logger.info({ method: config.method, url: config.url }, "API Request");
       if (accessToken && config.headers) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -25,13 +27,22 @@ export function useAxios(): AxiosInstance {
     });
 
     instance.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        logger.info(
+          { status: response.status, url: response.config.url },
+          "API Response"
+        );
+        return response;
+      },
       (error) => {
-        // e.g., handle 401 unauthorized
-        if (error.response?.status === 401) {
-          console.log("Unauthorized - logging out");
-          localLogout();
-        }
+        logger.error(
+          {
+            error: error.response?.data?.message || error.response?.data?.error,
+            url: error.config?.url,
+          },
+          "API Error"
+        );
+        if (error.response?.status === 401) localLogout();
         return Promise.reject(error);
       }
     );

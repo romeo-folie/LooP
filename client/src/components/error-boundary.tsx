@@ -1,3 +1,4 @@
+import { logger } from "@/lib/utils";
 import { Component, ErrorInfo, ReactNode } from "react";
 
 interface ErrorBoundaryProps {
@@ -20,8 +21,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // @TODO: Put a proper logger in here
-    console.error("Uncaught error:", error, errorInfo);
+    logger.error({ error, errorInfo }, "Unhandled error occurred");
   }
 
   render() {
