@@ -27,11 +27,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen text-center">
+        <div className="bg-background text-foreground flex flex-col items-center justify-center h-screen w-screen text-center">
           <h1 className="text-3xl font-bold">Something went wrong.</h1>
           <p className="text-gray-500">Please try again later.</p>
           <button
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground text-white rounded-md"
             onClick={() => window.location.reload()}
           >
             Reload Page
