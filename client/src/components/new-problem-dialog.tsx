@@ -35,7 +35,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import { AxiosError, AxiosInstance } from "axios";
 
-import type { Problem, ProblemResponse } from "@/pages/ProblemDashboard";
+import type { Problem, ProblemResponse } from "@/pages/problems/ProblemDashboard";
 import { Badge } from "./ui/badge";
 import { toast } from "@/hooks/use-toast";
 

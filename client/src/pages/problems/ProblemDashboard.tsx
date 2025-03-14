@@ -30,6 +30,7 @@ import { useAxios } from "@/hooks/use-axios";
 import { useQuery } from "@tanstack/react-query";
 import LoadingScreen from "@/components/loading-screen";
 import { toast } from "@/hooks/use-toast";
+import ProblemDetail from "./ProblemDetail";
 
 export interface ProblemResponse {
   problem_id: number;
@@ -71,9 +72,7 @@ export default function ProblemsDashboard() {
     null
   );
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    undefined
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const [currentPage, setCurrentPage] = useState(1);
   const problemsPerPage = 10;
@@ -81,10 +80,15 @@ export default function ProblemsDashboard() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["problems"],
     queryFn: () => fetchProblems(apiClient),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (isError) {
-    console.log("Error fetching problems: ", error instanceof Error ? error.message : error);
+    console.log(
+      "Error fetching problems: ",
+      error instanceof Error ? error.message : error
+    );
     const message =
       error?.message || "Error fetching problems. Reload the page";
     toast({ title: "Error", description: message, variant: "destructive" });
@@ -99,7 +103,9 @@ export default function ProblemsDashboard() {
     setSelectedDifficulty(params.get("difficulty") || null);
     setSelectedTag(params.get("tag") || null);
     setSelectedDate(
-      params.get("date_solved") ? parseISO(params.get("date_solved")!) : undefined
+      params.get("date_solved")
+        ? parseISO(params.get("date_solved")!)
+        : undefined
     );
     setCurrentPage(Number(params.get("page")) || 1);
   }, [location.search]);
@@ -133,7 +139,7 @@ export default function ProblemsDashboard() {
     setSelectedTag(null);
     setSelectedDate(undefined);
     setCurrentPage(1);
-    navigate("/problems");
+    navigate(`/problems?page=${currentPage}`);
   };
 
   const filteredProblems = problems.filter((problem) => {
@@ -141,7 +147,9 @@ export default function ProblemsDashboard() {
       problem.name.toLowerCase().includes(search.toLowerCase()) &&
       (!selectedDifficulty || problem.difficulty === selectedDifficulty) &&
       (!selectedTag || problem.tags.includes(selectedTag)) &&
-      (!selectedDate ||  format(new Date(problem.date_solved!), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))
+      (!selectedDate ||
+        format(new Date(problem.date_solved!), "yyyy-MM-dd") ===
+          format(selectedDate, "yyyy-MM-dd"))
     );
   });
 
@@ -160,7 +168,7 @@ export default function ProblemsDashboard() {
         <div className="p-6 space-y-6">
           {/* Header Section (Title & New Button) */}
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Problems</h1>
+            <h1 className="text-3xl font-bold">Problems</h1>
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="flex items-center gap-2"
@@ -265,53 +273,64 @@ export default function ProblemsDashboard() {
             <>
               <div className="border rounded-md">
                 {paginatedProblems.map((problem) => (
-                  <div
-                    key={problem.problem_id}
-                    className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition"
-                  >
-                    {/* Clickable Problem Title */}
-                    <span
-                      className="cursor-pointer text-sm font-medium hover:underline"
-                      onClick={() => navigate(`/problems/${problem.problem_id}`)}
-                    >
-                      {problem.name}
-                    </span>
-
-                    <div className="flex items-center gap-4">
-                      {/* Difficulty Badge */}
-                      <Badge
-                        className={`${
-                          difficultyColors[problem.difficulty]
-                        } text-white`}
+                  <Popover key={problem.problem_id}>
+                    <PopoverTrigger asChild>
+                      <div
+                        key={problem.problem_id}
+                        className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
                       >
-                        {problem.difficulty}
-                      </Badge>
+                        {/* Clickable Problem Title */}
+                        <span className="text-lg font-small">
+                          {problem.name}
+                        </span>
 
-                      {/* More Options Dropdown */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              console.log("Add reminder for", problem.problem_id)
-                            }
+                        <div className="flex items-center gap-4">
+                          {/* Difficulty Badge */}
+                          <Badge
+                            className={`${
+                              difficultyColors[problem.difficulty]
+                            } text-white`}
                           >
-                            Add Reminder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => console.log("Delete", problem.problem_id)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
+                            {problem.difficulty}
+                          </Badge>
+
+                          {/* More Options Dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  console.log(
+                                    "Add reminder for",
+                                    problem.problem_id
+                                  )
+                                }
+                              >
+                                Add Reminder
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() =>
+                                  console.log("Delete", problem.problem_id)
+                                }
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </PopoverTrigger>
+
+                    {/* Popover Content with Problem Detail */}
+                    <PopoverContent align="start" className="w-[500px]">
+                      <ProblemDetail problem={problem} />
+                    </PopoverContent>
+                  </Popover>
                 ))}
               </div>
               {/* Pagination Controls */}
