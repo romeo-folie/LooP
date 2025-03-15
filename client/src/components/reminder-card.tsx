@@ -8,25 +8,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 
 interface ReminderCardProps {
-  date: Date;
-  is_sent: boolean;
+  reminder: ReminderResponse;
 }
 
-const ReminderCard: React.FC<ReminderCardProps> = ({
-  date = new Date(),
-  is_sent = false, // false for 'pending', true for 'sent'
-}) => {
+const ReminderCard: React.FC<ReminderCardProps> = ({ reminder: { due_datetime, is_sent }}) => {
   // Format the date components
-  const day = date.getDate();
-  const month = date
+  due_datetime = new Date(due_datetime)
+  const day = due_datetime.getDate();
+  const month = due_datetime
     .toLocaleString("default", { month: "short" })
     .toLowerCase();
 
   // Format the time (hours and minutes)
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = due_datetime.getHours();
+  const minutes = due_datetime.getMinutes();
   const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}`;
@@ -40,7 +38,7 @@ const ReminderCard: React.FC<ReminderCardProps> = ({
       <div className="absolute top-0 right-0 z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost">
+            <Button variant="ghost" className="hover:bg-transparent outline-none ring-0 focus-visible:ring-0 inset-ring-0 shadow-none inset-shadow-none">
               <MoreHorizontal size={18} />
             </Button>
           </DropdownMenuTrigger>
@@ -55,15 +53,15 @@ const ReminderCard: React.FC<ReminderCardProps> = ({
         </DropdownMenu>
       </div>
 
-      <CardContent className="px-4 pt-10">
+      <CardContent className="px-4 pt-8">
         <div className="flex items-center">
           {/* Vertical status line */}
-          <div className={`${statusColor} w-2 h-16 rounded-sm mr-4`}></div>
+          <div className={`${statusColor} w-2 h-14 rounded-sm mr-3`}></div>
 
           {/* Calendar box with date */}
-          <div className="flex flex-col items-center justify-center h-16 w-16 border border-gray-200 bg-gray-50 dark:bg-gray-800">
-            <span className="text-2xl font-bold">{day}</span>
-            <span className="text-sm">{month}</span>
+          <div className="flex flex-col items-center justify-center h-14 w-14 border rounded-md border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <span className="text-2xl font-black">{day}</span>
+            <span className="text-xs">{month}</span>
           </div>
 
           {/* Spacer */}

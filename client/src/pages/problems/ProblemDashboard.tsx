@@ -32,6 +32,13 @@ import LoadingScreen from "@/components/loading-screen";
 import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
 
+export interface ReminderResponse {
+  reminder_id: number;
+  problem_id: number;
+  due_datetime: Date;
+  is_sent: boolean;
+  created_at: Date;
+}
 export interface ProblemResponse {
   problem_id: number;
   user_id: number;
@@ -41,6 +48,7 @@ export interface ProblemResponse {
   date_solved: Date;
   notes: string | null;
   created_at: Date;
+  reminders: ReminderResponse[];
 }
 
 export interface Problem {
@@ -179,12 +187,12 @@ export default function ProblemsDashboard() {
           </div>
 
           {/* Search & Filters Section */}
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-center">
             <Input
               placeholder="Search problems..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-1/3"
+              className="w-full lg:w-1/3 h-10 md:text-base lg:text-lg"
             />
 
             {/* Filters */}
@@ -192,7 +200,7 @@ export default function ProblemsDashboard() {
               {/* Difficulty Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant="outline" size="lg">
                     {selectedDifficulty ?? "Difficulty"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
@@ -212,7 +220,7 @@ export default function ProblemsDashboard() {
               {/* Tags Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant="outline" size="lg">
                     {selectedTag ?? "Tags"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
@@ -238,7 +246,7 @@ export default function ProblemsDashboard() {
               {/* Date Solved Filter */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant="outline" size="lg">
                     {selectedDate ? format(selectedDate, "PPP") : "Date Solved"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
@@ -255,6 +263,7 @@ export default function ProblemsDashboard() {
               <Button
                 variant="outline"
                 className="flex items-center"
+                size="lg"
                 onClick={resetFilters}
               >
                 <RotateCcw className="h-4 w-4" /> Reset
@@ -280,7 +289,7 @@ export default function ProblemsDashboard() {
                         className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
                       >
                         {/* Clickable Problem Title */}
-                        <span className="text-lg font-small">
+                        <span className="text-base font-normal lg:text-lg">
                           {problem.name}
                         </span>
 

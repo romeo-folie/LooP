@@ -112,21 +112,6 @@ const PasswordResetForm: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid w-full items-center gap-4">
-            {/* <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                placeholder="e.g. P@s$w0rd"
-                className="h-12 px-4 text-lg"
-                {...register("new_password")}
-              />
-              {errors.new_password && (
-                <p className="text-red-500 text-sm">
-                  {errors.new_password.message}
-                </p>
-              )}
-            </div> */}
             <PasswordInput
               label="New Password"
               id="new-password"
@@ -135,21 +120,6 @@ const PasswordResetForm: React.FC = () => {
               register={register}
               error={errors.new_password?.message}
             />
-            {/* <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="confirm-new-password">Confirm Password</Label>
-              <Input
-                id="confirm-new-password"
-                type="password"
-                placeholder="e.g. P@s$w0rd"
-                className="h-12 px-4 text-lg"
-                {...register("confirm_password")}
-              />
-              {errors.confirm_password && (
-                <p className="text-red-500 text-sm">
-                  {errors.confirm_password.message}
-                </p>
-              )}
-            </div> */}
             <PasswordInput
               label="Confirm New Password"
               id="confirm-password"
