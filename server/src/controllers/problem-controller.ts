@@ -69,7 +69,18 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
 
     // Extract optional query parameters
     const { difficulty, tags, date_solved } = req.query;
-    let query = db('problems').where({ user_id: userId });
+    let query = db('problems')
+      .where({ user_id: userId })
+      .select(
+        'problem_id',
+        'user_id',
+        'name',
+        'difficulty',
+        'tags',
+        'date_solved',
+        'notes',
+        'created_at'
+      );
 
     // Apply filters if present
     if (difficulty) {
@@ -83,25 +94,48 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
       query = query.where('date_solved', date_solved as string);
     }
 
-    // Execute query and fetch problems
-    const problems = await query.select(
-      'problem_id',
-      'name',
-      'difficulty',
-      'tags',
-      'date_solved',
-      'notes',
-      'created_at'
-    );
+    // Fetch problems
+    const problems = await query;
+
+    // Fetch reminders for the problems
+    const problemIds = problems.map((p) => p.problem_id);
+    const reminders = await db('reminders')
+      .whereIn('problem_id', problemIds)
+      .select(
+        'reminder_id',
+        'problem_id',
+        'due_datetime',
+        'is_sent',
+        // 'sent_at',
+        // 'is_completed',
+        // 'completed_at',
+        'created_at'
+      );
+
+    // Map reminders to their corresponding problems
+    const remindersMap = reminders.reduce((acc, reminder) => {
+      if (!acc[reminder.problem_id]) {
+        acc[reminder.problem_id] = [];
+      }
+      acc[reminder.problem_id].push(reminder);
+      return acc;
+    }, {} as Record<number, any[]>);
+
+    // Attach reminders to their respective problems
+    const problemsWithReminders = problems.map((problem) => ({
+      ...problem,
+      reminders: remindersMap[problem.problem_id] || [],
+    }));
 
     logger.info(`Successfully fetched ${problems.length} problems for User ID: ${userId}`);
 
-    res.status(200).json({ problems });
+    res.status(200).json({ problems: problemsWithReminders });
   } catch (error: unknown) {
     logger.error(`Error fetching problems for User ID: ${req.authUser?.userId || 'unknown'}: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
