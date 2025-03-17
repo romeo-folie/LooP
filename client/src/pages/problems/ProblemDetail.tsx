@@ -39,13 +39,13 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
           {/* Difficulty & Tags */}
           <div className="text-right space-y-2">
             <div className="space-y-2">
-              <p className="text-gray-500">Difficulty</p>
+              <p className="text-gray-500 text-sm font-bold">Difficulty</p>
               <Badge className={`${difficultyColors[problem.difficulty]}`}>
                 {problem.difficulty}
               </Badge>
             </div>
             <div className="space-y-2">
-              <p className=" text-gray-500">Tags</p>
+              <p className="text-gray-500 text-sm font-bold">Tags</p>
               <div className="flex flex-wrap gap-2 justify-end">
                 {problem.tags.map((tag) => (
                   <Badge key={tag}>

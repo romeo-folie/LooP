@@ -176,7 +176,7 @@ export default function ProblemsDashboard() {
         <div className="p-6 space-y-6">
           {/* Header Section (Title & New Button) */}
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Problems</h1>
+            <h1 className="text-2xl font-bold">Problems</h1>
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="flex items-center gap-2"

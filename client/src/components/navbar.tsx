@@ -9,8 +9,9 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
-import { Moon, Sun } from "lucide-react";
+import { Bell, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
+import NotificationCard from "./notification-card";
 
 export default function Navbar() {
   const { userName, logout } = useAuth();
@@ -25,7 +26,7 @@ export default function Navbar() {
         border-grid sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
       "
     >
-      <Link to="/" className="text-xl font-bold text-inherit cursor-pointer select-none">DSA Tracker</Link>
+      <Link to="/" className="text-2xl font-black text-inherit cursor-pointer select-none">DSA Tracker</Link>
 
       <nav className="flex items-center space-x-4">
         <Toggle
@@ -36,6 +37,17 @@ export default function Navbar() {
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Toggle>
+ 
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-10 h-10 p-0 rounded-full bg-accent">
+              <Bell className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="p-0">
+            <NotificationCard className="border-none rounded-none"/>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
