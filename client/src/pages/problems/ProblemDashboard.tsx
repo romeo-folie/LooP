@@ -31,6 +31,8 @@ import { useQuery } from "@tanstack/react-query";
 import LoadingScreen from "@/components/loading-screen";
 import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
+import NotificationPermissionDialog from "@/components/notification-permission-dialog";
+import { requestNotificationPermission } from "@/lib/push-notifications";
 
 export interface ReminderResponse {
   reminder_id: number;
@@ -70,6 +72,8 @@ const fetchProblems = async (apiClient: AxiosInstance) => {
   return data;
 };
 
+const problemsPerPage = 10;
+
 export default function ProblemsDashboard() {
   const apiClient = useAxios();
   const navigate = useNavigate();
@@ -83,8 +87,40 @@ export default function ProblemsDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const problemsPerPage = 10;
+  const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
+    useState(false);
 
+  useEffect(() => {
+    // Check localStorage for user’s notification preference
+    const storedPref = localStorage.getItem("notificationsAllowed");
+    if (!storedPref || storedPref === "false") {
+      // No preference found => show the dialog once
+      setShowNotificationRequestDialog(true);
+    }
+  }, []);
+
+  async function saveUserNotificationPreference(allowed: boolean) {
+    try {
+      console.log("make api call to save user preference. allowed: ", allowed.toString());
+    } catch (error) {
+      console.error("Failed to save user preference on backend", error);
+    }
+  }
+
+  const handleConfirm = async () => {
+    localStorage.setItem("notificationsAllowed", "true");
+    await saveUserNotificationPreference(true);
+    await requestNotificationPermission(apiClient);
+    setShowNotificationRequestDialog(false);
+  };
+
+  const handleCancel = async () => {
+    localStorage.setItem("notificationsAllowed", "false");
+    await saveUserNotificationPreference(false);
+    setShowNotificationRequestDialog(false);
+  };
+
+  // Problem Dashboard
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["problems"],
     queryFn: () => fetchProblems(apiClient),
@@ -370,6 +406,14 @@ export default function ProblemsDashboard() {
               No problems found
             </div>
           )}
+
+          {/* The permission dialog */}
+          <NotificationPermissionDialog
+            isOpen={showNotificationRequestDialog}
+            onOpenChange={(open) => setShowNotificationRequestDialog(open)}
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+          />
         </div>
       )}
     </>
