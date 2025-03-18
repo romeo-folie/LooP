@@ -2,6 +2,8 @@ import pgPromise from 'pg-promise';
 import dotenv from 'dotenv';
 import knex from 'knex';
 import knexConfig from './knexfile';
+import cron from 'node-cron';
+import reminderJob from '../jobs/reminder-job';
 
 dotenv.config();
 
@@ -32,6 +34,7 @@ export const connectDB = function() {
       obj.done(); // Release connection
       console.log('✅ Connected to PostgreSQL database');
       await runMigrations();
+      cron.schedule('* * * * *', reminderJob);
     })
     .catch((error) => {
       console.error('❌ Database connection error:', error.message);
