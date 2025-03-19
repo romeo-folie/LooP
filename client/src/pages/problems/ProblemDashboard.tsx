@@ -33,6 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
 import NotificationPermissionDialog from "@/components/notification-permission-dialog";
 import { requestNotificationPermission } from "@/lib/push-notifications";
+import browserStore from "@/lib/browser-storage";
 
 export interface ReminderResponse {
   reminder_id: number;
@@ -92,7 +93,7 @@ export default function ProblemsDashboard() {
 
   useEffect(() => {
     // Check localStorage for user’s notification preference
-    const storedPref = localStorage.getItem("notificationsAllowed");
+    const storedPref = browserStore.get("notificationsAllowed");
     if (!storedPref || storedPref === "false") {
       // No preference found => show the dialog once
       setShowNotificationRequestDialog(true);
@@ -108,14 +109,14 @@ export default function ProblemsDashboard() {
   }
 
   const handleConfirm = async () => {
-    localStorage.setItem("notificationsAllowed", "true");
+    browserStore.set("notificationsAllowed", "true");
     await saveUserNotificationPreference(true);
     await requestNotificationPermission(apiClient);
     setShowNotificationRequestDialog(false);
   };
 
   const handleCancel = async () => {
-    localStorage.setItem("notificationsAllowed", "false");
+    browserStore.set("notificationsAllowed", "false");
     await saveUserNotificationPreference(false);
     setShowNotificationRequestDialog(false);
   };

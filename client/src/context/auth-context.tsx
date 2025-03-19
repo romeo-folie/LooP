@@ -10,6 +10,7 @@ import {
 import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/utils";
+import browserStore from "@/lib/browser-storage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  const storedEmail = localStorage.getItem("forgotPasswordEmail");
+  const storedEmail = browserStore.get("forgotPasswordEmail");
   const [email, setEmail] = useState<string | null>(storedEmail);
 
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
 
   const getUserNameFromLocalStorage = useCallback(() => {
-    const storedName = localStorage.getItem("userName");
+    const storedName = browserStore.get("userName");
     if (storedName) {
       setUserName(storedName);
     }
@@ -65,7 +66,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const localLogout = useCallback(() => {
     setAccessToken(null);
     setUserName(null);
-    localStorage.removeItem("userName");
     navigate("/auth?tab=sign-in");
   }, [navigate]);
 
@@ -90,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAccessToken(null);
       setUser(null);
       setUserName(null);
-      localStorage.removeItem("userName");
     } finally {
       setIsAuthLoading(false);
     }
@@ -120,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userObj = JSON.parse(decoded);
           setUser(userObj);
           setUserName(userObj.name);
-          localStorage.setItem("userName", userObj.name);
+          browserStore.set("userName", userObj.name);
         } catch (error: unknown) {
           const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Failed to parse GitHub user data"
           logger.error(message);
@@ -153,12 +152,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(token);
     setUser(user);
     setUserName(user.name);
-    localStorage.setItem("userName", user.name);
+    browserStore.set("userName", user.name);
     bc.postMessage({ type: "LOGIN" });
   };
 
   const saveEmail = (email: string) => {
-    localStorage.setItem("forgotPasswordEmail", email);
+    browserStore.set("forgotPasswordEmail", email);
     setEmail(email);
   };
 
