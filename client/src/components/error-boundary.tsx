@@ -1,4 +1,4 @@
-import { logger } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { Component, ErrorInfo, ReactNode } from "react";
 
 interface ErrorBoundaryProps {

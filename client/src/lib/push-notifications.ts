@@ -1,5 +1,5 @@
 import { AxiosError, AxiosInstance } from "axios";
-import { logger } from "./utils";
+import { logger } from "./logger";
 
 const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -43,6 +43,7 @@ export async function subscribeToPush(apiClient: AxiosInstance) {
   try {
     await apiClient.post(`/subscriptions`, subscriptionPayload)
   } catch (error: unknown) {
+    //TODO: consider setting nofificationsAllowed to false so app can request permission again
     const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Error saving subscription"
     logger.error(message);
   }

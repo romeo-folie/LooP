@@ -9,7 +9,7 @@ import {
 } from "react";
 import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
-import { logger } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import browserStore from "@/lib/browser-storage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;

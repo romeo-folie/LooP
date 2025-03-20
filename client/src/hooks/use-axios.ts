@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
-import { logger } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export interface APIErrorResponse {
   message?: string;

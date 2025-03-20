@@ -17,18 +17,18 @@ import { requestNotificationPermission } from "@/lib/push-notifications";
 import { useAxios } from "@/hooks/use-axios";
 
 const notifications = [
-  {
-    title: "Your call has been confirmed.",
-    description: "1 hour ago",
-  },
-  {
-    title: "You have a new message!",
-    description: "1 hour ago",
-  },
-  {
-    title: "Your subscription is expiring soon!",
-    description: "2 hours ago",
-  },
+  // {
+  //   title: "Your call has been confirmed.",
+  //   description: "1 hour ago",
+  // },
+  // {
+  //   title: "You have a new message!",
+  //   description: "1 hour ago",
+  // },
+  // {
+  //   title: "Your subscription is expiring soon!",
+  //   description: "2 hours ago",
+  // },
 ];
 
 type CardProps = React.ComponentProps<typeof Card>;
@@ -44,19 +44,19 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
   }, []);
 
   function handleCheckChanged(checked: boolean) {
-    if (checked) requestNotificationPermission(apiClient)
+    if (checked) requestNotificationPermission(apiClient);
     browserStore.set("notificationsAllowed", checked.toString());
-    setNotificationsAllowed(checked)
+    setNotificationsAllowed(checked);
   }
 
   return (
     <Card className={cn("w-[380px]", className)} {...props}>
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
-        <CardDescription>You have 3 unread messages.</CardDescription>
+        {/* <CardDescription>You have 3 unread messages.</CardDescription> */}
       </CardHeader>
       <CardContent className="grid gap-4">
-        {!notificationsAllowed && (
+        {notificationsAllowed && (
           <div className="flex items-center space-x-4 rounded-md border p-4">
             <BellRing />
             <div className="flex-1 space-y-1">
@@ -67,11 +67,15 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                 Send notifications to device.
               </p>
             </div>
-            <Switch checked={notificationsAllowed} onCheckedChange={handleCheckChanged}/>
+            <Switch
+              disabled={notificationsAllowed}
+              checked={notificationsAllowed}
+              onCheckedChange={handleCheckChanged}
+            />
           </div>
         )}
         <div>
-          {notifications.map((notification, index) => (
+          {/* {notifications.map((notification, index) => (
             <div
               key={index}
               className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
@@ -86,13 +90,15 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                 </p>
               </div>
             </div>
-          ))}
+          ))} */}
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">
-          <Check /> Mark all as read
-        </Button>
+        {!!notifications.length && (
+          <Button disabled={!notifications.length} className="w-full">
+            <Check /> Mark all as read
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
