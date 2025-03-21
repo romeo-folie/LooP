@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { logger } from "@/lib/logger";
+import { getCsrfToken } from "@/lib/cookies";
 
 export interface APIErrorResponse {
   message?: string;
@@ -23,6 +24,12 @@ export function useAxios(): AxiosInstance {
       if (accessToken && config.headers) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       }
+
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-TOKEN'] = csrfToken;
+      }
+
       return config;
     });
 

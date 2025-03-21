@@ -43,11 +43,7 @@ const ReminderCard: React.FC<ReminderCardProps> = ({ reminder: { due_datetime, i
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit</DropdownMenuItem>
             <DropdownMenuItem>Reschedule</DropdownMenuItem>
-            <DropdownMenuItem>
-              Mark as {is_sent ? "pending" : "sent"}
-            </DropdownMenuItem>
             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

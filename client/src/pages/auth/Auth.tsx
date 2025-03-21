@@ -23,7 +23,7 @@ const Auth = () => {
   return (
     <Container>
         <Tabs
-          className="w-[400px]"
+          className="w-[360px] pt-16 md:w-[400px] md:pt-0 lg:w-[450px] xl:w-[480px]"
           value={activeTab}
           onValueChange={handleTabChange}
         >
