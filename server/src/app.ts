@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import webpush from 'web-push'
 
 const app: Application = express();
-const corsOptions = { origin: process.env.CLIENT_URL as string, credentials: true, allowedHeaders: "Content-Type, Authorization" }
+const corsOptions = { origin: process.env.CLIENT_URL as string, credentials: true, allowedHeaders: "Content-Type, Authorization, X-CSRF-TOKEN" }
 
 app.use(cookieParser());
 app.use(express.json());

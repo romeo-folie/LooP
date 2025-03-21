@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import { db } from "../db";
 import { AuthenticatedRequest } from "../types/authenticated-request";
 import logger from "../logging/winston-config";
-import resend from "../utils/resend";
+import resend from "../config/resend";
 import crypto from 'crypto';
 
 dotenv.config();
@@ -80,15 +80,32 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
 
+    const csrfToken = jwt.sign({
+      userId: existingUser.user_id,
+      email: existingUser.email,
+      issuedAt: Date.now(),
+    }, process.env.CSRF_SECRET_KEY as string)
+
     logger.info(`Login successful for ${email} from IP: ${req.ip}`);
 
-    // Set token in HTTP-only cookie
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
+    res.cookie("CSRF-TOKEN", csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
+
+    res.cookie("XSRF-TOKEN", csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
 
     res.status(200).json({
       message: "Login successful",
@@ -506,7 +523,19 @@ export const logout: RequestHandler = (req: Request, res: Response) => {
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
-    logger.info(`User logged out - refresh token cookie cleared`);
+    res.clearCookie("CSRF-TOKEN", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    });
+
+    res.clearCookie("XSRF-TOKEN", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    });
+
+    logger.info(`User logged out - refresh and csrf tokens and cookies cleared`);
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error: unknown) {
     logger.error(
