@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { useMemo } from "react";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 import { logger } from "@/lib/logger";
 import { getCsrfToken } from "@/lib/cookies";
 

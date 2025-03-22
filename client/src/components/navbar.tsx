@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 import { useTheme } from "@/context/theme-provider";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import {
@@ -9,12 +9,14 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
-import { Bell, Moon, Sun } from "lucide-react";
+import { Bell, BellDot, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import NotificationCard from "./notification-card";
+import { useNotifications } from "@/context/notification-provider";
 
 export default function Navbar() {
   const { userName, logout } = useAuth();
+  const { notificationLength } = useNotifications();
   const { isDark, toggleTheme } = useTheme();
 
   return (
@@ -26,7 +28,12 @@ export default function Navbar() {
         border-grid sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
       "
     >
-      <Link to="/" className="text-2xl font-black text-inherit cursor-pointer select-none">DSA Tracker</Link>
+      <Link
+        to="/"
+        className="text-2xl font-black text-inherit cursor-pointer select-none"
+      >
+        DSA Reminders
+      </Link>
 
       <nav className="flex items-center space-x-4">
         <Toggle
@@ -37,15 +44,22 @@ export default function Navbar() {
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Toggle>
- 
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-10 h-10 p-0 rounded-full bg-accent">
-              <Bell className="h-6 w-6" />
+            <Button
+              variant="ghost"
+              className="w-10 h-10 p-0 rounded-full bg-accent"
+            >
+              {notificationLength ? (
+                <BellDot className="h-8 w-8" />
+              ) : (
+                <Bell className="h-8 w-8" />
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="p-0">
-            <NotificationCard className="border-none rounded-none"/>
+            <NotificationCard className="border-none rounded-none" />
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -54,7 +68,7 @@ export default function Navbar() {
             <Button variant="ghost" className="p-0 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
-                  {userName?.charAt(0).toUpperCase() ?? 'U'}
+                  {userName?.charAt(0).toUpperCase() ?? "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>

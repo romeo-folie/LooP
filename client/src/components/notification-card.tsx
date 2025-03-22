@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  // CardDescription,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -15,27 +15,16 @@ import browserStore from "@/lib/browser-storage";
 import { useEffect, useState } from "react";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { useAxios } from "@/hooks/use-axios";
-
-const notifications = [
-  // {
-  //   title: "Your call has been confirmed.",
-  //   description: "1 hour ago",
-  // },
-  // {
-  //   title: "You have a new message!",
-  //   description: "1 hour ago",
-  // },
-  // {
-  //   title: "Your subscription is expiring soon!",
-  //   description: "2 hours ago",
-  // },
-];
+import { useNotifications } from "@/context/notification-provider";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
+  const { notifications, clearNotifications } = useNotifications();
+
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
+ 
   // get notification preference from local store
   useEffect(() => {
     const notificationsAllowed = browserStore.get("notificationsAllowed");
@@ -49,14 +38,22 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
     setNotificationsAllowed(checked);
   }
 
+  function handleMarkAllAsRead() {
+    clearNotifications();
+  }
+
   return (
     <Card className={cn("w-[380px]", className)} {...props}>
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
-        {/* <CardDescription>You have 3 unread messages.</CardDescription> */}
+        <CardDescription>
+          You have {notifications.length} unread messages.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        {notificationsAllowed && (
+      <CardContent
+        className={`grid gap-4 ${!notifications.length ? "pb-0" : ""}`}
+      >
+        {!notificationsAllowed && (
           <div className="flex items-center space-x-4 rounded-md border p-4">
             <BellRing />
             <div className="flex-1 space-y-1">
@@ -75,7 +72,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
           </div>
         )}
         <div>
-          {/* {notifications.map((notification, index) => (
+          {notifications.map((notification, index) => (
             <div
               key={index}
               className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
@@ -86,20 +83,24 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                   {notification.title}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {notification.description}
+                  {notification.body.message}
                 </p>
               </div>
             </div>
-          ))} */}
+          ))}
         </div>
       </CardContent>
-      <CardFooter>
-        {!!notifications.length && (
-          <Button disabled={!notifications.length} className="w-full">
+      {!!notifications.length && (
+        <CardFooter>
+          <Button
+            disabled={!notifications.length}
+            className="w-full"
+            onClick={handleMarkAllAsRead}
+          >
             <Check /> Mark all as read
           </Button>
-        )}
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 };

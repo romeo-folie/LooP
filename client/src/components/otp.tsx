@@ -19,7 +19,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 import { useMutation } from "@tanstack/react-query";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import {

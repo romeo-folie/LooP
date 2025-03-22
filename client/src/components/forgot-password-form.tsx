@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 
 export interface ForgotPasswordResponse {
   message: string;

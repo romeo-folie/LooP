@@ -15,7 +15,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
 import { toast } from "@/hooks/use-toast";
 import { AxiosError } from "axios";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "./password-input";
 

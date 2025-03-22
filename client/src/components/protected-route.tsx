@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-provider";
 import LoadingScreen from "./loading-screen";
 import Navbar from "./navbar";
 

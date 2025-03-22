@@ -7,25 +7,8 @@ import ProtectedRoute from "./components/protected-route";
 import ProblemDashboard from "./pages/problems/ProblemDashboard";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyOtp from "./pages/auth/VerifyOtp";
-import { toast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 const App: React.FC = () => {
-  useEffect(() => {
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        const { type, payload } = event.data || {};
-
-        if (type === "IN_APP_ALERT") {
-          toast({
-            title: payload.title,
-            description: payload.body,
-          });
-        }
-      });
-    }
-  }, []);
-
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Routes>

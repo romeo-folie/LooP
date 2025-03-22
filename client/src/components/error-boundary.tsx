@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           <h1 className="text-3xl font-bold">Something went wrong.</h1>
           <p className="text-gray-500">Please try again later.</p>
           <button
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground text-white rounded-md"
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
             onClick={() => window.location.reload()}
           >
             Reload Page
