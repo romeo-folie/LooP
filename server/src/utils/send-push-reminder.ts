@@ -2,7 +2,7 @@ import webpush from 'web-push';
 import { db } from "../db";
 import logger from '../logging/winston-config';
 
-async function sendPushReminder(userId: number, message: string) {
+async function sendPushReminder(userId: number, message: string, due_datetime: Date) {
   const subscriptions = await db('subscriptions')
     .where({ user_id: userId, is_active: true });
   
@@ -14,7 +14,7 @@ async function sendPushReminder(userId: number, message: string) {
         auth: sub.auth
       }
     };
-    const payload = JSON.stringify({ title: 'DSA Reminder', body: message });
+    const payload = JSON.stringify({ title: 'DSA Reminder', body: { message, due_datetime } });
     try {
       await webpush.sendNotification(subscription, payload);
       logger.info(`Push sent to user ${userId}`);

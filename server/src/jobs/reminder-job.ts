@@ -14,7 +14,8 @@ export default async function reminderJob() {
       .select(
         'reminders.reminder_id',
         'reminders.user_id',
-        'problems.name as problem_name'
+        'problems.name as problem_name',
+        'reminders.due_datetime'
       );
 
     if (dueReminders.length === 0) {
@@ -25,7 +26,7 @@ export default async function reminderJob() {
     logger.info(`Found ${dueReminders.length} reminders due`);
 
     for (const reminder of dueReminders) {
-      await sendPushReminder(reminder.user_id, `Time to revisit: ${reminder.problem_name}`);
+      await sendPushReminder(reminder.user_id, `Time to revisit: ${reminder.problem_name}`, reminder.due_datetime);
     }
 
     const reminderIds = dueReminders.map((r) => r.reminder_id);
