@@ -24,7 +24,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
   const { notifications, clearNotifications } = useNotifications();
 
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
- 
+
   // get notification preference from local store
   useEffect(() => {
     const notificationsAllowed = browserStore.get("notificationsAllowed");

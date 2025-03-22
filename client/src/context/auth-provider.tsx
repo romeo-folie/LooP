@@ -44,7 +44,9 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [passwordResetToken, setPasswordResetToken] = useState<string | null>(null);
+  const [passwordResetToken, setPasswordResetToken] = useState<string | null>(
+    null
+  );
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -85,7 +87,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         navigate("/");
       }
     } catch (error: unknown) {
-      const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "failed to refresh token"
+      const message =
+        error instanceof AxiosError
+          ? error.response?.data?.error || error.response?.data?.message
+          : "failed to refresh token";
       logger.error(message);
       setAccessToken(null);
       setUser(null);
@@ -121,7 +126,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserName(userObj.name);
           browserStore.set("userName", userObj.name);
         } catch (error: unknown) {
-          const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Failed to parse GitHub user data"
+          const message =
+            error instanceof AxiosError
+              ? error.response?.data?.error || error.response?.data?.message
+              : "Failed to parse GitHub user data";
           logger.error(message);
         }
       }
@@ -140,7 +148,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { withCredentials: true }
       );
     } catch (error: unknown) {
-      const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Logout API call failed, but continuing logout"
+      const message =
+        error instanceof AxiosError
+          ? error.response?.data?.error || error.response?.data?.message
+          : "Logout API call failed, but continuing logout";
       logger.error(message);
     } finally {
       localLogout();
@@ -163,7 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const savePasswordResetToken = (token: string | null) => {
     setPasswordResetToken(token);
-  }
+  };
 
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie

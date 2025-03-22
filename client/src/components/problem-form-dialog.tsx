@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,8 @@ const initialTagOptions = [
   "Linked List",
 ];
 
-const newProblemSchema = z.object({
+// Zod schema for both "new" and "edit" flows
+const problemSchema = z.object({
   name: z
     .string()
     .min(3, "Name must be at least 3 characters")
@@ -67,17 +68,18 @@ const newProblemSchema = z.object({
   notes: z.string().nonempty("Add a note"),
 });
 
-export type NewProblemFormData = z.infer<typeof newProblemSchema>;
+export type ProblemFormData = z.infer<typeof problemSchema>;
 
-interface NewProblemResponse {
+// API calls
+interface ProblemResponseData {
   message: string;
   problem: ProblemResponse;
 }
 
-const createNewProblem = async (
-  formData: NewProblemFormData,
+async function createProblem(
+  formData: ProblemFormData,
   apiClient: AxiosInstance
-): Promise<NewProblemResponse> => {
+): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
     date_solved: formData.date_solved
@@ -86,20 +88,47 @@ const createNewProblem = async (
   };
   const { data } = await apiClient.post("/problems", payload);
   return data;
-};
-
-interface NewProblemDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
 }
 
-const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChange }) => {
+async function updateProblem(
+  problemId: number,
+  formData: ProblemFormData,
+  apiClient: AxiosInstance
+): Promise<ProblemResponseData> {
+  const payload = {
+    ...formData,
+    date_solved: formData.date_solved
+      ? format(formData.date_solved, "yyyy-MM-dd")
+      : undefined,
+  };
+  const { data } = await apiClient.put(`/problems/${problemId}`, payload);
+  return data;
+}
+
+// Props for the unified dialog
+interface ProblemFormDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: "new" | "edit";
+  // If mode = "edit", we pass an existing problem to pre-fill
+  problem?: ProblemResponse;
+}
+
+export default function ProblemFormDialog({
+  isOpen,
+  onOpenChange,
+  mode,
+  problem,
+}: ProblemFormDialogProps) {
   const apiClient = useAxios();
   const queryClient = useQueryClient();
 
+  // We use a single schema for both new & edit
+  // We'll set defaultValues based on `problem` if mode=edit
   const [dropdownWidth, setDropdownWidth] = useState<number | null>(null);
   const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  // For typed tag input
   const [tagOptions, setTagOptions] = useState(initialTagOptions);
   const [inputValue, setInputValue] = useState("");
   const [isTagOpen, setIsTagOpen] = useState(false);
@@ -110,29 +139,60 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
     }
   };
 
+  // Set default form values: if editing, fill from `problem`.
+  const defaultVals: Partial<ProblemFormData> = useMemo(
+    () =>
+      mode === "edit" && problem
+        ? {
+            name: problem.name,
+            difficulty: problem.difficulty as (typeof difficultyLevels)[number],
+            tags: problem.tags,
+            date_solved: problem.date_solved
+              ? new Date(problem.date_solved) // convert from string to Date
+              : undefined,
+            notes: problem.notes || "",
+          }
+        : {
+            name: "",
+            difficulty: undefined,
+            tags: [],
+            date_solved: undefined,
+            notes: "",
+          },
+    [mode, problem]
+  );
+
+  // React Hook Form setup
   const {
     control,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<NewProblemFormData>({
-    resolver: zodResolver(newProblemSchema),
-    defaultValues: {
-      name: "",
-      difficulty: undefined,
-      tags: [],
-      date_solved: undefined,
-      notes: "",
-    },
+  } = useForm<ProblemFormData>({
+    resolver: zodResolver(problemSchema),
+    defaultValues: defaultVals,
     mode: "onChange",
   });
 
+  // If we switch from "new" to "edit" or vice versa, or problem changes, sync defaults
+  // (Rare, but just in case.)
+  useEffect(() => {
+    reset(defaultVals);
+  }, [problem, mode, reset, defaultVals]);
+
+  // Distinguish if we do create or update
   const mutation = useMutation<
-    NewProblemResponse,
+    ProblemResponseData,
     AxiosError<APIErrorResponse>,
-    NewProblemFormData
+    ProblemFormData
   >({
-    mutationFn: (formData) => createNewProblem(formData, apiClient),
+    mutationFn: (formData) => {
+      if (mode === "edit" && problem) {
+        return updateProblem(problem.problem_id, formData, apiClient);
+      } else {
+        return createProblem(formData, apiClient);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       onOpenChange(false);
@@ -147,7 +207,7 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
-        "Failed to add new problem";
+        "Failed to save problem";
       toast({
         title: "Error",
         description: message,
@@ -156,14 +216,19 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
     },
   });
 
-  const onSubmit = (formData: NewProblemFormData) => {
+  const onSubmit = (formData: ProblemFormData) => {
     mutation.mutate(formData);
   };
 
-  const handleAddNewTag = (onChange: (tags: string[]) => void, currentTags: string[]) => {
-    if (inputValue && !tagOptions.includes(inputValue)) {
-      setTagOptions([...tagOptions, inputValue]);
-      onChange([...currentTags, inputValue]);
+  // Add typed tag
+  const handleAddNewTag = (
+    onChange: (tags: string[]) => void,
+    currentTags: string[]
+  ) => {
+    const val = inputValue.trim();
+    if (val && !tagOptions.includes(val)) {
+      setTagOptions([...tagOptions, val]);
+      onChange([...currentTags, val]);
     }
     setInputValue("");
     setIsTagOpen(false);
@@ -173,8 +238,14 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader className="text-left mb-4">
-          <DialogTitle className="text-2xl font-bold">New Problem</DialogTitle>
-          <DialogDescription>Enter problem details</DialogDescription>
+          <DialogTitle className="text-2xl font-bold">
+            {mode === "edit" ? "Edit Problem" : "New Problem"}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === "edit"
+              ? "Update the details of your problem."
+              : "Enter problem details"}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -232,7 +303,9 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
               )}
             />
             {errors.difficulty && (
-              <p className="text-red-500 text-sm">{errors.difficulty.message}</p>
+              <p className="text-red-500 text-sm">
+                {errors.difficulty.message}
+              </p>
             )}
           </div>
 
@@ -278,7 +351,6 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
                               <CommandItem
                                 key={tag}
                                 onSelect={() => {
-                                  // Add/remove tag in form
                                   if (value.includes(tag)) {
                                     onChange(value.filter((t) => t !== tag));
                                   } else {
@@ -317,7 +389,7 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
                             onChange(value.filter((t) => t !== tag))
                           }
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-3 w-3 ml-1" />
                         </button>
                       </Badge>
                     ))}
@@ -354,7 +426,9 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
               )}
             />
             {errors.date_solved && (
-              <p className="text-red-500 text-sm">{errors.date_solved.message}</p>
+              <p className="text-red-500 text-sm">
+                {errors.date_solved.message}
+              </p>
             )}
           </div>
 
@@ -385,6 +459,8 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
           >
             {mutation.isPending ? (
               <Loader2 className="animate-spin mr-2" />
+            ) : mode === "edit" ? (
+              "Save"
             ) : (
               "Add Problem"
             )}
@@ -394,5 +470,3 @@ const NewProblemDialog: React.FC<NewProblemDialogProps> = ({ isOpen, onOpenChang
     </Dialog>
   );
 }
-
-export default NewProblemDialog;

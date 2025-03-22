@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil } from "lucide-react";
 import ReminderCard from "@/components/reminder-card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { ProblemResponse } from "./ProblemDashboard";
+import ProblemFormDialog from "@/components/problem-form-dialog";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -18,6 +19,8 @@ interface ProblemDetailProps {
 }
 
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   return (
     <div className="p-4 space-y-6">
       {/* Header: Title & Edit Button */}
@@ -31,7 +34,10 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
         {/* Edit + Difficulty & Tags */}
         <div className="flex flex-col items-end gap-4">
           {/* Edit Button */}
-          <Button className="flex items-center gap-2">
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => setIsDialogOpen(true)}
+          >
             <Pencil className="h-4 w-4" />
             Edit
           </Button>
@@ -48,9 +54,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
               <p className="text-gray-500 text-sm font-bold">Tags</p>
               <div className="flex flex-wrap gap-2 justify-end">
                 {problem.tags.map((tag) => (
-                  <Badge key={tag}>
-                    {tag}
-                  </Badge>
+                  <Badge key={tag}>{tag}</Badge>
                 ))}
               </div>
             </div>
@@ -65,16 +69,21 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 pt-5 pb-3">
               {problem.reminders.map((rem, index) => (
-                <ReminderCard
-                  key={index}
-                  reminder={rem}
-                />
+                <ReminderCard key={index} reminder={rem} />
               ))}
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
       )}
+
+      {/* Problem Form Dialog */}
+      <ProblemFormDialog
+        mode="edit"
+        problem={problem}
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+      />
     </div>
   );
 };

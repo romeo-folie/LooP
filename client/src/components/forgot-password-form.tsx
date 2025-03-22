@@ -43,7 +43,11 @@ const ForgotPasswordForm: React.FC = () => {
     resolver: zodResolver(ForgotPasswordSchema),
   });
 
-  const mutation = useMutation<ForgotPasswordResponse, AxiosError<APIErrorResponse>, ForgotPasswordFormValues>({
+  const mutation = useMutation<
+    ForgotPasswordResponse,
+    AxiosError<APIErrorResponse>,
+    ForgotPasswordFormValues
+  >({
     mutationFn: async (emailData: ForgotPasswordFormValues) => {
       const { data } = await apiClient.post("/auth/forgot-password", emailData);
       return data;
@@ -56,7 +60,11 @@ const ForgotPasswordForm: React.FC = () => {
       navigate("/auth/verify-otp");
     },
     onError: (error) => {
-      const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Failed to send OTP";
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to send OTP";
       toast({
         title: "Error",
         description: message,

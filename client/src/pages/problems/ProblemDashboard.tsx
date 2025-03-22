@@ -24,7 +24,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import NewProblemDialog from "@/components/new-problem-dialog";
+import ProblemFormDialog from "@/components/problem-form-dialog";
 import { AxiosInstance } from "axios";
 import { useAxios } from "@/hooks/use-axios";
 import { useQuery } from "@tanstack/react-query";
@@ -80,6 +80,7 @@ export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
@@ -102,7 +103,10 @@ export default function ProblemsDashboard() {
 
   async function saveUserNotificationPreference(allowed: boolean) {
     try {
-      console.log("make api call to save user preference. allowed: ", allowed.toString());
+      console.log(
+        "make api call to save user preference. allowed: ",
+        allowed.toString()
+      );
     } catch (error) {
       console.error("Failed to save user preference on backend", error);
     }
@@ -308,8 +312,9 @@ export default function ProblemsDashboard() {
             </div>
           </div>
 
-          {/* New Problem Dialog */}
-          <NewProblemDialog
+          {/* Problem Form Dialog */}
+          <ProblemFormDialog
+            mode="new"
             isOpen={isDialogOpen}
             onOpenChange={setIsDialogOpen}
           />
