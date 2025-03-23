@@ -6,6 +6,7 @@ import ReminderCard from "@/components/reminder-card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { ProblemResponse } from "./ProblemDashboard";
 import ProblemFormDialog from "@/components/problem-form-dialog";
+import { ReminderFormDialog } from "@/components/reminder-form-dialog";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -19,7 +20,8 @@ interface ProblemDetailProps {
 }
 
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
 
   return (
     <div className="p-4 space-y-6">
@@ -36,7 +38,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
           {/* Edit Button */}
           <Button
             className="flex items-center gap-2"
-            onClick={() => setIsDialogOpen(true)}
+            onClick={() => setIsProblemDialogOpen(true)}
           >
             <Pencil className="h-4 w-4" />
             Edit
@@ -81,9 +83,18 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
       <ProblemFormDialog
         mode="edit"
         problem={problem}
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        isOpen={isProblemDialogOpen}
+        onOpenChange={setIsProblemDialogOpen}
       />
+
+      {/* Reminder Form Dialog */}
+      {/* <ReminderFormDialog
+        isOpen={isReminderDialogOpen}
+        onOpenChange={setIsReminderDialogOpen}
+        mode="edit"
+        problemId={problem.problem_id}
+        reminder={}
+      /> */}
     </div>
   );
 };

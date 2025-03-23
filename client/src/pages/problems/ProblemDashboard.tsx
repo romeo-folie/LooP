@@ -34,12 +34,15 @@ import ProblemDetail from "./ProblemDetail";
 import NotificationPermissionDialog from "@/components/notification-permission-dialog";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import browserStore from "@/lib/browser-storage";
+import { ReminderFormDialog } from "@/components/reminder-form-dialog";
 
 export interface ReminderResponse {
+  message?: string;
   reminder_id: number;
   problem_id: number;
   due_datetime: Date;
   is_sent: boolean;
+  sent_at: Date;
   created_at: Date;
 }
 export interface ProblemResponse {
@@ -80,13 +83,14 @@ export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
   );
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedProblem, setSelectedProblem] = useState<ProblemResponse | null>(null)
 
   const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
@@ -104,6 +108,7 @@ export default function ProblemsDashboard() {
   async function saveUserNotificationPreference(allowed: boolean) {
     try {
       console.log(
+        //TODO:
         "make api call to save user preference. allowed: ",
         allowed.toString()
       );
@@ -226,7 +231,6 @@ export default function ProblemsDashboard() {
               New
             </Button>
           </div>
-
           {/* Search & Filters Section */}
           <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-center">
             <Input
@@ -311,71 +315,61 @@ export default function ProblemsDashboard() {
               </Button>
             </div>
           </div>
-
-          {/* Problem Form Dialog */}
-          <ProblemFormDialog
-            mode="new"
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-          />
-
           {/* Problems List */}
           {paginatedProblems.length ? (
             <>
               <div className="border rounded-md">
                 {paginatedProblems.map((problem) => (
                   <Popover key={problem.problem_id}>
-                    <PopoverTrigger asChild>
-                      <div
-                        key={problem.problem_id}
-                        className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
-                      >
+                    <div
+                      key={problem.problem_id}
+                      className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
+                    >
+                      <PopoverTrigger asChild>
                         {/* Clickable Problem Title */}
-                        <span className="text-base font-normal lg:text-lg">
+                        <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
                           {problem.name}
                         </span>
+                      </PopoverTrigger>
 
-                        <div className="flex items-center gap-4">
-                          {/* Difficulty Badge */}
-                          <Badge
-                            className={`${
-                              difficultyColors[problem.difficulty]
-                            } text-white`}
-                          >
-                            {problem.difficulty}
-                          </Badge>
+                      <div className="flex items-center gap-4">
+                        {/* Difficulty Badge */}
+                        <Badge
+                          className={`${
+                            difficultyColors[problem.difficulty]
+                          } text-white`}
+                        >
+                          {problem.difficulty}
+                        </Badge>
 
-                          {/* More Options Dropdown */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  console.log(
-                                    "Add reminder for",
-                                    problem.problem_id
-                                  )
-                                }
-                              >
-                                Add Reminder
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-red-600"
-                                onClick={() =>
-                                  console.log("Delete", problem.problem_id)
-                                }
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        {/* More Options Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedProblem(problem)
+                                setIsReminderDialogOpen(true)
+                              }}
+                            >
+                              Add Reminder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() =>
+                                console.log("Delete", problem.problem_id)
+                              }
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </PopoverTrigger>
+                    </div>
 
                     {/* Popover Content with Problem Detail */}
                     <PopoverContent align="start" className="w-[500px]">
@@ -384,6 +378,7 @@ export default function ProblemsDashboard() {
                   </Popover>
                 ))}
               </div>
+
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
@@ -412,6 +407,20 @@ export default function ProblemsDashboard() {
               No problems found
             </div>
           )}
+          {/* Problem Form Dialog */}
+          <ProblemFormDialog
+            mode="new"
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+          />
+
+          {/* Reminder Form Dialog */}
+          <ReminderFormDialog
+            isOpen={isReminderDialogOpen}
+            onOpenChange={setIsReminderDialogOpen}
+            mode="new"
+            problemId={selectedProblem?.problem_id as number}
+          />
 
           {/* The permission dialog */}
           <NotificationPermissionDialog
