@@ -106,7 +106,7 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
         'problem_id',
         'due_datetime',
         'is_sent',
-        // 'sent_at',
+        'sent_at',
         // 'is_completed',
         // 'completed_at',
         'created_at'

@@ -110,8 +110,8 @@ export const createReminder: RequestHandler = async (req: AuthenticatedRequest, 
         'due_datetime',
         'is_sent',
         'sent_at',
-        'is_completed',
-        'completed_at',
+        // 'is_completed',
+        // 'completed_at',
         'created_at'
       ]);
 

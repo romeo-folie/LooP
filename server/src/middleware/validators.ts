@@ -91,6 +91,11 @@ export const validateReminderCreation: ValidationChain[] = [
     .withMessage(
       "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)"
     ),
+
+    body("is_completed")
+    .optional()
+    .isBoolean()
+    .withMessage("is_completed must be a boolean"),
 ];
 
 export const validateReminderUpdate: ValidationChain[] = [
