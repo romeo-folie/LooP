@@ -32,7 +32,7 @@ export default function Navbar() {
         to="/"
         className="text-2xl font-black text-inherit cursor-pointer select-none"
       >
-        DSA Reminders
+        LööP
       </Link>
 
       <nav className="flex items-center space-x-4">

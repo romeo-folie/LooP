@@ -25,16 +25,21 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import ProblemFormDialog from "@/components/problem-form-dialog";
-import { AxiosInstance } from "axios";
-import { useAxios } from "@/hooks/use-axios";
-import { useQuery } from "@tanstack/react-query";
+import { AxiosError, AxiosInstance } from "axios";
+import {
+  APIErrorResponse,
+  APISuccessResponse,
+  useAxios,
+} from "@/hooks/use-axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingScreen from "@/components/loading-screen";
 import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
 import NotificationPermissionDialog from "@/components/notification-permission-dialog";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import browserStore from "@/lib/browser-storage";
-import { ReminderFormDialog } from "@/components/reminder-form-dialog";
+import DeleteConfirmationDialog from "@/components/delete-confirmation-dialog";
+import ReminderFormDialog from "@/components/reminder-form-dialog";
 
 export interface ReminderResponse {
   message?: string;
@@ -76,12 +81,22 @@ const fetchProblems = async (apiClient: AxiosInstance) => {
   return data;
 };
 
+const deleteProblem = async function (
+  problem_id: number,
+  apiClient: AxiosInstance
+): Promise<APISuccessResponse> {
+  const { data } = await apiClient.delete(`/problems/${problem_id}`);
+  return data;
+};
+
 const problemsPerPage = 10;
 
 export default function ProblemsDashboard() {
   const apiClient = useAxios();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -90,7 +105,9 @@ export default function ProblemsDashboard() {
   );
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedProblem, setSelectedProblem] = useState<ProblemResponse | null>(null)
+  const [selectedProblem, setSelectedProblem] =
+    useState<ProblemResponse | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
@@ -131,7 +148,10 @@ export default function ProblemsDashboard() {
   };
 
   // Problem Dashboard
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<
+    { problems: ProblemResponse[] },
+    AxiosError<APIErrorResponse>
+  >({
     queryKey: ["problems"],
     queryFn: () => fetchProblems(apiClient),
     staleTime: 5 * 60 * 1000,
@@ -139,14 +159,38 @@ export default function ProblemsDashboard() {
   });
 
   if (isError) {
-    console.log(
-      "Error fetching problems: ",
-      error instanceof Error ? error.message : error
-    );
     const message =
-      error?.message || "Error fetching problems. Reload the page";
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Error fetching problems. Reload the page";
     toast({ title: "Error", description: message, variant: "destructive" });
   }
+
+  const mutation = useMutation<
+    APISuccessResponse,
+    AxiosError<APIErrorResponse>,
+    number
+  >({
+    mutationFn: (problem_id: number) => deleteProblem(problem_id, apiClient),
+    onSuccess: ({ message }) => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      toast({ title: "Success", description: message });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to delete problem.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleProblemDelete = () => {
+    mutation.mutate(selectedProblem!.problem_id);
+  };
 
   const problems: ProblemResponse[] = data?.problems ?? [];
 
@@ -352,17 +396,18 @@ export default function ProblemsDashboard() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedProblem(problem)
-                                setIsReminderDialogOpen(true)
+                                setSelectedProblem(problem);
+                                setIsReminderDialogOpen(true);
                               }}
                             >
                               Add Reminder
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() =>
-                                console.log("Delete", problem.problem_id)
-                              }
+                              onClick={() => {
+                                setSelectedProblem(problem);
+                                setIsDeleteDialogOpen(true);
+                              }}
                             >
                               Delete
                             </DropdownMenuItem>
@@ -407,6 +452,7 @@ export default function ProblemsDashboard() {
               No problems found
             </div>
           )}
+
           {/* Problem Form Dialog */}
           <ProblemFormDialog
             mode="new"
@@ -428,6 +474,13 @@ export default function ProblemsDashboard() {
             onOpenChange={(open) => setShowNotificationRequestDialog(open)}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          <DeleteConfirmationDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            onConfirmDelete={handleProblemDelete}
           />
         </div>
       )}

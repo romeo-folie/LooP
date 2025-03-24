@@ -30,7 +30,7 @@ export const getRemindersByProblem: RequestHandler = async (req: AuthenticatedRe
     // Fetch reminders for the problem
     const reminders = await db('reminders')
       .where({ problem_id, user_id: userId })
-      .select('reminder_id', 'due_date', 'is_sent', 'sent_at', 'is_completed', 'completed_at', 'created_at');
+      .select('reminder_id', 'due_datetime', 'is_sent', 'sent_at', 'is_completed', 'completed_at', 'created_at');
 
     logger.info(`Successfully fetched ${reminders.length} reminders - User ID: ${userId}`);
 
@@ -162,11 +162,11 @@ export const updateReminder: RequestHandler = async (req: AuthenticatedRequest, 
       .returning([
         'reminder_id',
         'problem_id',
-        'due_date',
+        'due_datetime',
         'is_sent',
         'sent_at',
-        'is_completed',
-        'completed_at',
+        // 'is_completed',
+        // 'completed_at',
         'updated_at'
       ]);
 

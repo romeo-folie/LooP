@@ -54,13 +54,13 @@ interface ReminderDialogProps {
   reminder?: ReminderResponse;
 }
 
-export function ReminderFormDialog({
+const ReminderFormDialog = ({
   isOpen,
   onOpenChange,
   mode,
   problemId,
   reminder,
-}: ReminderDialogProps) {
+}: ReminderDialogProps) => {
   const apiClient = useAxios();
   const queryClient = useQueryClient();
 
@@ -86,7 +86,11 @@ export function ReminderFormDialog({
     defaultValues: defaultVals,
   });
 
-  const mutation = useMutation<ReminderResponse, AxiosError<APIErrorResponse>, ReminderFormData>({
+  const mutation = useMutation<
+    ReminderResponse,
+    AxiosError<APIErrorResponse>,
+    ReminderFormData
+  >({
     mutationFn: (formData) => {
       if (mode === "edit") {
         return updateReminder(problemId, formData, apiClient);
@@ -99,7 +103,7 @@ export function ReminderFormDialog({
       toast({
         title: "Success",
         description: message,
-      })
+      });
       onOpenChange(false);
       reset();
     },
@@ -107,7 +111,10 @@ export function ReminderFormDialog({
       console.error(error);
       toast({
         title: "Error",
-        description: error.response?.data?.error || error.response?.data?.message || "Failed to save reminder",
+        description:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to save reminder",
         variant: "destructive",
       });
       onOpenChange(false);
@@ -134,15 +141,21 @@ export function ReminderFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           {/* Due DateTime Field */}
           <div>
-          <Controller
+            <Controller
               name="due_datetime"
               control={control}
               render={({ field }) => (
-                <DateTimePicker {...field} placeholder="Set Due Date & Time"/>
+                <DateTimePicker
+                  {...field}
+                  value={reminder?.due_datetime}
+                  placeholder="Set Due Date & Time"
+                />
               )}
             />
             {errors.due_datetime && (
-              <p className="text-red-500 text-sm mt-1">{errors.due_datetime.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.due_datetime.message}
+              </p>
             )}
           </div>
 
@@ -165,3 +178,5 @@ export function ReminderFormDialog({
     </Dialog>
   );
 }
+
+export default ReminderFormDialog;

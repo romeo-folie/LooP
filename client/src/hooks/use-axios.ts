@@ -4,6 +4,9 @@ import { useAuth } from "@/context/auth-provider";
 import { logger } from "@/lib/logger";
 import { getCsrfToken } from "@/lib/cookies";
 
+export interface APISuccessResponse {
+  message: string;
+}
 export interface APIErrorResponse {
   message?: string;
   error?: string;

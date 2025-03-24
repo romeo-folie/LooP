@@ -136,7 +136,6 @@ export const getProblems: RequestHandler = async (req: AuthenticatedRequest, res
   }
 };
 
-
 export const getProblemById: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.authUser?.userId;

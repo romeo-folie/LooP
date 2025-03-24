@@ -7,6 +7,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { ProblemResponse } from "./ProblemDashboard";
 import ProblemFormDialog from "@/components/problem-form-dialog";
 import { ReminderFormDialog } from "@/components/reminder-form-dialog";
+import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -22,6 +23,13 @@ interface ProblemDetailProps {
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<ReminderResponse | undefined>(undefined);
+
+  // Callback passed to ReminderCard that triggers editing.
+  const handleEditReminder = (reminder: ReminderResponse) => {
+    setEditingReminder(reminder);
+    setIsReminderDialogOpen(true);
+  };
 
   return (
     <div className="p-4 space-y-6">
@@ -71,7 +79,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 pt-5 pb-3">
               {problem.reminders.map((rem, index) => (
-                <ReminderCard key={index} reminder={rem} />
+                <ReminderCard key={index} reminder={rem} 
+                onEdit={handleEditReminder} 
+                />
               ))}
             </div>
             <ScrollBar orientation="horizontal" />
@@ -88,13 +98,13 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
       />
 
       {/* Reminder Form Dialog */}
-      {/* <ReminderFormDialog
+      <ReminderFormDialog
         isOpen={isReminderDialogOpen}
         onOpenChange={setIsReminderDialogOpen}
         mode="edit"
         problemId={problem.problem_id}
-        reminder={}
-      /> */}
+        reminder={editingReminder}
+      />
     </div>
   );
 };

@@ -70,7 +70,6 @@ const problemSchema = z.object({
 
 export type ProblemFormData = z.infer<typeof problemSchema>;
 
-// API calls
 interface ProblemResponseData {
   message: string;
   problem: ProblemResponse;
@@ -110,7 +109,6 @@ interface ProblemFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "new" | "edit";
-  // If mode = "edit", we pass an existing problem to pre-fill
   problem?: ProblemResponse;
 }
 

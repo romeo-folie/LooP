@@ -12,11 +12,14 @@ import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 
 interface ReminderCardProps {
   reminder: ReminderResponse;
+  onEdit: (reminder: ReminderResponse) => void;
 }
 
-const ReminderCard: React.FC<ReminderCardProps> = ({ reminder: { due_datetime, is_sent }}) => {
+const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) => {
   // Format the date components
-  due_datetime = new Date(due_datetime)
+  // eslint-disable-next-line prefer-const
+  let { due_datetime, is_sent } = reminder;
+  due_datetime = new Date(due_datetime);
   const day = due_datetime.getDate();
   const month = due_datetime
     .toLocaleString("default", { month: "short" })
@@ -38,12 +41,20 @@ const ReminderCard: React.FC<ReminderCardProps> = ({ reminder: { due_datetime, i
       <div className="absolute top-0 right-0 z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="hover:bg-transparent outline-none ring-0 focus-visible:ring-0 inset-ring-0 shadow-none inset-shadow-none">
+            <Button
+              variant="ghost"
+              className="hover:bg-transparent outline-none ring-0 focus-visible:ring-0 inset-ring-0 shadow-none inset-shadow-none"
+            >
               <MoreHorizontal size={18} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Reschedule</DropdownMenuItem>
+            {/* //TODO: find a way to update reminder card after notification is sent */}
+            {!is_sent || due_datetime > new Date() && (
+              <DropdownMenuItem onClick={() => onEdit(reminder)}>
+                Reschedule
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
