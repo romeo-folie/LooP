@@ -43,14 +43,15 @@ const config: {[key: string]: Knex.Config } = {
     },
   },
 
-  // production: {
-  //   ...BASE_CONFIG,
-  //   connection: {
-  //     database: 'my_db',
-  //     user:     'username',
-  //     password: 'password'
-  //   },
-  // }
+  production: {
+    ...BASE_CONFIG,
+    connection: {
+      host: process.env.DB_HOST,
+      user:     process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+    },
+  }
 
 };
 

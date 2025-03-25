@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "build": "tsc"
   },
   "author": "Romeo Nutifafa Folie",
   "license": "ISC",
