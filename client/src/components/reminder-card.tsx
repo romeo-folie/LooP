@@ -13,9 +13,10 @@ import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 interface ReminderCardProps {
   reminder: ReminderResponse;
   onEdit: (reminder: ReminderResponse) => void;
+  onDelete: (reminder: ReminderResponse) => void;
 }
 
-const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) => {
+const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit, onDelete }) => {
   // Format the date components
   // eslint-disable-next-line prefer-const
   let { due_datetime, is_sent } = reminder;
@@ -50,12 +51,12 @@ const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {/* //TODO: find a way to update reminder card after notification is sent */}
-            {!is_sent || due_datetime > new Date() && (
+            {!is_sent && (
               <DropdownMenuItem onClick={() => onEdit(reminder)}>
                 Reschedule
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={() => onDelete(reminder)}>Delete</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

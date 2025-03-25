@@ -481,6 +481,7 @@ export default function ProblemsDashboard() {
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
             onConfirmDelete={handleProblemDelete}
+            resource="problem"
           />
         </div>
       )}

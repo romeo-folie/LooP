@@ -13,16 +13,17 @@ interface DeleteConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirmDelete: () => void;
+  resource: string;
 }
 
-const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({ open, onOpenChange, onConfirmDelete }) => {
+const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({ open, resource, onOpenChange, onConfirmDelete }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
         <AlertDialogDescription>
-          Are you sure you want to delete this problem?
+          { `Are you sure you want to delete this ${resource}?` }
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>

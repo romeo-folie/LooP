@@ -6,8 +6,13 @@ import ReminderCard from "@/components/reminder-card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { ProblemResponse } from "./ProblemDashboard";
 import ProblemFormDialog from "@/components/problem-form-dialog";
-import { ReminderFormDialog } from "@/components/reminder-form-dialog";
+import ReminderFormDialog from "@/components/reminder-form-dialog";
 import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
+import DeleteConfirmationDialog from "@/components/delete-confirmation-dialog";
+import { APIErrorResponse, APISuccessResponse, useAxios } from "@/hooks/use-axios";
+import { AxiosError, AxiosInstance } from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -16,20 +21,65 @@ const difficultyColors: Record<string, string> = {
   Hard: "bg-red-500 text-white",
 };
 
+const deleteReminder = async function (
+  reminder_id: number,
+  apiClient: AxiosInstance
+): Promise<APISuccessResponse> {
+  const { data } = await apiClient.delete(`/reminders/${reminder_id}`);
+  return data;
+};
+
 interface ProblemDetailProps {
   problem: ProblemResponse;
 }
 
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
+  const queryClient = useQueryClient();
+  const apiClient = useAxios();
+
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
-  const [editingReminder, setEditingReminder] = useState<ReminderResponse | undefined>(undefined);
+  const [editingReminder, setEditingReminder] = useState<
+    ReminderResponse | undefined
+  >(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Callback passed to ReminderCard that triggers editing.
   const handleEditReminder = (reminder: ReminderResponse) => {
     setEditingReminder(reminder);
     setIsReminderDialogOpen(true);
   };
+
+  const onDeleteReminder = (reminder: ReminderResponse) => {
+    setEditingReminder(reminder)
+    setIsDeleteDialogOpen(true);
+  }
+
+  const mutation = useMutation<
+    APISuccessResponse,
+    AxiosError<APIErrorResponse>,
+    number
+  >({
+    mutationFn: (reminder_id: number) => deleteReminder(reminder_id, apiClient),
+    onSuccess: ({ message }) => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      toast({ title: "Success", description: message });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to delete reminder",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleConfirmReminderDelete = () => {
+    mutation.mutate(editingReminder!.reminder_id);
+  }
 
   return (
     <div className="p-4 space-y-6">
@@ -79,8 +129,11 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 pt-5 pb-3">
               {problem.reminders.map((rem, index) => (
-                <ReminderCard key={index} reminder={rem} 
-                onEdit={handleEditReminder} 
+                <ReminderCard
+                  key={index}
+                  reminder={rem}
+                  onEdit={handleEditReminder}
+                  onDelete={onDeleteReminder}
                 />
               ))}
             </div>
@@ -104,6 +157,14 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
         mode="edit"
         problemId={problem.problem_id}
         reminder={editingReminder}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirmDelete={handleConfirmReminderDelete}
+        resource="reminder"
       />
     </div>
   );
