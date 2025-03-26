@@ -7,7 +7,7 @@ import subscriptionRouter from './subscription-router';
 const router: Router = Router();
 
 router.get('/health', (req: Request, res: Response) => {
-  res.status(200).send({ message: 'progress-tracker server is up and running' });
+  res.status(200).send({ message: 'loop server ok', timestamp: new Date().toISOString() });
 });
 
 router.use('/auth', authRouter);

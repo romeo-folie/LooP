@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest",
     "dev": "nodemon",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/src/index.js"
   },
   "author": "Romeo Nutifafa Folie",
   "license": "ISC",
