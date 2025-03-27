@@ -40,6 +40,15 @@ import { requestNotificationPermission } from "@/lib/push-notifications";
 import browserStore from "@/lib/browser-storage";
 import DeleteConfirmationDialog from "@/components/delete-confirmation-dialog";
 import ReminderFormDialog from "@/components/reminder-form-dialog";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  Credenza,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/credenza";
 
 export interface ReminderResponse {
   message?: string;
@@ -96,6 +105,7 @@ export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
@@ -364,63 +374,87 @@ export default function ProblemsDashboard() {
             <>
               <div className="border rounded-md">
                 {paginatedProblems.map((problem) => (
-                  <Popover key={problem.problem_id}>
-                    <div
-                      key={problem.problem_id}
-                      className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
-                    >
-                      <PopoverTrigger asChild>
-                        {/* Clickable Problem Title */}
-                        <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
-                          {problem.name}
-                        </span>
-                      </PopoverTrigger>
+                  <div
+                    key={problem.problem_id}
+                    className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
+                  >
+                    {isDesktop ? (
+                      <>
+                        {/* Display popover for desktop */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            {/* Clickable Problem Title */}
+                            <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
+                              {problem.name}
+                            </span>
+                          </PopoverTrigger>
+                          {/* Popover Content with Problem Detail */}
+                          <PopoverContent align="start" className="w-[500px]">
+                            <ProblemDetail problem={problem} />
+                          </PopoverContent>
+                        </Popover>
+                      </>
+                    ) : (
+                      <Credenza>
+                        <CredenzaTrigger asChild>
+                          {/* Clickable Problem Title */}
+                          <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
+                            {problem.name}
+                          </span>
+                        </CredenzaTrigger>
+                        <CredenzaContent className="px-4">
+                          <CredenzaHeader>
+                            <CredenzaTitle className="sr-only">
+                              Hidden Title for Screen Readers
+                            </CredenzaTitle>
+                            <CredenzaDescription className="sr-only">
+                              Hidden Description for Screen Readers
+                            </CredenzaDescription>
+                          </CredenzaHeader>
+                          <ProblemDetail problem={problem} />
+                        </CredenzaContent>
+                      </Credenza>
+                    )}
 
-                      <div className="flex items-center gap-4">
-                        {/* Difficulty Badge */}
-                        <Badge
-                          className={`${
-                            difficultyColors[problem.difficulty]
-                          } text-white`}
-                        >
-                          {problem.difficulty}
-                        </Badge>
+                    <div className="flex items-center gap-4">
+                      {/* Difficulty Badge */}
+                      <Badge
+                        className={`${
+                          difficultyColors[problem.difficulty]
+                        } text-white`}
+                      >
+                        {problem.difficulty}
+                      </Badge>
 
-                        {/* More Options Dropdown */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedProblem(problem);
-                                setIsReminderDialogOpen(true);
-                              }}
-                            >
-                              Add Reminder
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => {
-                                setSelectedProblem(problem);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      {/* More Options Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedProblem(problem);
+                              setIsReminderDialogOpen(true);
+                            }}
+                          >
+                            Add Reminder
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => {
+                              setSelectedProblem(problem);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-
-                    {/* Popover Content with Problem Detail */}
-                    <PopoverContent align="start" className="w-[500px]">
-                      <ProblemDetail problem={problem} />
-                    </PopoverContent>
-                  </Popover>
+                  </div>
                 ))}
               </div>
 

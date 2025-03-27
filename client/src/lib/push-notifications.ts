@@ -1,5 +1,6 @@
 import { AxiosError, AxiosInstance } from "axios";
 import { logger } from "./logger";
+import browserStore from "./browser-storage";
 
 const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -15,6 +16,7 @@ export async function requestNotificationPermission(apiClient: AxiosInstance) {
     logger.info("Notification permission granted");
     await subscribeToPush(apiClient)
   } else {
+    browserStore.set("notificationsAllowed", "false");
     logger.warn("Notification permission not granted or denied explicitly.");
   }
 }
@@ -43,7 +45,7 @@ export async function subscribeToPush(apiClient: AxiosInstance) {
   try {
     await apiClient.post(`/subscriptions`, subscriptionPayload)
   } catch (error: unknown) {
-    //TODO: consider setting nofificationsAllowed to false so app can request permission again
+    browserStore.set("notificationsAllowed", "false");
     const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Error saving subscription"
     logger.error(message);
   }

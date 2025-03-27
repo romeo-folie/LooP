@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-17.756 2.315 500 500">
-  <g transform="matrix(1.0211, 0, 0, 1.00716, -3.0627, 53.4896)" style="">
-    <rect x="110.439" y="91.672" width="182.519" height="111.682" style="fill: rgb(255, 255, 255); stroke: rgb(255, 255, 255);" rx="0.085" ry="0.085"/>
-  </g>
-  <g transform="matrix(1, 0, 0, 1, -1.7168, 59.0424)">
+  <g transform="matrix(2.66722, 0, 0, 3.38253, -290.237, -245.764)" style="">
     <text style="font-family: &quot;PT Sans Caption&quot;; font-size: 70px; font-weight: 700; stroke: rgb(0, 0, 0); stroke-width: 0px; text-anchor: middle; white-space: pre;" x="206.601" y="169.126">LööP</text>
   </g>
 </svg>

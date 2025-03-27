@@ -11,20 +11,22 @@ import VerifyOtp from "./pages/auth/VerifyOtp";
 const App: React.FC = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/auth/verify-otp" element={<VerifyOtp />} />
-        <Route path="/auth/password-reset" element={<ResetPassword />} />
+      <div vaul-drawer-wrapper="" className="bg-background">
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/verify-otp" element={<VerifyOtp />} />
+          <Route path="/auth/password-reset" element={<ResetPassword />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/problems" />} />
-          <Route path="/dashboard" element={<Navigate to="/problems" />} />
-          <Route path="/problems" element={<ProblemDashboard />} />
-        </Route>
-      </Routes>
-      <Toaster />
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Navigate to="/problems" />} />
+            <Route path="/dashboard" element={<Navigate to="/problems" />} />
+            <Route path="/problems" element={<ProblemDashboard />} />
+          </Route>
+        </Routes>
+        <Toaster />
+      </div>
     </ThemeProvider>
   );
 };
