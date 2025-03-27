@@ -1,11 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +24,14 @@ import {
   CommandList,
   CommandEmpty,
 } from "@/components/ui/command";
+import {
+  Credenza,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/credenza";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError, AxiosInstance } from "axios";
 
@@ -237,20 +238,20 @@ export default function ProblemFormDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader className="text-left mb-4">
-          <DialogTitle className="text-2xl font-bold">
+    <Credenza open={isOpen} onOpenChange={onOpenChange}>
+      <CredenzaContent className="px-6 pb-4">
+        <CredenzaHeader className="text-left mb-4 pl-0">
+          <CredenzaTitle className="text-2xl font-bold">
             {mode === "edit" ? "Edit Problem" : "New Problem"}
-          </DialogTitle>
-          <DialogDescription>
+          </CredenzaTitle>
+          <CredenzaDescription>
             {mode === "edit"
               ? "Update the details of your problem."
               : "Enter problem details"}
-          </DialogDescription>
-        </DialogHeader>
+          </CredenzaDescription>
+        </CredenzaHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Name Field */}
           <div>
             <Controller
@@ -468,7 +469,7 @@ export default function ProblemFormDialog({
             )}
           </Button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CredenzaContent>
+    </Credenza>
   );
 }

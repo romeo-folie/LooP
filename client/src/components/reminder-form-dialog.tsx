@@ -1,11 +1,4 @@
 import { useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError, AxiosInstance } from "axios";
@@ -17,6 +10,13 @@ import { toast } from "@/hooks/use-toast";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 import { DateTimePicker } from "./date-time-picker";
+import {
+  Credenza,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/credenza";
 
 const reminderSchema = z.object({
   due_datetime: z.date({ required_error: "Date is required" }),
@@ -127,18 +127,18 @@ const ReminderFormDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+    <Credenza open={isOpen} onOpenChange={onOpenChange}>
+      <CredenzaContent className="px-6 pb-4">
+        <CredenzaHeader className="text-left mb-4 pl-0">
+          <CredenzaTitle className="text-2xl font-bold">
             {mode === "edit" ? "Edit Reminder" : "New Reminder"}
-          </DialogTitle>
-          <DialogDescription>
+          </CredenzaTitle>
+          <CredenzaDescription>
             Please select a date and time for the reminder.
-          </DialogDescription>
-        </DialogHeader>
+          </CredenzaDescription>
+        </CredenzaHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Due DateTime Field */}
           <div>
             <Controller
@@ -174,9 +174,9 @@ const ReminderFormDialog = ({
             )}
           </Button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CredenzaContent>
+    </Credenza>
   );
-}
+};
 
 export default ReminderFormDialog;

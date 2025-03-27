@@ -403,7 +403,7 @@ export default function ProblemsDashboard() {
                           </span>
                         </CredenzaTrigger>
                         <CredenzaContent className="px-4">
-                          <CredenzaHeader>
+                          <CredenzaHeader className="p-0">
                             <CredenzaTitle className="sr-only">
                               Hidden Title for Screen Readers
                             </CredenzaTitle>
