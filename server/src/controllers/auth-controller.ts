@@ -89,6 +89,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     logger.info(`Login successful for ${email} from IP: ${req.ip}`);
 
     res.cookie("refresh_token", refreshToken, {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
@@ -96,12 +97,14 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     });
 
     res.cookie("CSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     })
 
     res.cookie("XSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
@@ -340,6 +343,7 @@ export const getAccessToken: RequestHandler = async (
     );
 
     res.cookie("refresh_token", refreshToken, {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
@@ -518,18 +522,21 @@ export const resetPassword: RequestHandler = async (req: Request, res: Response)
 export const logout: RequestHandler = (req: Request, res: Response) => {
   try {
     res.clearCookie("refresh_token", {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
     res.clearCookie("CSRF-TOKEN", {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
     res.clearCookie("XSRF-TOKEN", {
+      domain: `.${process.env.DOMAIN as string}`,
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
