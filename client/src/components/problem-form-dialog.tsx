@@ -191,11 +191,15 @@ export default function ProblemFormDialog({
         return createProblem(formData, apiClient);
       }
     },
-    onSuccess: () => {
+    onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       onOpenChange(false);
       reset();
       setInputValue("");
+      toast({
+        title: "Success",
+        description: message,
+      });
     },
     onError: (error) => {
       onOpenChange(false);

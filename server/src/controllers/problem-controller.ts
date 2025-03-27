@@ -43,7 +43,7 @@ export const createProblem: RequestHandler = async (req: AuthenticatedRequest, r
 
     await db('reminders').insert(reminders);
 
-    logger.info(`Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.id}`);
+    logger.info(`Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.problem_id}`);
 
     res.status(201).json({
       message: 'Problem created successfully with scheduled reminders',
