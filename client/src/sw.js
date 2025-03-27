@@ -10,10 +10,22 @@ self.addEventListener("push", (event) => {
 
     event.waitUntil(
       (async () => {
+        const userAgent = navigator.userAgent.toLowerCase();
+
+        const iconUrl = "/logo.svg";
+
+        // if (userAgent.includes('android')) {
+        //   iconUrl = "/logo.svg"; // Icon for Android devices
+        // } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+        //   iconUrl = "/apple-touch-icon-180x180.png"; // Icon for iOS devices
+        // } else if (userAgent.includes('windows')) {
+        //   iconUrl = "/logo.svg"; // SVG icon for Windows devices
+        // }
+
         // trigger OS alert
         await self.registration.showNotification(data.title, {
-          body: data.body,
-          icon: "/icon.png",
+          body: data.body.message,
+          icon: iconUrl,
         });
 
         // broadcast a message to open tabs (clients) to display in app alert
