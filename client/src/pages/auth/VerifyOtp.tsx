@@ -14,7 +14,7 @@ const VerifyOtp: React.FC = () => {
     <Container>
       <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">One Time Password</CardTitle>
+            <CardTitle className="text-2xl xl:text-3xl">One Time Password</CardTitle>
             <CardDescription>
               Please enter the 6 digit code sent to your email
             </CardDescription>

@@ -82,7 +82,7 @@ const ForgotPasswordForm: React.FC = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl">Forgot Password</CardTitle>
+          <CardTitle className="text-2xl xl:text-3xl">Forgot Password</CardTitle>
           <CardDescription>
             Please enter the email address associated with your account
           </CardDescription>
@@ -95,7 +95,7 @@ const ForgotPasswordForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4 text-lg"
+                className="h-12 px-4 text-base md:text-lg"
                 {...register("email")}
               />
               {errors.email && (

@@ -21,7 +21,7 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({ ope
     <AlertDialog open={open} onOpenChange={onOpenChange}>
     <AlertDialogContent className="w-[90vw] sm:max-w-md rounded-lg">
       <AlertDialogHeader>
-        <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+        <AlertDialogTitle className="text-2xl xl:text-3xl">Confirm Delete</AlertDialogTitle>
         <AlertDialogDescription>
           { `Are you sure you want to delete this ${resource}?` }
         </AlertDialogDescription>

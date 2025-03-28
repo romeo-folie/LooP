@@ -58,7 +58,7 @@ export default function Navbar() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="p-0">
+          <DropdownMenuContent align="center" className="p-0">
             <NotificationCard className="border-none rounded-none" />
           </DropdownMenuContent>
         </DropdownMenu>

@@ -105,7 +105,7 @@ const PasswordResetForm: React.FC = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl">Reset Password</CardTitle>
+          <CardTitle className="text-2xl xl:text-3xl">Reset Password</CardTitle>
           <CardDescription>
             Please enter the details below to reset your password
           </CardDescription>
@@ -116,7 +116,7 @@ const PasswordResetForm: React.FC = () => {
               label="New Password"
               id="new-password"
               name="new_password"
-              className="h-12 px-4 text-lg"
+              className="h-12 px-4 text-base md:text-lg"
               register={register}
               error={errors.new_password?.message}
             />
@@ -124,7 +124,7 @@ const PasswordResetForm: React.FC = () => {
               label="Confirm New Password"
               id="confirm-password"
               name="confirm_password"
-              className="h-12 px-4 text-lg"
+              className="h-12 px-4 text-base md:text-lg"
               register={register}
               error={errors.confirm_password?.message}
             />

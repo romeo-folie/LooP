@@ -117,7 +117,7 @@ const SigninForm: React.FC = () => {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle className="text-3xl">Welcome Back</CardTitle>
+        <CardTitle className="text-2xl xl:text-3xl">Welcome Back</CardTitle>
         <CardDescription>Please enter your details</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -129,13 +129,13 @@ const SigninForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4 text-lg"
+                className="h-12 px-4 text-base md:text-lg"
                 {...register("email")}
               />
             </div>
             <PasswordInput
               name="password"
-              className="h-12 px-4 text-lg"
+              className="h-12 px-4 text-base md:text-lg"
               register={register}
               error={errors.password?.message}
             />

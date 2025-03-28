@@ -129,7 +129,7 @@ const SignupForm: React.FC = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle className="text-3xl">Welcome</CardTitle>
+          <CardTitle className="text-2xl xl:text-3xl">Welcome</CardTitle>
           <CardDescription>Create a new account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -138,7 +138,7 @@ const SignupForm: React.FC = () => {
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                className="h-12 px-4 text-lg"
+                className="h-12 px-4 text-base md:text-lg"
                 placeholder="John Doe"
                 {...register("name")}
               />
@@ -152,7 +152,7 @@ const SignupForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4 text-lg"
+                className="h-12 px-4 text-base md:text-lg"
                 {...register("email")}
               />
               {errors.email && (
@@ -161,6 +161,7 @@ const SignupForm: React.FC = () => {
             </div>
             <PasswordInput
               name="password"
+              className="text-base md:text-lg"
               register={register}
               error={errors.password?.message}
             />
@@ -168,6 +169,7 @@ const SignupForm: React.FC = () => {
               name="confirmPassword"
               id="confirmPassword"
               label="Confirm Password"
+              className="text-base md:text-lg"
               register={register}
               error={errors.confirmPassword?.message}
             />
