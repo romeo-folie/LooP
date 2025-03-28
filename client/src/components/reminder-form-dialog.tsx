@@ -128,7 +128,7 @@ const ReminderFormDialog = ({
 
   return (
     <Credenza open={isOpen} onOpenChange={onOpenChange}>
-      <CredenzaContent className="px-6 pb-4">
+      <CredenzaContent className="px-6 pb-8">
         <CredenzaHeader className="text-left mb-4 pl-0">
           <CredenzaTitle className="text-2xl font-bold">
             {mode === "edit" ? "Edit Reminder" : "New Reminder"}

@@ -126,3 +126,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for vaul drawer wrapper issue */
+@layer base {
+  :root:not(.dark) body[style*="background: black;"] {
+    background: white !important;
+  }
+}

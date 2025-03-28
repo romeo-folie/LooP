@@ -1,3 +1,4 @@
+import browserStore from "@/lib/browser-storage"
 import { createContext, useCallback, useContext, useEffect, useState, useMemo } from "react"
 
 type Theme = "dark" | "light" | "system"
@@ -31,14 +32,15 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => (browserStore.get(storageKey) as Theme) || defaultTheme
   )
 
   const isDark = useMemo(() => theme === 'dark', [theme]);
 
   const toggleTheme = useCallback(() => {
     setTheme(isDark ? 'light' : 'dark')
-  }, [isDark])
+    browserStore.set(storageKey, isDark ? 'light' : 'dark')
+  }, [isDark, storageKey])
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -63,7 +65,7 @@ export function ThemeProvider({
     isDark,
     toggleTheme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
+      browserStore.set(storageKey, theme)
       setTheme(theme)
     },
   }
