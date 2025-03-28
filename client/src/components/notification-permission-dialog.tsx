@@ -23,7 +23,7 @@ const NotificationPermissionDialog: React.FC<
 > = ({ isOpen, onOpenChange, onConfirm, onCancel }) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="gap-y-4">
+      <AlertDialogContent className="gap-y-4 w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -34,7 +34,7 @@ const NotificationPermissionDialog: React.FC<
             We use notifications to remind you to revise the problems you solve.
             By enabling them, you'll never miss a scheduled reminder.            
           </AlertDialogDescription>
-          <AlertDialogDescription className="text-sm text-gray-500">
+          <AlertDialogDescription className="text-base text-gray-500">
             Without notifications, you might overlook functionality that is critical to
             your success in this app. It's entirely optional, but highly
             recommended!

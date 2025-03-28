@@ -19,7 +19,7 @@ interface DeleteConfirmationDialogProps {
 const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({ open, resource, onOpenChange, onConfirmDelete }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent>
+    <AlertDialogContent className="w-[90vw] sm:max-w-md rounded-lg">
       <AlertDialogHeader>
         <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
         <AlertDialogDescription>
