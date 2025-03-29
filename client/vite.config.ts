@@ -17,8 +17,8 @@ export default defineConfig({
       manifest: {
         name: "LööP",
         short_name: "LööP",
-        theme_color: "#000000",
-        background_color: "#000000",
+        theme_color: "HSL(240, 10%, 3.9%)",
+        background_color: "HSL(240, 10%, 3.9%)",
         display: "standalone",
         start_url: ".",
         icons: [
@@ -26,6 +26,14 @@ export default defineConfig({
             src: "/favicon.ico",
             sizes: "48x48",
             type: "image/x-icon",
+          },
+          {
+            src: "/logo.svg",
+            type: "image/svg+xml"
+          },
+          {
+            src: "/logo-white.svg",
+            type: "image/svg+xml"
           },
           {
             src: "/pwa-64x64.png",
