@@ -36,13 +36,13 @@ async function createReminder(
 }
 
 async function updateReminder(
-  problemId: number,
+  reminder_id: number,
   formData: ReminderFormData,
   apiClient: AxiosInstance
 ): Promise<ReminderResponse> {
   const payload = { due_datetime: formData.due_datetime };
 
-  const { data } = await apiClient.put(`/reminders/${problemId}`, payload);
+  const { data } = await apiClient.put(`/reminders/${reminder_id}`, payload);
   return data;
 }
 
@@ -93,7 +93,7 @@ const ReminderFormDialog = ({
   >({
     mutationFn: (formData) => {
       if (mode === "edit") {
-        return updateReminder(problemId, formData, apiClient);
+        return updateReminder(reminder?.reminder_id as number, formData, apiClient);
       } else {
         return createReminder(problemId, formData, apiClient);
       }
@@ -147,7 +147,7 @@ const ReminderFormDialog = ({
               render={({ field }) => (
                 <DateTimePicker
                   {...field}
-                  value={reminder?.due_datetime}
+                  value={reminder ? new Date(reminder?.due_datetime) : undefined}
                   placeholder="Set Due Date & Time"
                 />
               )}
