@@ -5,7 +5,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { db } from "../db";
 import { AuthenticatedRequest } from "../types/authenticated-request";
-import logger from "../logging/winston-config";
+import logger from "../config/winston-config";
 import resend from "../config/resend";
 import crypto from 'crypto';
 

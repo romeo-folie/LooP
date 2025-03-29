@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 import { db } from "../db";
-import logger from '../logging/winston-config';
+import logger from '../config/winston-config';
 
 async function sendPushReminder(userId: number, message: string, due_datetime: Date) {
   const subscriptions = await db('subscriptions')

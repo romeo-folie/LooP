@@ -1,7 +1,7 @@
 import { RequestHandler, Response } from 'express';
 import { db } from '../db';
 import { AuthenticatedRequest } from '../types/authenticated-request';
-import logger from '../logging/winston-config';
+import logger from '../config/winston-config';
 
 
 export const createProblem: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {

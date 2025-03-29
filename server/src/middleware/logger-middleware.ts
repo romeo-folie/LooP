@@ -1,5 +1,5 @@
 import morgan from 'morgan';
-import logger from '../logging/winston-config';
+import logger from '../config/winston-config';
 
 // Create a Morgan stream that logs to Winston
 const stream = {

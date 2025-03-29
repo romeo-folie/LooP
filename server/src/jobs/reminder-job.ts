@@ -1,5 +1,5 @@
 import { db } from '../db';
-import logger from '../logging/winston-config';
+import logger from '../config/winston-config';
 import sendPushReminder from '../utils/send-push-reminder';
 
 export default async function reminderJob() {

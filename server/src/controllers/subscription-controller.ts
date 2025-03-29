@@ -1,7 +1,7 @@
 import { RequestHandler, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticated-request";
 import { db } from "../db";
-import logger from "../logging/winston-config";
+import logger from "../config/winston-config";
 
 
 export const createSubscription: RequestHandler = async (req: AuthenticatedRequest, res: Response) => {
