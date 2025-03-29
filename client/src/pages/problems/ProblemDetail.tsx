@@ -9,10 +9,15 @@ import ProblemFormDialog from "@/components/problem-form-dialog";
 import ReminderFormDialog from "@/components/reminder-form-dialog";
 import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
 import DeleteConfirmationDialog from "@/components/delete-confirmation-dialog";
-import { APIErrorResponse, APISuccessResponse, useAxios } from "@/hooks/use-axios";
+import {
+  APIErrorResponse,
+  APISuccessResponse,
+  useAxios,
+} from "@/hooks/use-axios";
 import { AxiosError, AxiosInstance } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -36,6 +41,7 @@ interface ProblemDetailProps {
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
   const queryClient = useQueryClient();
   const apiClient = useAxios();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
@@ -51,9 +57,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
   };
 
   const onDeleteReminder = (reminder: ReminderResponse) => {
-    setEditingReminder(reminder)
+    setEditingReminder(reminder);
     setIsDeleteDialogOpen(true);
-  }
+  };
 
   const mutation = useMutation<
     APISuccessResponse,
@@ -79,28 +85,30 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
 
   const handleConfirmReminderDelete = () => {
     mutation.mutate(editingReminder!.reminder_id);
-  }
+  };
 
   return (
     <div className="p-4 space-y-6">
       {/* Header: Title & Edit Button */}
       <div className="flex justify-between items-start">
         {/* Title & Notes */}
-        <div className="flex-1">
+        <div className="flex-auto">
           <h1 className="text-xl lg:text-2xl font-bold">{problem.name}</h1>
           <p className="text-gray-700 mt-5">{problem.notes}</p>
         </div>
 
         {/* Edit + Difficulty & Tags */}
-        <div className="flex flex-col items-end gap-4">
+        <div className="flex flex-col items-end gap-4 flex-auto">
           {/* Edit Button */}
-          <Button
-            className="flex items-center gap-2"
-            onClick={() => setIsProblemDialogOpen(true)}
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </Button>
+          {isDesktop && (
+            <Button
+              className="flex items-center gap-2"
+              onClick={() => setIsProblemDialogOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+          )}
 
           {/* Difficulty & Tags */}
           <div className="text-right space-y-2">

@@ -38,20 +38,24 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notificationLength, setNotificationLength] = useState<number>(0);
 
   useEffect(() => {
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        const { type, payload } = event.data || {};
-        if (type === "IN_APP_ALERT") {
-          browserStore.set("notifications", payload);
-          setNotifications((prev) => [...prev, payload]);
-          setNotificationLength((prev) => prev + 1);
-          toast({
-            title: payload.title,
-            description: payload.body.message,
-          });
-        }
-      });
+    const listener = (event: MessageEvent) => {
+      const { type, payload } = event.data || {};
+      if (type === "IN_APP_ALERT") {
+        browserStore.set("notifications", payload);
+        setNotifications((prev) => [...prev, payload]);
+        setNotificationLength((prev) => prev + 1);
+        toast({
+          title: payload.title,
+          description: payload.body.message,
+        });
+      }
     }
+
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener("message", listener);
+    }
+
+    return () => navigator.serviceWorker.removeEventListener("message", listener);
   }, []);
 
   useEffect(() => {

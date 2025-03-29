@@ -107,7 +107,7 @@ export default function ProblemsDashboard() {
   const queryClient = useQueryClient();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
@@ -118,6 +118,7 @@ export default function ProblemsDashboard() {
   const [selectedProblem, setSelectedProblem] =
     useState<ProblemResponse | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [problemFormMode, setProblemFormMode] = useState<"new" | "edit">("new");
 
   const [dropdownWidth, setDropdownWidth] = useState<number | null>(null);
   const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -287,7 +288,10 @@ export default function ProblemsDashboard() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Problems</h1>
             <Button
-              onClick={() => setIsDialogOpen(true)}
+              onClick={() => {
+                setProblemFormMode("new");
+                setIsProblemDialogOpen(true);
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -311,7 +315,7 @@ export default function ProblemsDashboard() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="flex-auto"
+                    className="flex-1"
                     ref={dropdownTriggerRef}
                   >
                     {selectedDifficulty ?? "Difficulty"}{" "}
@@ -338,7 +342,7 @@ export default function ProblemsDashboard() {
               {/* Tags Filter */}
               <DropdownMenu onOpenChange={handleDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg" className="flex-auto">
+                  <Button variant="outline" size="lg" className="flex-1">
                     {selectedTag ?? "Tags"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
@@ -369,12 +373,12 @@ export default function ProblemsDashboard() {
               {/* Date Solved Filter */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="lg" className="flex-auto">
+                  <Button variant="outline" size="lg" className="flex-1">
                     {selectedDate ? format(selectedDate, "PPP") : "Date Solved"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="flex-auto">
+                <PopoverContent>
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -385,7 +389,7 @@ export default function ProblemsDashboard() {
               {/* Reset Filters Button */}
               <Button
                 variant="outline"
-                className="flex items-center flex-auto"
+                className="flex items-center flex-1"
                 size="lg"
                 onClick={resetFilters}
               >
@@ -466,6 +470,17 @@ export default function ProblemsDashboard() {
                           >
                             Add Reminder
                           </DropdownMenuItem>
+                          {!isDesktop && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedProblem(problem);
+                                setProblemFormMode("edit");
+                                setIsProblemDialogOpen(true);
+                              }}
+                            >
+                              Edit Problem
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => {
@@ -473,7 +488,7 @@ export default function ProblemsDashboard() {
                               setIsDeleteDialogOpen(true);
                             }}
                           >
-                            Delete
+                            Delete Problem
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -513,9 +528,10 @@ export default function ProblemsDashboard() {
 
           {/* Problem Form Dialog */}
           <ProblemFormDialog
-            mode="new"
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
+            mode={problemFormMode}
+            problem={selectedProblem}
+            isOpen={isProblemDialogOpen}
+            onOpenChange={setIsProblemDialogOpen}
           />
 
           {/* Reminder Form Dialog */}

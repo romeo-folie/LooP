@@ -110,7 +110,7 @@ interface ProblemFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "new" | "edit";
-  problem?: ProblemResponse;
+  problem?: ProblemResponse | null;
 }
 
 export default function ProblemFormDialog({
