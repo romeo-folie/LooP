@@ -87,7 +87,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
       <div className="flex justify-between items-start">
         {/* Title & Notes */}
         <div className="flex-1">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold">{problem.name}</h1>
+          <h1 className="text-xl lg:text-2xl font-bold">{problem.name}</h1>
           <p className="text-gray-700 mt-5">{problem.notes}</p>
         </div>
 
@@ -125,7 +125,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
       {/* Reminders Section */}
       {problem.reminders && problem.reminders.length > 0 && (
         <div className="mt-4">
-          <h2 className="text-base md:text-lg lg:text-xl font-semibold mb-2">Reminders</h2>
+          <h2 className="text-lg lg:text-xl font-semibold mb-2">Reminders</h2>
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 pt-5 pb-3">
               {problem.reminders.map((rem, index) => (

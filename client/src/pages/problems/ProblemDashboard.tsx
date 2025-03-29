@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,9 @@ export default function ProblemsDashboard() {
     useState<ProblemResponse | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  const [dropdownWidth, setDropdownWidth] = useState<number | null>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
     useState(false);
@@ -131,6 +134,12 @@ export default function ProblemsDashboard() {
       setShowNotificationRequestDialog(true);
     }
   }, []);
+
+  const handleDropdownOpen = (opened: boolean) => {
+    if (opened && dropdownTriggerRef.current) {
+      setDropdownWidth(dropdownTriggerRef.current.offsetWidth);
+    }
+  };
 
   async function saveUserNotificationPreference(allowed: boolean) {
     try {
@@ -273,7 +282,7 @@ export default function ProblemsDashboard() {
       {isLoading ? (
         <LoadingScreen />
       ) : (
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-6">
           {/* Header Section (Title & New Button) */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Problems</h1>
@@ -297,14 +306,24 @@ export default function ProblemsDashboard() {
             {/* Filters */}
             <div className="flex flex-wrap gap-2">
               {/* Difficulty Filter */}
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={handleDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-auto"
+                    ref={dropdownTriggerRef}
+                  >
                     {selectedDifficulty ?? "Difficulty"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent
+                  align="start"
+                  style={{
+                    width: dropdownWidth ? `${dropdownWidth}px` : "auto",
+                  }}
+                >
                   {["Easy", "Medium", "Hard"].map((level) => (
                     <DropdownMenuItem
                       key={level}
@@ -317,14 +336,19 @@ export default function ProblemsDashboard() {
               </DropdownMenu>
 
               {/* Tags Filter */}
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={handleDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" className="flex-auto">
                     {selectedTag ?? "Tags"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent
+                  align="start"
+                  style={{
+                    width: dropdownWidth ? `${dropdownWidth}px` : "auto",
+                  }}
+                >
                   {[
                     "Array",
                     "HashMap",
@@ -345,12 +369,12 @@ export default function ProblemsDashboard() {
               {/* Date Solved Filter */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" className="flex-auto">
                     {selectedDate ? format(selectedDate, "PPP") : "Date Solved"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent>
+                <PopoverContent className="flex-auto">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -361,7 +385,7 @@ export default function ProblemsDashboard() {
               {/* Reset Filters Button */}
               <Button
                 variant="outline"
-                className="flex items-center"
+                className="flex items-center flex-auto"
                 size="lg"
                 onClick={resetFilters}
               >
@@ -416,7 +440,7 @@ export default function ProblemsDashboard() {
                       </Credenza>
                     )}
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 ml-4">
                       {/* Difficulty Badge */}
                       <Badge
                         className={`${
