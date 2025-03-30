@@ -260,7 +260,7 @@ export default function ProblemFormDialog({
               render={({ field }) => (
                 <Input
                   placeholder="Problem Title"
-                  className="h-10"
+                  className="h-12 text-base md:text-lg"
                   {...field}
                 />
               )}
@@ -443,6 +443,7 @@ export default function ProblemFormDialog({
               render={({ field }) => (
                 <Textarea
                   placeholder="Additional Notes..."
+                  className="text-base md:text-lg"
                   style={{ height: "100px" }}
                   {...field}
                 />

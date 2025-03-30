@@ -271,7 +271,7 @@ export default function ProblemsDashboard() {
   });
 
   // Pagination Logic
-  const problemsPerPage = isDesktop? 10 : 6;
+  const problemsPerPage = isDesktop ? 10 : 6;
   const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
   const paginatedProblems = filteredProblems.slice(
     (currentPage - 1) * problemsPerPage,
@@ -283,7 +283,7 @@ export default function ProblemsDashboard() {
       {isLoading ? (
         <LoadingScreen />
       ) : (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 pb-8">
           {/* Header Section (Title & New Button) */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Problems</h1>

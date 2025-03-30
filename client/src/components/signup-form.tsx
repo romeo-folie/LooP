@@ -161,7 +161,6 @@ const SignupForm: React.FC = () => {
             </div>
             <PasswordInput
               name="password"
-              className="text-base md:text-lg"
               register={register}
               error={errors.password?.message}
             />
@@ -169,7 +168,6 @@ const SignupForm: React.FC = () => {
               name="confirmPassword"
               id="confirmPassword"
               label="Confirm Password"
-              className="text-base md:text-lg"
               register={register}
               error={errors.confirmPassword?.message}
             />

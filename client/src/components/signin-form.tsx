@@ -135,7 +135,6 @@ const SigninForm: React.FC = () => {
             </div>
             <PasswordInput
               name="password"
-              className="h-12 px-4 text-base md:text-lg"
               register={register}
               error={errors.password?.message}
             />

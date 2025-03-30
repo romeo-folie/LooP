@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SignupForm from "@/components/signup-form";
 import { useNavigate, useLocation } from "react-router-dom";
-import SigninForm from "@/components/sigin-form";
+import SigninForm from "@/components/signin-form";
 import { useEffect } from "react";
 import Container from "@/components/container";
 
