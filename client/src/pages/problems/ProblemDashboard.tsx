@@ -98,7 +98,6 @@ const deleteProblem = async function (
   return data;
 };
 
-const problemsPerPage = 10;
 
 export default function ProblemsDashboard() {
   const apiClient = useAxios();
@@ -272,6 +271,7 @@ export default function ProblemsDashboard() {
   });
 
   // Pagination Logic
+  const problemsPerPage = isDesktop? 10 : 6;
   const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
   const paginatedProblems = filteredProblems.slice(
     (currentPage - 1) * problemsPerPage,
