@@ -5,12 +5,17 @@ import path from "path";
 import dotenv from 'dotenv'
 dotenv.config({ path: path.resolve(__dirname, "../../.env") })
 
-const SECRET_KEY = process.env.REFRESH_SECRET as string;
+const REFRESH_KEY = process.env.REFRESH_SECRET as string;
+const RESET_KEY = process.env.RESET_PASSWORD_SECRET as string;
 
-export function generateRefreshToken(payload: object, expiresIn: StringValue = "15m" ) {
-  return jwt.sign(payload, SECRET_KEY, { expiresIn });
+export function generateRefreshToken(payload: object, expiresIn: StringValue = "15m") {
+  return jwt.sign(payload, REFRESH_KEY, { expiresIn });
 }
 
 export function generateExpiredRefreshToken(payload: object) {
-  return jwt.sign(payload, SECRET_KEY, { expiresIn: "-1s" }); 
+  return jwt.sign(payload, REFRESH_KEY, { expiresIn: "-1s" }); 
+}
+
+export function generatePasswordResetToken(payload: object, expiresIn: StringValue = "15m") {
+  return jwt.sign(payload, RESET_KEY, { expiresIn });
 }

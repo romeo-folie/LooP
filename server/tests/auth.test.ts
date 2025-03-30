@@ -3,9 +3,11 @@ import app from "../src/app";
 import { db } from "../src/db";
 import {
   generateExpiredRefreshToken,
+  generatePasswordResetToken,
   generateRefreshToken,
 } from "../src/utils/jwt";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 process.env.NODE_ENV = "test";
 
@@ -434,6 +436,158 @@ describe("authentication tests", () => {
             "OTP verified successfully"
           );
           expect(res.body).toHaveProperty("password_reset_token");
+        });
+      });
+    });
+
+    describe("Resetting Password", () => {
+      const validToken = generatePasswordResetToken({
+        userId: 4,
+        email: validEmail4,
+      }, "1s");
+      
+      describe("No Reset Token or No New Password", () => {
+        it("should return 400 if token is missing", async () => {
+          const res = await request(app)
+            .post("/api/auth/reset-password")
+            .send({ new_password: validPassword });
+
+          expect(res.status).toBe(400);
+          expect(res.body).toHaveProperty("errors");
+          expect(res.body.errors).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                msg: "Password reset token is required",
+                path: "password_reset_token",
+              }),
+            ])
+          );
+        });
+
+        it("should return 400 if new_password is missing", async () => {
+          const res = await request(app)
+            .post("/api/auth/reset-password")
+            .send({ password_reset_token: "someToken" });
+
+          expect(res.status).toBe(400);
+          expect(res.body).toHaveProperty("errors");
+          expect(res.body.errors).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                msg: "Password must be at least 6 characters long",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one uppercase letter",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one lowercase letter",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one number",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one special character (@$!%*?&#)",
+                path: "new_password",
+              }),
+            ])
+          );
+        });
+      });
+
+      describe("Invalid or Expired Token", () => {
+        it("should return 403 if token is invalid or expired", async () => {
+          const expiredToken = generatePasswordResetToken(
+            { userId: 4, email: validEmail4 },
+            "-1s"
+          );
+
+          const res = await request(app).post("/api/auth/reset-password").send({
+            password_reset_token: expiredToken,
+            new_password: validPassword,
+          });
+
+          expect(res.status).toBe(403);
+          expect(res.body).toHaveProperty("error", "Invalid or expired token");
+        });
+      });
+
+      describe("Password Strength Validation", () => {
+        it("should return 400 if new password is too weak", async () => {
+          const res = await request(app).post("/api/auth/reset-password").send({
+            password_reset_token: validToken,
+            new_password: "abc",
+          });
+
+          expect(res.status).toBe(400);
+          expect(res.body).toHaveProperty("errors");
+          expect(res.body.errors).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                msg: "Password must be at least 6 characters long",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one uppercase letter",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one number",
+                path: "new_password",
+              }),
+              expect.objectContaining({
+                msg: "Password must contain at least one special character (@$!%*?&#)",
+                path: "new_password",
+              }),
+            ])
+          );
+        });
+      });
+
+      describe("Successful Password Reset", () => {
+        it("should return 200 and update user’s password in DB", async () => {
+          const validToken = generatePasswordResetToken({
+            userId: 4,
+            email: validEmail4,
+          });
+
+          const newPass = "StrongPass@1!";
+          const res = await request(app).post("/api/auth/reset-password").send({
+            password_reset_token: validToken,
+            new_password: newPass,
+          });
+
+          expect(res.status).toBe(200);
+          expect(res.body).toHaveProperty(
+            "message",
+            "Password reset successfully. You can now log in."
+          );
+
+          const user = await db("users").where({ user_id: 4 }).first();
+          const match = await bcrypt.compare(newPass, user.password);
+          expect(match).toBe(true);
+        });
+      });
+
+      describe('Token Reuse', () => {
+        it('should fail if attempting to reuse the same token again', async () => {
+          // TODO:Might cause failures
+          // set token to expire after a second, so should be expired by the test runner gets here
+          // not the best implementation but works for now
+          const usedToken = validToken;
+    
+          const res = await request(app)
+            .post('/api/auth/reset-password')
+            .send({
+              password_reset_token: usedToken,
+              new_password: 'AnotherStrongPass1!'
+            });
+    
+          expect(res.status).toBe(403);
+          expect(res.body).toHaveProperty('error', 'Invalid or expired token');
         });
       });
     });

@@ -46,7 +46,7 @@ export const createSubscription: RequestHandler = async (req: AuthenticatedReque
       });
     }
   } catch (error: unknown) {
-    logger.error('Error in POST /subscriptions', { error });
+    logger.error('Error in POST /subscriptions', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -81,7 +81,7 @@ export const deleteSubscription: RequestHandler = async (req: AuthenticatedReque
     logger.info(`Subscription deleted for user ${userId}`, { subscription_id: existingSubscription.subscription_id });
     res.status(200).json({ message: 'Subscription deleted successfully' });
   } catch (error: unknown) {
-    logger.error('Error in DELETE /subscriptions', { error });
+    logger.error('Error in DELETE /subscriptions', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

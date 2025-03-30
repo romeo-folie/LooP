@@ -40,7 +40,7 @@ export default async function reminderJob() {
 
     logger.info(`Marked ${dueReminders.length} reminders as sent.`);
   } catch (error) {
-    logger.error('Error processing due reminders', { error });
+    logger.error('Error processing due reminders', error);
   }
 };
 

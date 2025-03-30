@@ -414,7 +414,7 @@ export const forgotPassword: RequestHandler = async (req: Request, res: Response
 
     res.status(200).json({ message: 'If the email exists, an OTP has been sent.' });
   } catch (error) {
-    logger.error('Forgot password error', { error });
+    logger.error('Forgot password error', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -472,7 +472,7 @@ export const verifyOtp: RequestHandler = async (req: Request, res: Response) => 
       password_reset_token: passwordResetToken
     });
   } catch (error) {
-    logger.error('OTP verification error', { error });
+    logger.error('OTP verification error', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -488,7 +488,7 @@ export const resetPassword: RequestHandler = async (req: Request, res: Response)
       return;
     }
 
-    // 1. Verify the reset token
+    // Verify the reset token
     let decoded;
     try {
       decoded = jwt.verify(password_reset_token, process.env.RESET_PASSWORD_SECRET as string);
@@ -500,10 +500,10 @@ export const resetPassword: RequestHandler = async (req: Request, res: Response)
 
     const { userId, email } = decoded as { userId: number; email: string };
 
-    // 2. Hash the new password securely
+    // Hash the new password securely
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
-    // 3. Update password in the database
+    // Update password in the database
     await db('users').where({ user_id: userId, email }).update({
       password: hashedPassword,
       updated_at: new Date()
@@ -513,7 +513,7 @@ export const resetPassword: RequestHandler = async (req: Request, res: Response)
 
     res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
   } catch (error) {
-    logger.error('Password reset error', { error });
+    logger.error('Password reset error', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
