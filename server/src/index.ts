@@ -11,5 +11,5 @@ const PORT: number = Number(process.env.PORT);
 connectDB();
 
 app.listen(PORT, () => {
-  console.info(`🚀 server running on http://[::1]:${PORT}`)
+  console.info(`🚀 server running at port ${PORT}`)
 })

@@ -173,6 +173,27 @@ export const refreshToken: RequestHandler = async (
       { expiresIn: "30m" }
     );
 
+    const csrfToken = jwt.sign({
+      userId: decoded.userId,
+      email: decoded.email,
+      issuedAt: Date.now(),
+    }, process.env.CSRF_SECRET_KEY as string)
+
+
+    res.cookie("CSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
+
+    res.cookie("XSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
+
     logger.info(
       `Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`
     );
