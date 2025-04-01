@@ -129,7 +129,7 @@ const SigninForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4 text-base md:text-lg"
+                className="h-10 px-4"
                 {...register("email")}
               />
             </div>

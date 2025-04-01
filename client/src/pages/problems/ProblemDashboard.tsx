@@ -283,7 +283,7 @@ export default function ProblemsDashboard() {
       {isLoading ? (
         <LoadingScreen />
       ) : (
-        <div className="p-4 space-y-6 pb-8">
+        <div className="p-4 space-y-6 pb-8 max-h-screen max-w-screen">
           {/* Header Section (Title & New Button) */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Problems</h1>

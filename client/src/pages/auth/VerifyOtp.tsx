@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import InputOTPForm from "@/components/otp";
+import InputOTPForm from "@/components/otp-form";
 import Container from "@/components/container";
 
 const VerifyOtp: React.FC = () => {

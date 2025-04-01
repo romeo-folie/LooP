@@ -260,7 +260,7 @@ export default function ProblemFormDialog({
               render={({ field }) => (
                 <Input
                   placeholder="Problem Title"
-                  className="h-12 text-base md:text-lg"
+                  className="h-10"
                   {...field}
                 />
               )}
@@ -297,6 +297,7 @@ export default function ProblemFormDialog({
                       <DropdownMenuItem
                         key={level}
                         onClick={() => onChange(level)}
+                        className="h-10"
                       >
                         {level}
                       </DropdownMenuItem>
@@ -443,7 +444,6 @@ export default function ProblemFormDialog({
               render={({ field }) => (
                 <Textarea
                   placeholder="Additional Notes..."
-                  className="text-base md:text-lg"
                   style={{ height: "100px" }}
                   {...field}
                 />

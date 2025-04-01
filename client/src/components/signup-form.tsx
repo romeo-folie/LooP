@@ -138,7 +138,7 @@ const SignupForm: React.FC = () => {
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                className="h-12 px-4 text-base md:text-lg"
+                className="h-10 px-4"
                 placeholder="John Doe"
                 {...register("name")}
               />
@@ -152,7 +152,7 @@ const SignupForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4 text-base md:text-lg"
+                className="h-10 px-4"
                 {...register("email")}
               />
               {errors.email && (

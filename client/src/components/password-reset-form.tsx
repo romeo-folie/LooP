@@ -105,7 +105,7 @@ const PasswordResetForm: React.FC = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl xl:text-3xl">Reset Password</CardTitle>
+          <CardTitle className="text-xl 2xl:text-2xl">Reset Password</CardTitle>
           <CardDescription>
             Please enter the details below to reset your password
           </CardDescription>

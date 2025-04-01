@@ -24,7 +24,7 @@ const PasswordInput: React.FC<Props> = ({ label, register, error, ...props }) =>
           id={props.id || "password"}
           type={showPassword ? "text" : "password"}
           placeholder="e.g. P@s$w0rd"
-          className="h-12 px-4 text-base md:text-lg"
+          className="h-10 px-4"
           {...(register ? register(props.name!) : {})}
           {...props}
         />
