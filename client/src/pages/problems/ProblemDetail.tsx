@@ -36,9 +36,10 @@ const deleteReminder = async function (
 
 interface ProblemDetailProps {
   problem: ProblemResponse;
+  tags: string[];
 }
 
-const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
+const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   const queryClient = useQueryClient();
   const apiClient = useAxios();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -154,6 +155,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem }) => {
       <ProblemFormDialog
         mode="edit"
         problem={problem}
+        initialTagList={tags}
         isOpen={isProblemDialogOpen}
         onOpenChange={setIsProblemDialogOpen}
       />

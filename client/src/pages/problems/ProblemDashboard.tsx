@@ -49,6 +49,7 @@ import {
   CredenzaTitle,
   CredenzaTrigger,
 } from "@/components/credenza";
+import { startCase } from "lodash";
 
 export interface ReminderResponse {
   message?: string;
@@ -97,7 +98,6 @@ const deleteProblem = async function (
   const { data } = await apiClient.delete(`/problems/${problem_id}`);
   return data;
 };
-
 
 export default function ProblemsDashboard() {
   const apiClient = useAxios();
@@ -212,6 +212,19 @@ export default function ProblemsDashboard() {
   };
 
   const problems: ProblemResponse[] = data?.problems ?? [];
+  let tags: string[] = [];
+  if (problems.length) {
+    tags = problems.reduce((accumulator: string[], problem) => {
+      accumulator.push(
+        ...problem.tags
+        .map((tag) => startCase(tag))
+        .filter((tag) => !accumulator.includes(tag))
+      );
+      return accumulator;
+    }, []);
+  } else {
+    tags = ["Array", "HashMap", "Sliding Window", "Heap", "Linked List"];
+  }
 
   // Sync filters with URL query params
   useEffect(() => {
@@ -233,7 +246,7 @@ export default function ProblemsDashboard() {
     if (currentPage) params.set("page", currentPage.toString());
     if (search) params.set("search", search);
     if (selectedDifficulty) params.set("difficulty", selectedDifficulty);
-    if (selectedTag) params.set("tag", selectedTag);
+    if (selectedTag) params.set("tag", selectedTag.toLowerCase());
     if (selectedDate)
       params.set("date_solved", format(selectedDate, "yyyy-MM-dd"));
 
@@ -263,7 +276,7 @@ export default function ProblemsDashboard() {
     return (
       problem.name.toLowerCase().includes(search.toLowerCase()) &&
       (!selectedDifficulty || problem.difficulty === selectedDifficulty) &&
-      (!selectedTag || problem.tags.includes(selectedTag)) &&
+      (!selectedTag || problem.tags.includes(selectedTag.toLowerCase())) &&
       (!selectedDate ||
         format(new Date(problem.date_solved!), "yyyy-MM-dd") ===
           format(selectedDate, "yyyy-MM-dd"))
@@ -343,23 +356,18 @@ export default function ProblemsDashboard() {
               <DropdownMenu onOpenChange={handleDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="lg" className="flex-1">
-                    {selectedTag ?? "Tags"}{" "}
+                    {selectedTag ? startCase(selectedTag) : "Tags"}{" "}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"
+                  className="max-h-40 overflow-y-auto"
                   style={{
                     width: dropdownWidth ? `${dropdownWidth}px` : "auto",
                   }}
                 >
-                  {[
-                    "Array",
-                    "HashMap",
-                    "Sliding Window",
-                    "Heap",
-                    "Linked List",
-                  ].map((tag) => (
+                  {tags.map((tag) => (
                     <DropdownMenuItem
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
@@ -418,7 +426,7 @@ export default function ProblemsDashboard() {
                           </PopoverTrigger>
                           {/* Popover Content with Problem Detail */}
                           <PopoverContent align="start" className="w-[500px]">
-                            <ProblemDetail problem={problem} />
+                            <ProblemDetail problem={problem} tags={tags}/>
                           </PopoverContent>
                         </Popover>
                       </>
@@ -439,7 +447,7 @@ export default function ProblemsDashboard() {
                               Hidden Description for Screen Readers
                             </CredenzaDescription>
                           </CredenzaHeader>
-                          <ProblemDetail problem={problem} />
+                          <ProblemDetail problem={problem} tags={tags} />
                         </CredenzaContent>
                       </Credenza>
                     )}
@@ -530,6 +538,7 @@ export default function ProblemsDashboard() {
           <ProblemFormDialog
             mode={problemFormMode}
             problem={selectedProblem}
+            initialTagList={tags}
             isOpen={isProblemDialogOpen}
             onOpenChange={setIsProblemDialogOpen}
           />

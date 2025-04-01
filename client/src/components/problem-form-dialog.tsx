@@ -43,15 +43,10 @@ import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckIcon } from "@radix-ui/react-icons";
+import { startCase } from "lodash";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
-const initialTagOptions = [
-  "Array",
-  "HashMap",
-  "Sliding Window",
-  "Heap",
-  "Linked List",
-];
 
 // Zod schema for both "new" and "edit" flows
 const problemSchema = z.object({
@@ -111,6 +106,7 @@ interface ProblemFormDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "new" | "edit";
   problem?: ProblemResponse | null;
+  initialTagList: string[];
 }
 
 export default function ProblemFormDialog({
@@ -118,6 +114,7 @@ export default function ProblemFormDialog({
   onOpenChange,
   mode,
   problem,
+  initialTagList,
 }: ProblemFormDialogProps) {
   const apiClient = useAxios();
   const queryClient = useQueryClient();
@@ -128,7 +125,7 @@ export default function ProblemFormDialog({
   const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // For typed tag input
-  const [tagOptions, setTagOptions] = useState(initialTagOptions);
+  const [tagOptions, setTagOptions] = useState(initialTagList);
   const [inputValue, setInputValue] = useState("");
   const [isTagOpen, setIsTagOpen] = useState(false);
 
@@ -228,7 +225,7 @@ export default function ProblemFormDialog({
     onChange: (tags: string[]) => void,
     currentTags: string[]
   ) => {
-    const val = inputValue.trim();
+    const val = startCase(inputValue.trim());
     if (val && !tagOptions.includes(val)) {
       setTagOptions([...tagOptions, val]);
       onChange([...currentTags, val]);
@@ -326,18 +323,18 @@ export default function ProblemFormDialog({
                       setIsTagOpen(open);
                       handleDropdownOpen(open);
                     }}
+                    modal={true}
                   >
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full h-10">
                         {value?.length > 0
-                          ? value.join(", ")
+                          ? value.map((val) => startCase(val)).join(", ")
                           : "Select or Add Tags"}{" "}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
                       align="center"
-                      className="w-full"
                       style={{
                         width: dropdownWidth ? `${dropdownWidth}px` : "auto",
                       }}
@@ -348,22 +345,34 @@ export default function ProblemFormDialog({
                           value={inputValue}
                           onValueChange={(v) => setInputValue(v)}
                         />
-                        <CommandList>
+                        <CommandList className="max-h-40">
                           <CommandEmpty>No matching tags</CommandEmpty>
                           <CommandGroup>
                             {tagOptions.map((tag) => (
                               <CommandItem
                                 key={tag}
                                 onSelect={() => {
-                                  if (value.includes(tag)) {
-                                    onChange(value.filter((t) => t !== tag));
+                                  if (
+                                    value.includes(tag.toLowerCase()) ||
+                                    value.includes(startCase(tag))
+                                  ) {
+                                    onChange(
+                                      value.filter(
+                                        (t) => startCase(t) !== startCase(tag)
+                                      )
+                                    );
                                   } else {
-                                    onChange([...value, tag]);
+                                    onChange([...value, startCase(tag)]);
                                   }
                                 }}
                               >
-                                {value.includes(tag) ? "✔ " : ""}
-                                {tag}
+                                {value.includes(tag.toLowerCase()) ||
+                                value.includes(startCase(tag)) ? (
+                                  <CheckIcon />
+                                ) : (
+                                  ""
+                                )}
+                                {startCase(tag)}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -386,11 +395,15 @@ export default function ProblemFormDialog({
                   <div className="flex flex-wrap gap-2 mt-2">
                     {value?.map((tag) => (
                       <Badge key={tag} className="flex items-center space-x-2">
-                        {tag}
+                        {startCase(tag)}
                         <button
                           type="button"
                           onClick={() =>
-                            onChange(value.filter((t) => t !== tag))
+                            onChange(
+                              value.filter(
+                                (t) => startCase(t) !== startCase(tag)
+                              )
+                            )
                           }
                         >
                           <X className="h-3 w-3 ml-1" />
