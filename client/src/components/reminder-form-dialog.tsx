@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
-import { DateTimePicker } from "./date-time-picker";
+import DateTimePicker from "./date-time-picker";
 import {
   Credenza,
   CredenzaContent,
@@ -19,7 +19,11 @@ import {
 } from "@/components/credenza";
 
 const reminderSchema = z.object({
-  due_datetime: z.date({ required_error: "Date is required" }),
+  due_datetime: z
+    .date({ required_error: "Date is required" })
+    .refine((date) => date.getTime() > Date.now(), {
+      message: "Date must be in the future",
+    }),
 });
 
 type ReminderFormData = z.infer<typeof reminderSchema>;
@@ -84,6 +88,7 @@ const ReminderFormDialog = ({
   } = useForm<ReminderFormData>({
     resolver: zodResolver(reminderSchema),
     defaultValues: defaultVals,
+    mode: "onChange",
   });
 
   const mutation = useMutation<
@@ -93,7 +98,11 @@ const ReminderFormDialog = ({
   >({
     mutationFn: (formData) => {
       if (mode === "edit") {
-        return updateReminder(reminder?.reminder_id as number, formData, apiClient);
+        return updateReminder(
+          reminder?.reminder_id as number,
+          formData,
+          apiClient
+        );
       } else {
         return createReminder(problemId, formData, apiClient);
       }
@@ -147,7 +156,9 @@ const ReminderFormDialog = ({
               render={({ field }) => (
                 <DateTimePicker
                   {...field}
-                  value={reminder ? new Date(reminder?.due_datetime) : undefined}
+                  value={
+                    reminder ? new Date(reminder?.due_datetime) : undefined
+                  }
                   placeholder="Set Due Date & Time"
                 />
               )}

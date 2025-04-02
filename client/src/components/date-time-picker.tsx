@@ -18,11 +18,11 @@ interface DateTimePickerProps {
   placeholder?: string;
 }
 
-export function DateTimePicker({
+const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(({
   value,
   placeholder = "Pick date & time",
   onChange,
-}: DateTimePickerProps) {
+}, ref) => {
   const [date, setDate] = React.useState<Date | undefined>(value);
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -48,7 +48,7 @@ export function DateTimePicker({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -65,7 +65,7 @@ export function DateTimePicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent className="w-auto p-0" ref={ref}>
         <div className="sm:flex">
           <Calendar
             mode="single"
@@ -76,9 +76,7 @@ export function DateTimePicker({
           <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
             <div className="divide-y"></div>
             <ScrollArea className="w-64 sm:w-auto">
-              <div
-                className="flex sm:flex-col p-2 pb-4"
-              >
+              <div className="flex sm:flex-col p-2 pb-4">
                 {hours.reverse().map((hour) => (
                   <Button
                     key={hour}
@@ -97,7 +95,7 @@ export function DateTimePicker({
             </ScrollArea>
             <ScrollArea className="w-64 sm:w-auto">
               <div className="flex sm:flex-col p-2 pb-4">
-                {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
                   <Button
                     key={minute}
                     size="icon"
@@ -120,4 +118,6 @@ export function DateTimePicker({
       </PopoverContent>
     </Popover>
   );
-}
+});
+
+export default DateTimePicker;

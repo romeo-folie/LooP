@@ -123,7 +123,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
               <p className="text-gray-500 text-sm font-bold">Tags</p>
               <div className="flex flex-wrap gap-2 justify-end">
                 {problem.tags.map((tag) => (
-                  <Badge key={tag}>{tag}</Badge>
+                  <Badge key={tag} className="text-nowrap">{tag}</Badge>
                 ))}
               </div>
             </div>
