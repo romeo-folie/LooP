@@ -20,6 +20,7 @@ export function useAxios(): AxiosInstance {
     const instance = axios.create({
       baseURL: import.meta.env.VITE_SERVER_URL,
       withCredentials: true,
+      timeout: 5000,
     });
 
     instance.interceptors.request.use((config) => {

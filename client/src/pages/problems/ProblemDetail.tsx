@@ -165,7 +165,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
         isOpen={isReminderDialogOpen}
         onOpenChange={setIsReminderDialogOpen}
         mode="edit"
-        problemId={problem.problem_id}
+        problemId={problem.problem_id as number}
         reminder={editingReminder}
       />
 

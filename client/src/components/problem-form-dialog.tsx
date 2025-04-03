@@ -184,7 +184,7 @@ export default function ProblemFormDialog({
   >({
     mutationFn: (formData) => {
       if (mode === "edit" && problem) {
-        return updateProblem(problem.problem_id, formData, apiClient);
+        return updateProblem(problem.problem_id as number, formData, apiClient);
       } else {
         return createProblem(formData, apiClient);
       }
