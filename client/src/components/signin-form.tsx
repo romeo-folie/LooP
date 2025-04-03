@@ -21,6 +21,7 @@ import { AxiosError, AxiosInstance } from "axios";
 import PasswordInput from "./password-input";
 import { Loader2 } from "lucide-react";
 import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
+import { logger } from "@/lib/logger";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -49,8 +50,13 @@ const signInUser = async (
   userCredentials: SignInFormValues,
   apiClient: AxiosInstance
 ) => {
-  const response = await apiClient.post("/auth/login", userCredentials);
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/login", userCredentials);
+    return response.data;
+  } catch (error) {
+    logger.error("error logging in ", error)
+    throw error;
+  }
 };
 
 const handleGithubLogin = () => {
@@ -79,33 +85,12 @@ const SigninForm: React.FC = () => {
     mutationFn: (userCredentials: SignInFormValues) =>
       signInUser(userCredentials, apiClient),
     onSuccess: (data) => {
-      if (!data.token) {
-        toast({
-          title: "Error",
-          description: "No access token returned from server",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!data.user) {
-        toast({
-          title: "Error",
-          description: "No user returned from server",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Save token in memory (AuthContext)
       login(data.token, data.user);
 
       toast({ title: "Success", description: "Signed in successfully!" });
-      // Navigate to a protected page
       navigate("/");
     },
     onError: (error) => {
-      // Check for server error message
       const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Sign in failed, please try again.";
       toast({ title: "Error", description: message, variant: "destructive" });
     },

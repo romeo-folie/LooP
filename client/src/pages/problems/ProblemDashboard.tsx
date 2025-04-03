@@ -50,6 +50,9 @@ import {
   CredenzaTrigger,
 } from "@/components/credenza";
 import { startCase } from "lodash";
+import { bulkAddProblems, getAllProblems } from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { useNetworkStatus } from "@/context/network-status-provider";
 
 export interface ReminderResponse {
   message?: string;
@@ -61,14 +64,14 @@ export interface ReminderResponse {
   created_at: Date;
 }
 export interface ProblemResponse {
-  problem_id: number;
+  problem_id?: number; // set as optional due for compatibility with ProblemSchame in local DB
   user_id: number;
   name: string;
   difficulty: string;
   tags: string[];
   date_solved: Date;
-  notes: string | null;
-  created_at: Date;
+  notes: string;
+  created_at?: Date;
   reminders: ReminderResponse[];
 }
 
@@ -104,6 +107,7 @@ export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const isOnline = useNetworkStatus();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
@@ -172,7 +176,7 @@ export default function ProblemsDashboard() {
   };
 
   // Problem Dashboard
-  const { data, isLoading, isError, error } = useQuery<
+  const { data, isLoading, isError, isSuccess, error } = useQuery<
     { problems: ProblemResponse[] },
     AxiosError<APIErrorResponse>
   >({
@@ -181,7 +185,29 @@ export default function ProblemsDashboard() {
     refetchOnWindowFocus: false,
   });
 
+  let problems: ProblemResponse[] = [];
+  if (isSuccess) {
+    problems = data.problems;
+    bulkAddProblems(data.problems)
+      .then(() => {
+        logger.info("successfully added problems to local DB");
+      })
+      .catch((error) => {
+        logger.error("error saving problems to local DB", error);
+      });
+  }
+
   if (isError) {
+    if (!isOnline) {
+      // load problems from indexedDB
+      getAllProblems()
+        .then((data) => {
+          problems = data;
+        })
+        .catch((error) => {
+          logger.error("error fetching problems from local DB", error);
+        });
+    }
     const message =
       error.response?.data?.message ||
       error.response?.data?.error ||
@@ -212,10 +238,10 @@ export default function ProblemsDashboard() {
   });
 
   const handleProblemDelete = () => {
-    mutation.mutate(selectedProblem!.problem_id);
+    mutation.mutate(selectedProblem!.problem_id!);
   };
 
-  const problems: ProblemResponse[] = data?.problems ?? [];
+  // retrieve all problem tags
   let tags: string[] = [];
   if (problems.length) {
     tags = problems.reduce((accumulator: string[], problem) => {
