@@ -68,7 +68,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
         email: existingUser.email,
       },
       process.env.JWT_SECRET as string,
-      { expiresIn: "30m" }
+      { expiresIn: "1h" }
     );
 
     const refreshToken = jwt.sign(
@@ -170,7 +170,7 @@ export const refreshToken: RequestHandler = async (
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, email: decoded.email },
       process.env.JWT_SECRET as string,
-      { expiresIn: "30m" }
+      { expiresIn: "1h" }
     );
 
     const csrfToken = jwt.sign({

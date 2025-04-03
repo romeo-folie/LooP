@@ -14,10 +14,11 @@ export async function requestNotificationPermission(apiClient: AxiosInstance) {
 
   if (permission === "granted") {
     logger.info("Notification permission granted");
-    await subscribeToPush(apiClient)
+    return await subscribeToPush(apiClient);
   } else {
     browserStore.set("notificationsAllowed", "false");
     logger.warn("Notification permission not granted or denied explicitly.");
+    return false;
   }
 }
 
@@ -39,25 +40,27 @@ export async function subscribeToPush(apiClient: AxiosInstance) {
   const subscriptionPayload = {
     endpoint: subscription.endpoint,
     auth,
-    public_key: p256dh
+    public_key: p256dh,
   };
 
   try {
-    await apiClient.post(`/subscriptions`, subscriptionPayload)
+    await apiClient.post(`/subscriptions`, subscriptionPayload);
+    return true;
   } catch (error: unknown) {
     browserStore.set("notificationsAllowed", "false");
-    const message = error instanceof AxiosError ? error.response?.data?.error || error.response?.data?.message :  "Error saving subscription"
+    const message =
+      error instanceof AxiosError
+        ? error.response?.data?.error || error.response?.data?.message
+        : "Error saving subscription";
     logger.error(message);
+    return false;
   }
-
 }
 
 // Helper to convert VAPID public key from base64 => Uint8Array
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const binaryData = window.atob(base64);
   const outputArray = new Uint8Array(binaryData.length);
 
@@ -67,7 +70,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-// Helper to convert ArrayBuffers to base64 
+// Helper to convert ArrayBuffers to base64
 function arrayBufferToBase64(buffer: ArrayBuffer) {
   const bytes = new Uint8Array(buffer);
   let binary = "";

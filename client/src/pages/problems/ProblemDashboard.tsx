@@ -141,28 +141,33 @@ export default function ProblemsDashboard() {
     }
   };
 
-  async function saveUserNotificationPreference(allowed: boolean) {
-    try {
-      console.log(
-        //TODO:
-        "make api call to save user preference. allowed: ",
-        allowed.toString()
-      );
-    } catch (error) {
-      console.error("Failed to save user preference on backend", error);
-    }
-  }
+  // async function saveUserNotificationPreference(allowed: boolean) {
+  //   try {
+  //     console.log(
+  // TODO:
+  //       "make api call to save user preference. allowed: ",
+  //       allowed.toString()
+  //     );
+  //   } catch (error) {
+  //     console.error("Failed to save user preference on backend", error);
+  //   }
+  // }
 
   const handleConfirm = async () => {
     browserStore.set("notificationsAllowed", "true");
-    await saveUserNotificationPreference(true);
-    await requestNotificationPermission(apiClient);
+    // await saveUserNotificationPreference(true);
+    const success = await requestNotificationPermission(apiClient);
+    if (success)
+      toast({
+        title: "Success",
+        description: "Subscribed to push notifications",
+      });
     setShowNotificationRequestDialog(false);
   };
 
   const handleCancel = async () => {
     browserStore.set("notificationsAllowed", "false");
-    await saveUserNotificationPreference(false);
+    // await saveUserNotificationPreference(false);
     setShowNotificationRequestDialog(false);
   };
 
@@ -173,7 +178,6 @@ export default function ProblemsDashboard() {
   >({
     queryKey: ["problems"],
     queryFn: () => fetchProblems(apiClient),
-    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
@@ -217,8 +221,8 @@ export default function ProblemsDashboard() {
     tags = problems.reduce((accumulator: string[], problem) => {
       accumulator.push(
         ...problem.tags
-        .map((tag) => startCase(tag))
-        .filter((tag) => !accumulator.includes(tag))
+          .map((tag) => startCase(tag))
+          .filter((tag) => !accumulator.includes(tag))
       );
       return accumulator;
     }, []);
@@ -426,7 +430,7 @@ export default function ProblemsDashboard() {
                           </PopoverTrigger>
                           {/* Popover Content with Problem Detail */}
                           <PopoverContent align="start" className="w-[500px]">
-                            <ProblemDetail problem={problem} tags={tags}/>
+                            <ProblemDetail problem={problem} tags={tags} />
                           </PopoverContent>
                         </Popover>
                       </>

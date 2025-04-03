@@ -68,6 +68,7 @@ const SigninForm: React.FC = () => {
     formState: { errors },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
+    mode: "onChange",
   });
 
   const mutation = useMutation<

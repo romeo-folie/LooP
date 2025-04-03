@@ -88,6 +88,7 @@ const SignupForm: React.FC = () => {
     formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
+    mode: "onChange",
   });
 
 
