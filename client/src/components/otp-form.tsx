@@ -29,6 +29,7 @@ import {
 import { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 
 interface VerifyOtpResponse {
   message: string;
@@ -63,8 +64,14 @@ const InputOTPForm: React.FC = () => {
     RequestValues
   >({
     mutationFn: async (otpData: RequestValues) => {
-      const { data } = await apiClient.post("/auth/verify-otp", otpData);
-      return data;
+      try {
+        const { data } = await apiClient.post("/auth/verify-otp", otpData);
+        return data;
+      } catch (error) {
+        logger.error("error submitting otp for verification ", error)
+        throw error;
+      }
+
     },
     onSuccess: ({ message, password_reset_token }) => {
       savePasswordResetToken(password_reset_token);
@@ -93,8 +100,14 @@ const InputOTPForm: React.FC = () => {
     ForgotPasswordFormValues
   >({
     mutationFn: async (emailData: ForgotPasswordFormValues) => {
-      const { data } = await apiClient.post("/auth/forgot-password", emailData);
-      return data;
+      try {
+        const { data } = await apiClient.post("/auth/forgot-password", emailData);
+        return data;
+      } catch (error) {
+        logger.error("error requesting otp resend", error);
+        throw error;
+      }
+
     },
     onSuccess: ({ message }) => {
       toast({

@@ -19,6 +19,7 @@ import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
 import { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-provider";
+import { logger } from "@/lib/logger";
 
 export interface ForgotPasswordResponse {
   message: string;
@@ -49,8 +50,14 @@ const ForgotPasswordForm: React.FC = () => {
     ForgotPasswordFormValues
   >({
     mutationFn: async (emailData: ForgotPasswordFormValues) => {
-      const { data } = await apiClient.post("/auth/forgot-password", emailData);
-      return data;
+      try {
+        const { data } = await apiClient.post("/auth/forgot-password", emailData);
+        return data;
+      } catch (error) {
+        logger.error("error submitting email", error);
+        throw error;
+      }
+
     },
     onSuccess: ({ message }) => {
       toast({

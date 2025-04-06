@@ -17,6 +17,7 @@ import {
   CredenzaHeader,
   CredenzaTitle,
 } from "@/components/credenza";
+import { logger } from "@/lib/logger";
 
 const reminderSchema = z.object({
   due_datetime: z
@@ -34,9 +35,14 @@ async function createReminder(
   apiClient: AxiosInstance
 ): Promise<ReminderResponse> {
   const payload = { due_datetime: formData.due_datetime };
+  try {
+    const { data } = await apiClient.post(`/reminders/${problemId}`, payload);
+    return data;
+  } catch (error) {
+    logger.error("error requesting reminder creation ", error);
+    throw error;
+  }
 
-  const { data } = await apiClient.post(`/reminders/${problemId}`, payload);
-  return data;
 }
 
 async function updateReminder(
@@ -45,9 +51,13 @@ async function updateReminder(
   apiClient: AxiosInstance
 ): Promise<ReminderResponse> {
   const payload = { due_datetime: formData.due_datetime };
-
-  const { data } = await apiClient.put(`/reminders/${reminder_id}`, payload);
-  return data;
+  try {
+    const { data } = await apiClient.put(`/reminders/${reminder_id}`, payload);
+    return data;
+  } catch (error) {
+    logger.error("error requesting reminder update ", error);
+    throw error;
+  }
 }
 
 interface ReminderDialogProps {
