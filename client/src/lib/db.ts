@@ -1,35 +1,107 @@
-import Dexie, { EntityTable} from 'dexie';
-import { ReminderResponse } from '@/pages/problems/ProblemDashboard';
+import Dexie, { EntityTable } from "dexie";
+import {
+  ProblemResponse,
+} from "@/pages/problems/ProblemDashboard";
 
-// TODO: Define a schema for the outbox that'll serve as a queue for local mutations that need to be synced when online
-// could get this to use the ProblemResponse type definition
-interface ProblemSchema {
-  id?: number;
-  problem_id?: number;
-  user_id: number;
-  name: string;
-  difficulty: string;
-  tags: string[];
-  date_solved: Date;
-  notes: string;
-  reminders: ReminderResponse[];
+enum ActionType {
+ Create = "Create",
+ Update = "Update",
+ Delete = "Delete",
 }
 
+enum StatusType {
+  Pending = "PENDING",
+  Failed = "FAILED",
+  Synced = "SYNCED",
+}
+
+enum ResourceType {
+  Problem = "Problem",
+  Reminder = "Reminder",
+}
+
+interface OutboxSchema {
+  id: number;
+  type: ActionType;
+  resource: ResourceType;
+  payload: object;
+  status: StatusType;
+  createdAt: string;
+  retryCount: number;
+  lastAttemptAt?: string;
+}
+
+// TODO: get this to use the ProblemResponse type definition
+// interface ProblemSchema {
+//   id?: number;
+//   problem_id?: number;
+//   user_id: number;
+//   name: string;
+//   difficulty: string;
+//   tags: string[];
+//   date_solved: Date;
+//   notes: string;
+//   reminders?: ReminderResponse[];
+//   isOffline?: number; // boolean
+// }
+export type ProblemSchema = Partial<ProblemResponse> & {
+  id?: number;
+  isOffline?: number;
+};
+
 export const db = new Dexie("loopDB") as Dexie & {
-  problems: EntityTable<ProblemSchema, 'id'>
+  problems: EntityTable<ProblemSchema, "id">;
+  outbox: EntityTable<OutboxSchema, "id">;
 };
 
 db.version(1).stores({
-  problems: "++id, &problem_id, user_id, name, difficulty, *tags, date_solved, notes, reminders",
-})
+  problems:
+    "++id, &problem_id, user_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline",
+  outbox:
+    "++id, type, resource, payload, status, createdAt, lastAttemptAt",
+});
 
-//TODO: clear db before bulk adding problems?
-export async function bulkAddProblems(problems: ProblemSchema[]): Promise<void> {
-  return await db.transaction('rw', db.problems, async () => {
+export async function bulkAddProblems(
+  problems: ProblemSchema[]
+): Promise<void> {
+  return await db.transaction("rw", db.problems, async () => {
     await db.problems.bulkAdd(problems);
-  })
+  });
+}
+
+export async function addProblem(problem: ProblemSchema): Promise<number> {
+  await db.problems.add(problem);
+  return await addOutboxEntry(ActionType.Create, ResourceType.Problem, problem);
+}
+
+export async function clearOldProblems(): Promise<number> {
+  return await db.problems.where("isOffline").equals(0).delete();
 }
 
 export async function getAllProblems(): Promise<ProblemSchema[]> {
-  return await db.problems.toArray()
+  return await db.problems.toArray();
+}
+
+export async function getProblem(
+  id: number
+): Promise<ProblemSchema | undefined> {
+  return await db.problems.get(id);
+}
+
+export async function updateProblemLocally(id: number, problem: ProblemSchema) {
+  await db.problems.update(id, problem);
+  return await addOutboxEntry(ActionType.Update, ResourceType.Problem, problem);
+}
+
+export async function addOutboxEntry(type: ActionType, resource: ResourceType, payload: object) {
+  const entry = {
+    type,
+    resource,
+    payload: { ...payload },
+    status: StatusType.Pending,
+    createdAt: new Date().toISOString(),
+    retryCount: 0,
+  };
+
+  return await db.outbox.add(entry);
 }

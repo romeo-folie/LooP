@@ -14,7 +14,7 @@ import browserStore from "@/lib/browser-storage";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
-  user_id: string;
+  user_id: number;
   name: string;
   email: string;
 }
