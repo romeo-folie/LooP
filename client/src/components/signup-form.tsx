@@ -20,6 +20,7 @@ import { AxiosError, AxiosInstance } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useAxios, APIErrorResponse } from "@/hooks/use-axios";
+import { logger } from "@/lib/logger";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -74,8 +75,14 @@ const signupUser = async (
   userCredentials: SignupFormValues,
   apiClient: AxiosInstance
 ): Promise<SignupResponse> => {
-  const response = await apiClient.post("/auth/register", userCredentials);
-  return response.data;
+  try {
+    const response = await apiClient.post("/auth/register", userCredentials);
+    return response.data;
+  } catch (error) {
+    logger.error("error signing up ", error)
+    throw error;
+  }
+
 };
 
 const SignupForm: React.FC = () => {

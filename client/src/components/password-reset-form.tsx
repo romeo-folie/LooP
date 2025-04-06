@@ -18,6 +18,7 @@ import { AxiosError } from "axios";
 import { useAuth } from "@/context/auth-provider";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "./password-input";
+import { logger } from "@/lib/logger";
 
 interface PasswordResetResponse {
   message: string;
@@ -66,11 +67,17 @@ const PasswordResetForm: React.FC = () => {
     RequestValues
   >({
     mutationFn: async (passwordResetData: RequestValues) => {
-      const { data } = await apiClient.post(
-        "/auth/reset-password",
-        passwordResetData
-      );
-      return data;
+      try {
+        const { data } = await apiClient.post(
+          "/auth/reset-password",
+          passwordResetData
+        );
+        return data;
+      } catch (error) {
+        logger.error("error requesting password reset ", error)
+        throw error;
+      }
+
     },
     onSuccess: ({ message }) => {
       toast({

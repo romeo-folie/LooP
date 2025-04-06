@@ -45,6 +45,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { startCase } from "lodash";
+import { logger } from "@/lib/logger";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
 
@@ -81,8 +82,14 @@ async function createProblem(
       ? format(formData.date_solved, "yyyy-MM-dd")
       : undefined,
   };
-  const { data } = await apiClient.post("/problems", payload);
-  return data;
+  try {
+    const { data } = await apiClient.post("/problems", payload);
+    return data;
+  } catch (error) {
+    logger.error("error requesting problem creation ", error)
+    throw error;
+  }
+
 }
 
 async function updateProblem(
@@ -96,8 +103,13 @@ async function updateProblem(
       ? format(formData.date_solved, "yyyy-MM-dd")
       : undefined,
   };
-  const { data } = await apiClient.put(`/problems/${problemId}`, payload);
-  return data;
+  try {
+    const { data } = await apiClient.put(`/problems/${problemId}`, payload);
+    return data;
+  } catch (error) {
+    logger.error("error requesting problem update ", error)
+    throw error;
+  }
 }
 
 // Props for the unified dialog

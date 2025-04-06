@@ -21,6 +21,7 @@ export function useAxios(): AxiosInstance {
       baseURL: import.meta.env.VITE_SERVER_URL,
       withCredentials: true,
       timeout: 5000,
+      timeoutErrorMessage: "Request timed out",
     });
 
     instance.interceptors.request.use((config) => {

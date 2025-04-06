@@ -90,16 +90,27 @@ const difficultyColors: Record<string, string> = {
 };
 
 const fetchProblems = async (apiClient: AxiosInstance) => {
-  const { data } = await apiClient.get("/problems");
-  return data;
+  try {
+    const { data } = await apiClient.get("/problems");
+    return data;
+  } catch (error) {
+    logger.error("error fetching problems ", error);
+    throw error;
+  }
 };
 
 const deleteProblem = async function (
   problem_id: number,
   apiClient: AxiosInstance
 ): Promise<APISuccessResponse> {
-  const { data } = await apiClient.delete(`/problems/${problem_id}`);
-  return data;
+  try {
+    const { data } = await apiClient.delete(`/problems/${problem_id}`);
+    return data;
+  } catch (error) {
+    logger.error("error requesting problem deletion ", error);
+    throw error;
+  }
+
 };
 
 export default function ProblemsDashboard() {

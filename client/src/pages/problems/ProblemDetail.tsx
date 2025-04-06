@@ -18,6 +18,7 @@ import { AxiosError, AxiosInstance } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { logger } from "@/lib/logger";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -30,8 +31,14 @@ const deleteReminder = async function (
   reminder_id: number,
   apiClient: AxiosInstance
 ): Promise<APISuccessResponse> {
-  const { data } = await apiClient.delete(`/reminders/${reminder_id}`);
-  return data;
+  try {
+    const { data } = await apiClient.delete(`/reminders/${reminder_id}`);
+    return data;
+  } catch (error) {
+    logger.error("error requesting reminder deletion ", error);
+    throw error;
+  }
+
 };
 
 interface ProblemDetailProps {
