@@ -50,7 +50,7 @@ import {
   CredenzaTrigger,
 } from "@/components/credenza";
 import { startCase } from "lodash";
-import { bulkAddProblems, getAllProblems } from "@/lib/db";
+import { bulkAddProblems, clearOldProblems, getAllProblems } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
@@ -64,14 +64,14 @@ export interface ReminderResponse {
   created_at: Date;
 }
 export interface ProblemResponse {
-  problem_id?: number; // set as optional due for compatibility with ProblemSchame in local DB
+  problem_id: number;
   user_id: number;
   name: string;
   difficulty: string;
   tags: string[];
   date_solved: Date;
   notes: string;
-  created_at?: Date;
+  created_at: Date;
   reminders: ReminderResponse[];
 }
 
@@ -89,8 +89,13 @@ const difficultyColors: Record<string, string> = {
   Hard: "bg-red-500",
 };
 
-const fetchProblems = async (apiClient: AxiosInstance) => {
+const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean) => {
   try {
+    if (!isOnline) {
+      const problems = await getAllProblems();
+      return { problems };
+    }
+
     const { data } = await apiClient.get("/problems");
     return data;
   } catch (error) {
@@ -110,7 +115,6 @@ const deleteProblem = async function (
     logger.error("error requesting problem deletion ", error);
     throw error;
   }
-
 };
 
 export default function ProblemsDashboard() {
@@ -118,7 +122,7 @@ export default function ProblemsDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const isOnline = useNetworkStatus();
+  const { isOnline } = useNetworkStatus();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
@@ -149,6 +153,11 @@ export default function ProblemsDashboard() {
       setShowNotificationRequestDialog(true);
     }
   }, []);
+
+  // trigger problems query on network status change
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["problems"] });
+  }, [isOnline, queryClient]);
 
   const handleDropdownOpen = (opened: boolean) => {
     if (opened && dropdownTriggerRef.current) {
@@ -192,33 +201,31 @@ export default function ProblemsDashboard() {
     AxiosError<APIErrorResponse>
   >({
     queryKey: ["problems"],
-    queryFn: () => fetchProblems(apiClient),
+    queryFn: () => fetchProblems(apiClient, isOnline),
     refetchOnWindowFocus: false,
   });
 
   let problems: ProblemResponse[] = [];
+
   if (isSuccess) {
     problems = data.problems;
-    bulkAddProblems(data.problems)
+    clearOldProblems()
       .then(() => {
-        logger.info("successfully added problems to local DB");
+        logger.info("sucessfully cleared old problems from local DB");
+        bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
+          .then(() => {
+            logger.info("successfully added problems to local DB");
+          })
+          .catch((error) => {
+            logger.error("error saving problems to local DB", error);
+          });
       })
-      .catch((error) => {
-        logger.error("error saving problems to local DB", error);
+      .catch(() => {
+        logger.error("error clearing old problems from local DB");
       });
   }
 
   if (isError) {
-    if (!isOnline) {
-      // load problems from indexedDB
-      getAllProblems()
-        .then((data) => {
-          problems = data;
-        })
-        .catch((error) => {
-          logger.error("error fetching problems from local DB", error);
-        });
-    }
     const message =
       error.response?.data?.message ||
       error.response?.data?.error ||
