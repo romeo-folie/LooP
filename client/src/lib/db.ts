@@ -3,19 +3,19 @@ import {
   ProblemResponse,
 } from "@/pages/problems/ProblemDashboard";
 
-enum ActionType {
- Create = "Create",
- Update = "Update",
- Delete = "Delete",
+export enum ActionType {
+ Create = "POST",
+ Update = "PUT",
+ Delete = "DELETE",
 }
 
-enum StatusType {
+export enum StatusType {
   Pending = "PENDING",
   Failed = "FAILED",
   Synced = "SYNCED",
 }
 
-enum ResourceType {
+export enum ResourceType {
   Problem = "Problem",
   Reminder = "Reminder",
 }
@@ -26,9 +26,9 @@ interface OutboxSchema {
   resource: ResourceType;
   payload: object;
   status: StatusType;
-  createdAt: string;
+  createdAt: number;
   retryCount: number;
-  lastAttemptAt?: string;
+  lastAttemptAt?: number;
 }
 
 // TODO: get this to use the ProblemResponse type definition
@@ -99,7 +99,7 @@ export async function addOutboxEntry(type: ActionType, resource: ResourceType, p
     resource,
     payload: { ...payload },
     status: StatusType.Pending,
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(),
     retryCount: 0,
   };
 

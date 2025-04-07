@@ -50,8 +50,8 @@ import {
   CredenzaTrigger,
 } from "@/components/credenza";
 import { startCase } from "lodash";
-import { bulkAddProblems, clearOldProblems, getAllProblems } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { bulkAddProblems, clearOldProblems, getAllProblems } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
 export interface ReminderResponse {
