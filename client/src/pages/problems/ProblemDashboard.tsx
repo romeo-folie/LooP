@@ -65,6 +65,7 @@ export interface ReminderResponse {
 }
 export interface ProblemResponse {
   problem_id: number;
+  local_id?: string;
   user_id: number;
   name: string;
   difficulty: string;
@@ -90,6 +91,7 @@ const difficultyColors: Record<string, string> = {
 };
 
 const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean) => {
+  logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
     if (!isOnline) {
       const problems = await getAllProblems();
@@ -99,7 +101,7 @@ const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean) => {
     const { data } = await apiClient.get("/problems");
     return data;
   } catch (error) {
-    logger.error("error fetching problems ", error);
+    logger.error(`error fetching problems ${error}`);
     throw error;
   }
 };
@@ -112,7 +114,7 @@ const deleteProblem = async function (
     const { data } = await apiClient.delete(`/problems/${problem_id}`);
     return data;
   } catch (error) {
-    logger.error("error requesting problem deletion ", error);
+    logger.error(`error requesting problem deletion ${error}`);
     throw error;
   }
 };
@@ -154,9 +156,9 @@ export default function ProblemsDashboard() {
     }
   }, []);
 
-  // trigger problems query on network status change
+  // trigger problems query when device goes offline
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["problems"] });
+    if (!isOnline) queryClient.invalidateQueries({ queryKey: ["problems"] });
   }, [isOnline, queryClient]);
 
   const handleDropdownOpen = (opened: boolean) => {
@@ -209,20 +211,23 @@ export default function ProblemsDashboard() {
 
   if (isSuccess) {
     problems = data.problems;
-    clearOldProblems()
-      .then(() => {
-        logger.info("sucessfully cleared old problems from local DB");
-        bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
-          .then(() => {
-            logger.info("successfully added problems to local DB");
-          })
-          .catch((error) => {
-            logger.error("error saving problems to local DB", error);
-          });
-      })
-      .catch(() => {
-        logger.error("error clearing old problems from local DB");
-      });
+    if (isOnline) {
+      logger.info("saving online problems locally");
+      clearOldProblems()
+        .then(() => {
+          logger.info("sucessfully cleared old problems from local DB");
+          bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
+            .then(() => {
+              logger.info("successfully added problems to local DB");
+            })
+            .catch((error) => {
+              logger.error(`error saving problems to local DB ${error}`);
+            });
+        })
+        .catch((error) => {
+          logger.error(`error clearing old problems from local DB ${error}`);
+        });
+    }
   }
 
   if (isError) {
@@ -459,7 +464,7 @@ export default function ProblemsDashboard() {
               <div className="border rounded-md">
                 {paginatedProblems.map((problem) => (
                   <div
-                    key={problem.problem_id}
+                    key={problem.problem_id ?? problem.local_id}
                     className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
                   >
                     {isDesktop ? (

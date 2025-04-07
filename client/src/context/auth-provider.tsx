@@ -11,20 +11,22 @@ import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 import browserStore from "@/lib/browser-storage";
+import { encrypt, generateKey } from "@/lib/web-crypto";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
   user_id: number;
   name: string;
   email: string;
+  token?: string | Uint8Array<ArrayBuffer>;
+  iv?: Uint8Array<ArrayBuffer>;
 }
 interface AuthContextType {
   accessToken: string | null;
   passwordResetToken: string | null;
   isAuthLoading: boolean;
   user: User | null;
-  userName: string | null;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   email: string | null;
   saveEmail: (email: string) => void;
   savePasswordResetToken: (token: string | null) => void;
@@ -47,8 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [passwordResetToken, setPasswordResetToken] = useState<string | null>(
     null
   );
-  const [user, setUser] = useState<User | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(() => browserStore.get("user"));
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const storedEmail = browserStore.get("forgotPasswordEmail");
@@ -58,16 +59,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
 
-  const getUserNameFromLocalStorage = useCallback(() => {
-    const storedName = browserStore.get("userName");
-    if (storedName) {
-      setUserName(storedName);
-    }
+  const encryptAccessToken = async function (token: string) {
+    const key = await generateKey();
+    const exportedKey = await window.crypto.subtle.exportKey("jwk", key);
+    browserStore.set("exportedKey", exportedKey);
+    const { iv, ciphertext } = await encrypt(token, key);
+    return { iv, token: ciphertext };
+  };
+
+  const saveUserLocally = useCallback(async function (user: User) {
+    const { iv, token } = await encryptAccessToken(user.token as string);
+    user = Object.assign({ ...user }, { token, iv });
+    browserStore.set("user", user);
   }, []);
+
+  const updateLocalToken = useCallback(
+    async function (token: string) {
+      let user = browserStore.get("user");
+      if (!user) return;
+
+      user = Object.assign({ ...user }, { token });
+      saveUserLocally(user);
+    },
+    [saveUserLocally]
+  );
 
   const localLogout = useCallback(() => {
     setAccessToken(null);
-    setUserName(null);
     navigate("/auth?tab=sign-in");
   }, [navigate]);
 
@@ -82,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newToken = response.data.token;
       if (newToken) {
         setAccessToken(newToken);
+        updateLocalToken(newToken);
       }
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
@@ -94,11 +113,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logger.error(message);
       setAccessToken(null);
       setUser(null);
-      setUserName(null);
     } finally {
       setIsAuthLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, updateLocalToken]);
 
   useEffect(() => {
     bc.onmessage = (event) => {
@@ -122,9 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           const decoded = decodeURIComponent(encodedUser);
           const userObj = JSON.parse(decoded);
+          // TODO: INSPECT USER OBJECT HERE
           setUser(userObj);
-          setUserName(userObj.name);
-          browserStore.set("userName", userObj.name);
         } catch (error: unknown) {
           const message =
             error instanceof AxiosError
@@ -147,6 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         {},
         { withCredentials: true }
       );
+      setUser(null);
+      browserStore.set("user", "");
     } catch (error: unknown) {
       const message =
         error instanceof AxiosError
@@ -159,11 +178,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [bc, localLogout]);
 
-  const login = (token: string, user: User) => {
-    setAccessToken(token);
+  const login = (user: User) => {
+    setAccessToken(user.token as string);
     setUser(user);
-    setUserName(user.name);
-    browserStore.set("userName", user.name);
+    saveUserLocally(user);
     bc.postMessage({ type: "LOGIN" });
   };
 
@@ -179,8 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // On mount/new tab => try to get an access token using refresh cookie
     refreshToken();
-    getUserNameFromLocalStorage();
-  }, [refreshToken, getUserNameFromLocalStorage]);
+  }, [refreshToken]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -212,7 +229,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     email,
-    userName,
     accessToken,
     isAuthLoading,
     passwordResetToken,

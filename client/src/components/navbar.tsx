@@ -15,7 +15,7 @@ import NotificationCard from "./notification-card";
 import { useNotifications } from "@/context/notification-provider";
 
 export default function Navbar() {
-  const { userName, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { notificationLength } = useNotifications();
   const { isDark, toggleTheme } = useTheme();
 
@@ -68,7 +68,7 @@ export default function Navbar() {
             <Button variant="ghost" className="p-0 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
-                  {userName?.charAt(0).toUpperCase() ?? "U"}
+                  {user?.name?.charAt(0).toUpperCase() ?? "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>

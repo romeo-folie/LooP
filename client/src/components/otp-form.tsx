@@ -68,7 +68,7 @@ const InputOTPForm: React.FC = () => {
         const { data } = await apiClient.post("/auth/verify-otp", otpData);
         return data;
       } catch (error) {
-        logger.error("error submitting otp for verification ", error)
+        logger.error(`error submitting otp for verification ${error}`)
         throw error;
       }
 
@@ -104,7 +104,7 @@ const InputOTPForm: React.FC = () => {
         const { data } = await apiClient.post("/auth/forgot-password", emailData);
         return data;
       } catch (error) {
-        logger.error("error requesting otp resend", error);
+        logger.error(`error requesting otp resend ${error}`);
         throw error;
       }
 

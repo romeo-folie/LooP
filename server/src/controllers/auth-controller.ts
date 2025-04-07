@@ -112,11 +112,11 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Login successful",
-      token,
       user: {
         user_id: existingUser.user_id,
         name: existingUser.name,
         email: existingUser.email,
+        token,
       },
     });
   } catch (error: unknown) {

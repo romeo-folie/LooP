@@ -26,7 +26,7 @@ export const useNetworkStatus = () => {
 }
 
 export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => {
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -36,11 +36,11 @@ export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => 
     }
 
     const handleOffline = () => {
+      logger.info("device offline");
       setIsOnline(false)
     }
 
     window.addEventListener("online", handleOnline)
-
     window.addEventListener("offline", handleOffline)
 
     return () => { 

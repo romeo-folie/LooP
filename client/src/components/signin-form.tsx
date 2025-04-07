@@ -54,7 +54,7 @@ const signInUser = async (
     const response = await apiClient.post("/auth/login", userCredentials);
     return response.data;
   } catch (error) {
-    logger.error("error logging in ", error)
+    logger.error(`error logging in ${error}`)
     throw error;
   }
 };
@@ -85,7 +85,7 @@ const SigninForm: React.FC = () => {
     mutationFn: (userCredentials: SignInFormValues) =>
       signInUser(userCredentials, apiClient),
     onSuccess: (data) => {
-      login(data.token, data.user);
+      login(data.user);
 
       toast({ title: "Success", description: "Signed in successfully!" });
       navigate("/");

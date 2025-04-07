@@ -54,7 +54,7 @@ const ForgotPasswordForm: React.FC = () => {
         const { data } = await apiClient.post("/auth/forgot-password", emailData);
         return data;
       } catch (error) {
-        logger.error("error submitting email", error);
+        logger.error(`error submitting email ${error}`);
         throw error;
       }
 

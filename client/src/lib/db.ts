@@ -31,19 +31,6 @@ interface OutboxSchema {
   lastAttemptAt?: number;
 }
 
-// TODO: get this to use the ProblemResponse type definition
-// interface ProblemSchema {
-//   id?: number;
-//   problem_id?: number;
-//   user_id: number;
-//   name: string;
-//   difficulty: string;
-//   tags: string[];
-//   date_solved: Date;
-//   notes: string;
-//   reminders?: ReminderResponse[];
-//   isOffline?: number; // boolean
-// }
 export type ProblemSchema = Partial<ProblemResponse> & {
   id?: number;
   isOffline?: number;
@@ -65,7 +52,7 @@ export async function bulkAddProblems(
   problems: ProblemSchema[]
 ): Promise<void> {
   return await db.transaction("rw", db.problems, async () => {
-    await db.problems.bulkAdd(problems);
+    await db.problems.bulkPut(problems);
   });
 }
 
