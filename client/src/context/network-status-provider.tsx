@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { logger } from "@/lib/logger";
 
 interface NetworkStatusContextType {
   isOnline: boolean;
@@ -29,7 +30,9 @@ export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => 
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true)
+      setIsOnline(true);
+      logger.info("triggered outbox sync");
+      navigator.serviceWorker.controller?.postMessage({ type: "SYNC_OUTBOX" });
     }
 
     const handleOffline = () => {
