@@ -49,11 +49,9 @@ import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import {
   addProblem,
-  getProblem,
   ProblemSchema,
-  updateProblemLocally,
 } from "@/lib/db";
-import { useAuth } from "@/context/auth-provider";
+// import { useAuth } from "@/context/auth-provider";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
 
@@ -77,12 +75,13 @@ export type ProblemFormData = z.infer<typeof problemSchema>;
 
 interface ProblemResponseData {
   message: string;
-  problem: ProblemResponse;
+  problem: ProblemResponse | ProblemSchema;
 }
 
 async function createProblem(
   formData: ProblemFormData,
-  apiClient: AxiosInstance
+  apiClient: AxiosInstance,
+  isOnline: boolean
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -91,10 +90,18 @@ async function createProblem(
       : undefined,
   };
   try {
+    if (!isOnline) {
+      const localProblem = { ...payload, isOffline: 1, local_id: `offline-${Date.now()}` } as ProblemSchema;
+      await addProblem(localProblem);
+      return {
+        message: "Problem created offline",
+        problem: localProblem,
+      };
+    }
     const { data } = await apiClient.post("/problems", payload);
     return data;
   } catch (error) {
-    logger.error("error requesting problem creation ", error);
+    logger.error(`error requesting problem creation ${error}`);
     throw error;
   }
 }
@@ -114,7 +121,7 @@ async function updateProblem(
     const { data } = await apiClient.put(`/problems/${problemId}`, payload);
     return data;
   } catch (error) {
-    logger.error("error requesting problem update ", error);
+    logger.error(`error requesting problem update ${error}`);
     throw error;
   }
 }
@@ -138,7 +145,6 @@ export default function ProblemFormDialog({
   const apiClient = useAxios();
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
-  const { user } = useAuth();
 
   // We use a single schema for both new & edit
   // We'll set defaultValues based on `problem` if mode=edit
@@ -207,7 +213,7 @@ export default function ProblemFormDialog({
       if (mode === "edit" && problem) {
         return updateProblem(problem.problem_id as number, formData, apiClient);
       } else {
-        return createProblem(formData, apiClient);
+        return createProblem(formData, apiClient, isOnline);
       }
     },
     onSuccess: ({ message }) => {
@@ -220,39 +226,7 @@ export default function ProblemFormDialog({
         description: message,
       });
     },
-    onError: (error, variables) => {
-      if (!isOnline) {
-        if (mode === "new") {
-          logger.info("saving problem offline");
-          addProblem({ ...variables, user_id: user!.user_id, isOffline: 1 })
-            .then(() => {
-              logger.info("saved problem offline successfully");
-              queryClient.invalidateQueries({ queryKey: ["problems"] });
-            })
-            .catch((error) => {
-              logger.error("error saving problem offline", error);
-            });
-        } else {
-          getProblem((problem as ProblemSchema)?.id as number)
-            .then((prob) => {
-              logger.info("attempting to update problem locally");
-              if (prob && prob.id) {
-                const problemToEdit = { ...prob, ...variables, isOffline: 1 };
-                updateProblemLocally(problemToEdit.id!, problemToEdit)
-                  .then(() => {
-                    logger.info("successfully updated problem locally");
-                    queryClient.invalidateQueries({ queryKey: ["problems"] });
-                  })
-                  .catch(() => {
-                    logger.error("failed to update problem locally");
-                  });
-              }
-            })
-            .catch((error) => {
-              logger.error("error fetching problem locally", error);
-            });
-        }
-      }
+    onError: (error) => {
       onOpenChange(false);
       reset();
       setInputValue("");

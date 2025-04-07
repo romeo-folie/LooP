@@ -79,7 +79,7 @@ const signupUser = async (
     const response = await apiClient.post("/auth/register", userCredentials);
     return response.data;
   } catch (error) {
-    logger.error("error signing up ", error)
+    logger.error(`error signing up ${error}`)
     throw error;
   }
 

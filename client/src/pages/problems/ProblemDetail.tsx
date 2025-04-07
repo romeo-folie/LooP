@@ -35,7 +35,7 @@ const deleteReminder = async function (
     const { data } = await apiClient.delete(`/reminders/${reminder_id}`);
     return data;
   } catch (error) {
-    logger.error("error requesting reminder deletion ", error);
+    logger.error(`error requesting reminder deletion ${error}`);
     throw error;
   }
 

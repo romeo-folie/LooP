@@ -39,7 +39,7 @@ async function createReminder(
     const { data } = await apiClient.post(`/reminders/${problemId}`, payload);
     return data;
   } catch (error) {
-    logger.error("error requesting reminder creation ", error);
+    logger.error(`error requesting reminder creation ${error}`);
     throw error;
   }
 
@@ -55,7 +55,7 @@ async function updateReminder(
     const { data } = await apiClient.put(`/reminders/${reminder_id}`, payload);
     return data;
   } catch (error) {
-    logger.error("error requesting reminder update ", error);
+    logger.error(`error requesting reminder update ${error}`);
     throw error;
   }
 }

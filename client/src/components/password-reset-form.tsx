@@ -74,7 +74,7 @@ const PasswordResetForm: React.FC = () => {
         );
         return data;
       } catch (error) {
-        logger.error("error requesting password reset ", error)
+        logger.error(`error requesting password reset ${error}`)
         throw error;
       }
 
