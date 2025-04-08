@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 import browserStore from "@/lib/browser-storage";
 import { encrypt, generateKey } from "@/lib/web-crypto";
+import { getMeta, setMeta } from "@/lib/db";
+import { getCsrfToken } from "@/lib/cookies";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
@@ -20,9 +22,11 @@ export interface User {
   email: string;
   token?: string | Uint8Array<ArrayBuffer>;
   iv?: Uint8Array<ArrayBuffer>;
+  csrfToken?: string | null;
 }
 interface AuthContextType {
   accessToken: string | null;
+  csrfToken: string | null,
   passwordResetToken: string | null;
   isAuthLoading: boolean;
   user: User | null;
@@ -46,10 +50,11 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [passwordResetToken, setPasswordResetToken] = useState<string | null>(
     null
   );
-  const [user, setUser] = useState<User | null>(() => browserStore.get("user"));
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const storedEmail = browserStore.get("forgotPasswordEmail");
@@ -57,29 +62,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    async function retrieveLocalUser() {
+      try {
+        const storedUser = await getMeta("user");
+        if (!storedUser) throw new Error("Failed to retrieve local user");
+        setUser(storedUser as User);
+      } catch (error) {
+        logger.error(`Error setting user in app memory ${error}`);
+      }
+    }
+
+    retrieveLocalUser();
+  }, []);
+
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
 
   const encryptAccessToken = async function (token: string) {
-    const key = await generateKey();
-    const exportedKey = await window.crypto.subtle.exportKey("jwk", key);
-    browserStore.set("exportedKey", exportedKey);
-    const { iv, ciphertext } = await encrypt(token, key);
-    return { iv, token: ciphertext };
+    try {
+      const key = await generateKey();
+      const exportedKey = await window.crypto.subtle.exportKey("jwk", key);
+      await setMeta("exportedKey", exportedKey);
+      const { iv, ciphertext } = await encrypt(token, key);
+      return { iv, token: ciphertext };
+    } catch (error) {
+      logger.error(`Error encrypting access token ${error}`);
+    }
   };
 
   const saveUserLocally = useCallback(async function (user: User) {
-    const { iv, token } = await encryptAccessToken(user.token as string);
-    user = Object.assign({ ...user }, { token, iv });
-    browserStore.set("user", user);
+    try {
+      const encryptedData = await encryptAccessToken(user.token as string);
+      if (!encryptedData) throw new Error("Failed to encrypt access token");
+      user = Object.assign(
+        { ...user },
+        { token: encryptedData.token, iv: encryptedData.iv }
+      );
+      await setMeta("user", user);
+    } catch (error) {
+      logger.error(`Error saving user locally ${error}`);
+    }
   }, []);
 
   const updateLocalToken = useCallback(
-    async function (token: string) {
-      let user = browserStore.get("user");
-      if (!user) return;
-
-      user = Object.assign({ ...user }, { token });
-      saveUserLocally(user);
+    async function (token: string, csrf: string) {
+      try {
+        let user = await getMeta("user");
+        if (!user) throw new Error("Failed to retrieve local user");
+        user = Object.assign({ ...user }, { token, csrfToken: csrf });
+        saveUserLocally(user as User);
+      } catch (error) {
+        logger.error(`Error updating local token ${error}`);
+      }
     },
     [saveUserLocally]
   );
@@ -99,8 +133,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
       const newToken = response.data.token;
       if (newToken) {
+        const csrf = getCsrfToken();
         setAccessToken(newToken);
-        updateLocalToken(newToken);
+        setCsrfToken(csrf);
+        updateLocalToken(newToken, csrf as string);
       }
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
@@ -165,7 +201,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { withCredentials: true }
       );
       setUser(null);
-      browserStore.set("user", "");
+      setMeta("user", null)
+      setMeta("exportedKey", null)
     } catch (error: unknown) {
       const message =
         error instanceof AxiosError
@@ -181,6 +218,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = (user: User) => {
     setAccessToken(user.token as string);
     setUser(user);
+    // TODO: get csrf token, set on user object and in memory
+    const csrfToken = getCsrfToken();
+    setCsrfToken(csrfToken);
+    user.csrfToken = csrfToken;
     saveUserLocally(user);
     bc.postMessage({ type: "LOGIN" });
   };
@@ -230,6 +271,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     email,
     accessToken,
+    csrfToken,
     isAuthLoading,
     passwordResetToken,
     login,
