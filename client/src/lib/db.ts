@@ -1,12 +1,10 @@
 import Dexie, { EntityTable } from "dexie";
-import {
-  ProblemResponse,
-} from "@/pages/problems/ProblemDashboard";
+import { ProblemResponse } from "@/pages/problems/ProblemDashboard";
 
 export enum ActionType {
- Create = "POST",
- Update = "PUT",
- Delete = "DELETE",
+  Create = "POST",
+  Update = "PUT",
+  Delete = "DELETE",
 }
 
 export enum StatusType {
@@ -31,6 +29,11 @@ interface OutboxSchema {
   lastAttemptAt?: number;
 }
 
+interface MetaSchema {
+  key: string;
+  value: unknown;
+}
+
 export type ProblemSchema = Partial<ProblemResponse> & {
   id?: number;
   isOffline?: number;
@@ -39,13 +42,14 @@ export type ProblemSchema = Partial<ProblemResponse> & {
 export const db = new Dexie("loopDB") as Dexie & {
   problems: EntityTable<ProblemSchema, "id">;
   outbox: EntityTable<OutboxSchema, "id">;
+  meta: EntityTable<MetaSchema, "key">;
 };
 
 db.version(1).stores({
   problems:
     "++id, &problem_id, user_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline",
-  outbox:
-    "++id, type, resource, payload, status, createdAt, lastAttemptAt",
+  outbox: "++id, type, resource, payload, status, createdAt, lastAttemptAt",
+  meta: "key",
 });
 
 export async function bulkAddProblems(
@@ -80,7 +84,11 @@ export async function updateProblemLocally(id: number, problem: ProblemSchema) {
   return await addOutboxEntry(ActionType.Update, ResourceType.Problem, problem);
 }
 
-export async function addOutboxEntry(type: ActionType, resource: ResourceType, payload: object) {
+export async function addOutboxEntry(
+  type: ActionType,
+  resource: ResourceType,
+  payload: object
+) {
   const entry = {
     type,
     resource,
@@ -91,4 +99,13 @@ export async function addOutboxEntry(type: ActionType, resource: ResourceType, p
   };
 
   return await db.outbox.add(entry);
+}
+
+export async function setMeta<T>(key: string, value: T) {
+  return await db.meta.put({ key, value });
+}
+
+export async function getMeta<T>(key: string): Promise<T | undefined> {
+  const record = await db.meta.get(key);
+  return record?.value as T | undefined;
 }

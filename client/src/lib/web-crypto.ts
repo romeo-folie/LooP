@@ -1,6 +1,6 @@
 // Generate an AES-GCM key (256-bit)
 export async function generateKey(): Promise<CryptoKey> {
-  return await window.crypto.subtle.generateKey(
+  return await crypto.subtle.generateKey(
     {
       name: "AES-GCM",
       length: 256,
@@ -24,10 +24,10 @@ export async function encrypt(
   const data = encoder.encode(plaintext);
 
   // Generate a random initialization vector; 12 bytes is recommended for AES-GCM.
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
   // Encrypt the data
-  const encryptedBuffer = await window.crypto.subtle.encrypt(
+  const encryptedBuffer = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
       iv, // use the generated IV
@@ -53,7 +53,7 @@ export async function decrypt(
   key: CryptoKey
 ): Promise<string> {
   // Decrypt the data using the same IV and key
-  const decryptedBuffer = await window.crypto.subtle.decrypt(
+  const decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
       iv, // must be the same IV used during encryption

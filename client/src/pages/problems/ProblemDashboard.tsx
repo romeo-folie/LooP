@@ -90,7 +90,7 @@ const difficultyColors: Record<string, string> = {
   Hard: "bg-red-500",
 };
 
-const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean) => {
+const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean, lastFetchRef: React.RefObject<number>) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
     if (!isOnline) {
@@ -99,11 +99,12 @@ const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean) => {
     }
 
     const { data } = await apiClient.get("/problems");
+    lastFetchRef.current = Date.now();
     return data;
   } catch (error) {
     logger.error(`error fetching problems ${error}`);
     throw error;
-  }
+  } 
 };
 
 const deleteProblem = async function (
@@ -146,6 +147,8 @@ export default function ProblemsDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
     useState(false);
+  const lastLocalUpdateRef = useRef<number>(0);
+  const lastFetchRef = useRef<number>(0);
 
   useEffect(() => {
     // Check localStorage for user’s notification preference
@@ -155,11 +158,6 @@ export default function ProblemsDashboard() {
       setShowNotificationRequestDialog(true);
     }
   }, []);
-
-  // trigger problems query when device goes offline
-  useEffect(() => {
-    if (!isOnline) queryClient.invalidateQueries({ queryKey: ["problems"] });
-  }, [isOnline, queryClient]);
 
   const handleDropdownOpen = (opened: boolean) => {
     if (opened && dropdownTriggerRef.current) {
@@ -198,26 +196,33 @@ export default function ProblemsDashboard() {
   };
 
   // Problem Dashboard
-  const { data, isLoading, isError, isSuccess, error } = useQuery<
-    { problems: ProblemResponse[] },
-    AxiosError<APIErrorResponse>
-  >({
-    queryKey: ["problems"],
-    queryFn: () => fetchProblems(apiClient, isOnline),
-    refetchOnWindowFocus: false,
-  });
+  const { data, isLoading, isError, isSuccess, error, refetch } =
+    useQuery<{ problems: ProblemResponse[] }, AxiosError<APIErrorResponse>>({
+      queryKey: ["problems"],
+      queryFn: () => fetchProblems(apiClient, isOnline, lastFetchRef),
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+    });
+
+  // trigger problems query when device goes offline
+  useEffect(() => {
+    if (!isOnline) {
+      refetch();
+    }
+  }, [isOnline, refetch]);
 
   let problems: ProblemResponse[] = [];
 
   if (isSuccess) {
     problems = data.problems;
-    if (isOnline) {
-      logger.info("saving online problems locally");
+    if (isOnline && lastFetchRef.current > lastLocalUpdateRef.current) {
+      logger.info("saving problems locally");
       clearOldProblems()
         .then(() => {
           logger.info("sucessfully cleared old problems from local DB");
           bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
             .then(() => {
+              lastLocalUpdateRef.current = Date.now();
               logger.info("successfully added problems to local DB");
             })
             .catch((error) => {

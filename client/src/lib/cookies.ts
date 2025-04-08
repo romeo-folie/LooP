@@ -1,4 +1,4 @@
-export function getCookieValue(cookieName: string): string | undefined {
+export function getCookieValue(cookieName: string): string | null {
   const allCookies = document.cookie.split("; ");
 
   for (const cookie of allCookies) {
@@ -8,9 +8,9 @@ export function getCookieValue(cookieName: string): string | undefined {
     }
   }
 
-  return undefined;
+  return null;
 }
 
-export function getCsrfToken(): string | undefined {
+export function getCsrfToken(): string | null {
   return getCookieValue("XSRF-TOKEN");
 }

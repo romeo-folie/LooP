@@ -1,17 +1,17 @@
-import { createAxiosInstance } from "@/hooks/use-axios";
-import { ActionType, db, ResourceType, StatusType } from "./db";
+import { createAxiosInstance } from "@/lib/api-client";
+import { ActionType, db, getMeta, ResourceType, StatusType } from "./db";
 import { logger } from "./logger";
-import browserStore from "./browser-storage";
 import { decrypt } from "./web-crypto";
+import { User } from "@/context/auth-provider";
 
 export default async function syncOutbox() {
   const records = await db.outbox.toArray();
   logger.info(`outbox record count: ${records.length}`);
+  if (!records.length) return;
 
-  const accessToken = await retrieveToken();
-  logger.info("decrypted access token ", accessToken);
-  const axiosInstance = createAxiosInstance(accessToken);
-  logger.info(`AXIOS INSTANCE ${axiosInstance.defaults}`);
+  const tokens = await retrieveTokens();
+  if (!tokens) return;
+  const axiosInstance = createAxiosInstance(tokens.accessToken, tokens.csrfToken);
 
   for (const record of records) {
     const { type, resource, retryCount, lastAttemptAt } = record;
@@ -25,6 +25,7 @@ export default async function syncOutbox() {
       await axiosInstance({
         method,
         url,
+        data: record.payload,
       });
       await db.outbox.delete(record.id);
       logger.info(
@@ -32,7 +33,9 @@ export default async function syncOutbox() {
       );
     } catch (error) {
       logger.error(
-        `failed to sync ${resource as string} with id ${record.id}, error: ${error}`,
+        `failed to sync ${resource as string} with id ${
+          record.id
+        }, error: ${error}`
       );
       await db.outbox.update(record.id, {
         ...record,
@@ -51,23 +54,27 @@ function getRoute(type: ActionType, resource: ResourceType) {
   };
 }
 
-async function retrieveToken() {
-  const user = browserStore.get("user");
-  const key = browserStore.get("exportedKey");
-  const decryptionKey = await window.crypto.subtle.importKey(
-    "jwk",
-    key,
-    {
-      name: "AES-GCM",
-      length: 256,
-    },
-    false,
-    ["encrypt", "decrypt"]
-  );
-  const token = await decrypt(
-    { iv: user.iv, ciphertext: user.token },
-    decryptionKey
-  );
-  logger.info(`Decrypted access token ${token}`);
-  return token;
+async function retrieveTokens() {
+  try {
+    const user = (await getMeta("user")) as User;
+    const key = await getMeta("exportedKey");
+    if (!user || !key) throw new Error("Failed to retrieve local user and key");
+    const decryptionKey = await crypto.subtle.importKey(
+      "jwk",
+      key,
+      {
+        name: "AES-GCM",
+        length: 256,
+      },
+      true,
+      ["encrypt", "decrypt"]
+    );
+    const token = await decrypt(
+      { iv: user.iv!, ciphertext: user.token as Uint8Array<ArrayBuffer> },
+      decryptionKey
+    );
+    return { accessToken: token, csrfToken: user.csrfToken as string };
+  } catch (error) {
+    logger.error(`Error retrieving token for background sync ${error}`);
+  }
 }
