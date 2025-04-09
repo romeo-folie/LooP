@@ -1,5 +1,6 @@
 import Dexie, { EntityTable } from "dexie";
-import { ProblemResponse } from "@/pages/problems/ProblemDashboard";
+import { ProblemResponse, ReminderResponse } from "@/pages/problems/ProblemDashboard";
+import { isString } from "lodash";
 
 export enum ActionType {
   Create = "POST",
@@ -18,11 +19,23 @@ export enum ResourceType {
   Reminder = "Reminder",
 }
 
+interface SchemaDefaults {
+  id?: number;
+  isOffline?: number;
+}
+
+export type ProblemSchema = Partial<ProblemResponse> & SchemaDefaults;
+
+export type ReminderSchema = Partial<ReminderResponse> & SchemaDefaults;
+
+type Payload = ProblemSchema | ReminderSchema;
+
 interface OutboxSchema {
   id: number;
   type: ActionType;
   resource: ResourceType;
-  payload: object;
+  resourceId: string | number;
+  payload: Payload;
   status: StatusType;
   createdAt: number;
   retryCount: number;
@@ -34,11 +47,6 @@ interface MetaSchema {
   value: unknown;
 }
 
-export type ProblemSchema = Partial<ProblemResponse> & {
-  id?: number;
-  isOffline?: number;
-};
-
 export const db = new Dexie("loopDB") as Dexie & {
   problems: EntityTable<ProblemSchema, "id">;
   outbox: EntityTable<OutboxSchema, "id">;
@@ -47,8 +55,8 @@ export const db = new Dexie("loopDB") as Dexie & {
 
 db.version(1).stores({
   problems:
-    "++id, &problem_id, user_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline",
-  outbox: "++id, type, resource, payload, status, createdAt, lastAttemptAt",
+    "++id, &problem_id, user_id, local_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline",
+  outbox: "++id, type, resource, resourceId, payload, status, createdAt, lastAttemptAt",
   meta: "key",
 });
 
@@ -56,13 +64,23 @@ export async function bulkAddProblems(
   problems: ProblemSchema[]
 ): Promise<void> {
   return await db.transaction("rw", db.problems, async () => {
-    await db.problems.bulkPut(problems);
+    await db.problems.bulkAdd(problems);
   });
 }
 
-export async function addProblem(problem: ProblemSchema): Promise<number> {
+export async function addLocalProblem(problem: ProblemSchema): Promise<number> {
   await db.problems.add(problem);
-  return await addOutboxEntry(ActionType.Create, ResourceType.Problem, problem);
+  return await addOutboxEntry(ActionType.Create, ResourceType.Problem, problem as Payload);
+}
+
+export async function getLocalProblem(id: string | number) {
+  return await db.problems.where(isString(id) ? "local_id" : "problem_id").equals(id).first();
+}
+
+export async function updateLocalProblem(problem: ProblemSchema) {
+  await db.problems.update(problem.id, problem);
+  if (problem.problem_id) return await addOutboxEntry(ActionType.Update, ResourceType.Problem, problem);
+  return await updateOutboxPayload(problem.local_id as string, problem as Payload);
 }
 
 export async function clearOldProblems(): Promise<number> {
@@ -73,25 +91,15 @@ export async function getAllProblems(): Promise<ProblemSchema[]> {
   return await db.problems.toArray();
 }
 
-export async function getProblem(
-  id: number
-): Promise<ProblemSchema | undefined> {
-  return await db.problems.get(id);
-}
-
-export async function updateProblemLocally(id: number, problem: ProblemSchema) {
-  await db.problems.update(id, problem);
-  return await addOutboxEntry(ActionType.Update, ResourceType.Problem, problem);
-}
-
 export async function addOutboxEntry(
   type: ActionType,
   resource: ResourceType,
-  payload: object
+  payload: Payload
 ) {
   const entry = {
     type,
     resource,
+    resourceId: payload.local_id as string || payload.problem_id as number,
     payload: { ...payload },
     status: StatusType.Pending,
     createdAt: Date.now(),
@@ -99,6 +107,15 @@ export async function addOutboxEntry(
   };
 
   return await db.outbox.add(entry);
+}
+
+export async function getOutboxEntry(resourceId: string | number) {
+  return await db.outbox.where("resourceId").equals(resourceId).first();
+}
+
+export async function updateOutboxPayload(resourceId: string, payload: Payload) {
+  const record = await getOutboxEntry(resourceId);
+  return await db.outbox.update(record?.id as number, { ...record, payload })
 }
 
 export async function setMeta<T>(key: string, value: T) {

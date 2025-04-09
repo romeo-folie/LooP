@@ -11,11 +11,14 @@ export default async function syncOutbox() {
 
   const tokens = await retrieveTokens();
   if (!tokens) return;
-  const axiosInstance = createAxiosInstance(tokens.accessToken, tokens.csrfToken);
+  const axiosInstance = createAxiosInstance(
+    tokens.accessToken,
+    tokens.csrfToken
+  );
 
   for (const record of records) {
-    const { type, resource, retryCount, lastAttemptAt } = record;
-    const { method, url } = getRoute(type, resource);
+    const { type, resource, resourceId, retryCount, lastAttemptAt } = record;
+    const { method, url } = getRoute(type, resource, resourceId);
     const delay = Math.min(2 ** retryCount * 1000, 60000);
     const now = Date.now();
 
@@ -47,7 +50,22 @@ export default async function syncOutbox() {
   }
 }
 
-function getRoute(type: ActionType, resource: ResourceType) {
+function getRoute(
+  type: ActionType,
+  resource: ResourceType,
+  resourceId: number | string,
+) {
+  // the update action is only performed on entities with DB assigned IDs
+  if (type === ActionType.Update) {
+    return {
+      url:
+        resource === ResourceType.Problem
+          ? `/problems/${resourceId as number}`
+          : `/reminders/${resourceId as number}`,
+      method: type,
+    };
+  }
+
   return {
     url: resource === ResourceType.Problem ? "/problems" : "/reminders",
     method: type,

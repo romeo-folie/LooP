@@ -58,6 +58,7 @@ export interface ReminderResponse {
   message?: string;
   reminder_id: number;
   problem_id: number;
+  local_id?: string;
   due_datetime: Date;
   is_sent: boolean;
   sent_at: Date;
@@ -90,7 +91,11 @@ const difficultyColors: Record<string, string> = {
   Hard: "bg-red-500",
 };
 
-const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean, lastFetchRef: React.RefObject<number>) => {
+const fetchProblems = async (
+  apiClient: AxiosInstance,
+  isOnline: boolean,
+  lastFetchRef: React.RefObject<number>
+) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
     if (!isOnline) {
@@ -104,7 +109,7 @@ const fetchProblems = async (apiClient: AxiosInstance, isOnline: boolean, lastFe
   } catch (error) {
     logger.error(`error fetching problems ${error}`);
     throw error;
-  } 
+  }
 };
 
 const deleteProblem = async function (
@@ -196,13 +201,15 @@ export default function ProblemsDashboard() {
   };
 
   // Problem Dashboard
-  const { data, isLoading, isError, isSuccess, error, refetch } =
-    useQuery<{ problems: ProblemResponse[] }, AxiosError<APIErrorResponse>>({
-      queryKey: ["problems"],
-      queryFn: () => fetchProblems(apiClient, isOnline, lastFetchRef),
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-    });
+  const { data, isLoading, isError, isSuccess, error, refetch } = useQuery<
+    { problems: ProblemResponse[] },
+    AxiosError<APIErrorResponse>
+  >({
+    queryKey: ["problems"],
+    queryFn: () => fetchProblems(apiClient, isOnline, lastFetchRef),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
   // trigger problems query when device goes offline
   useEffect(() => {
@@ -243,6 +250,20 @@ export default function ProblemsDashboard() {
     toast({ title: "Error", description: message, variant: "destructive" });
   }
 
+  // retrieve all problem tags
+  let tags: string[] = [];
+  if (problems.length) {
+    tags = problems.reduce((accumulator: string[], problem) => {
+      accumulator.push(
+        ...problem.tags
+          .filter((tag) => !accumulator.includes(tag))
+      );
+      return accumulator;
+    }, []);
+  } else {
+    tags = ["Array", "HashMap", "Sliding Window", "Heap", "Linked List"];
+  }
+
   const mutation = useMutation<
     APISuccessResponse,
     AxiosError<APIErrorResponse>,
@@ -269,21 +290,6 @@ export default function ProblemsDashboard() {
     mutation.mutate(selectedProblem!.problem_id!);
   };
 
-  // retrieve all problem tags
-  let tags: string[] = [];
-  if (problems.length) {
-    tags = problems.reduce((accumulator: string[], problem) => {
-      accumulator.push(
-        ...problem.tags
-          .map((tag) => startCase(tag))
-          .filter((tag) => !accumulator.includes(tag))
-      );
-      return accumulator;
-    }, []);
-  } else {
-    tags = ["Array", "HashMap", "Sliding Window", "Heap", "Linked List"];
-  }
-
   // Sync filters with URL query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -304,7 +310,7 @@ export default function ProblemsDashboard() {
     if (currentPage) params.set("page", currentPage.toString());
     if (search) params.set("search", search);
     if (selectedDifficulty) params.set("difficulty", selectedDifficulty);
-    if (selectedTag) params.set("tag", selectedTag.toLowerCase());
+    if (selectedTag) params.set("tag", selectedTag);
     if (selectedDate)
       params.set("date_solved", format(selectedDate, "yyyy-MM-dd"));
 
@@ -334,7 +340,7 @@ export default function ProblemsDashboard() {
     return (
       problem.name.toLowerCase().includes(search.toLowerCase()) &&
       (!selectedDifficulty || problem.difficulty === selectedDifficulty) &&
-      (!selectedTag || problem.tags.includes(selectedTag.toLowerCase())) &&
+      (!selectedTag || problem.tags.includes(selectedTag)) &&
       (!selectedDate ||
         format(new Date(problem.date_solved!), "yyyy-MM-dd") ===
           format(selectedDate, "yyyy-MM-dd"))
@@ -342,7 +348,7 @@ export default function ProblemsDashboard() {
   });
 
   // Pagination Logic
-  const problemsPerPage = isDesktop ? 10 : 6;
+  const problemsPerPage = isDesktop ? 10 : 5;
   const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
   const paginatedProblems = filteredProblems.slice(
     (currentPage - 1) * problemsPerPage,
@@ -430,7 +436,7 @@ export default function ProblemsDashboard() {
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
                     >
-                      {tag}
+                      {startCase(tag)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

@@ -48,10 +48,11 @@ import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import {
-  addProblem,
+  addLocalProblem,
+  getLocalProblem,
   ProblemSchema,
+  updateLocalProblem,
 } from "@/lib/db";
-// import { useAuth } from "@/context/auth-provider";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
 
@@ -91,8 +92,12 @@ async function createProblem(
   };
   try {
     if (!isOnline) {
-      const localProblem = { ...payload, isOffline: 1, local_id: `offline-${Date.now()}` } as ProblemSchema;
-      await addProblem(localProblem);
+      const localProblem = {
+        ...payload,
+        isOffline: 1,
+        local_id: `offline-${Date.now()}`,
+      } as ProblemSchema;
+      await addLocalProblem(localProblem);
       return {
         message: "Problem created offline",
         problem: localProblem,
@@ -109,7 +114,9 @@ async function createProblem(
 async function updateProblem(
   problemId: number,
   formData: ProblemFormData,
-  apiClient: AxiosInstance
+  apiClient: AxiosInstance,
+  isOnline: boolean,
+  localId: string
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -118,6 +125,24 @@ async function updateProblem(
       : undefined,
   };
   try {
+    if (!isOnline) {
+      const problemToEdit = await getLocalProblem(
+        problemId ? problemId : localId
+      );
+      const problemWithUpdates = Object.assign(
+        { ...(problemToEdit as ProblemSchema) },
+        {
+          ...payload,
+          isOffline: 1,
+        }
+      );
+      await updateLocalProblem(problemWithUpdates);
+      const updatedProblem = await getLocalProblem(problemId ? problemId : localId);
+      return {
+        message: 'Problem updated offline',
+        problem: updatedProblem as ProblemSchema,
+      }
+    }
     const { data } = await apiClient.put(`/problems/${problemId}`, payload);
     return data;
   } catch (error) {
@@ -211,7 +236,13 @@ export default function ProblemFormDialog({
   >({
     mutationFn: (formData) => {
       if (mode === "edit" && problem) {
-        return updateProblem(problem.problem_id as number, formData, apiClient);
+        return updateProblem(
+          problem.problem_id as number,
+          formData,
+          apiClient,
+          isOnline,
+          problem.local_id as string
+        );
       } else {
         return createProblem(formData, apiClient, isOnline);
       }
@@ -252,7 +283,7 @@ export default function ProblemFormDialog({
     onChange: (tags: string[]) => void,
     currentTags: string[]
   ) => {
-    const val = startCase(inputValue.trim());
+    const val = inputValue.trim();
     if (val && !tagOptions.includes(val)) {
       setTagOptions([...tagOptions, val]);
       onChange([...currentTags, val]);
@@ -380,21 +411,20 @@ export default function ProblemFormDialog({
                                 key={tag}
                                 onSelect={() => {
                                   if (
-                                    value.includes(tag.toLowerCase()) ||
-                                    value.includes(startCase(tag))
+                                    value.includes(tag)
                                   ) {
                                     onChange(
                                       value.filter(
-                                        (t) => startCase(t) !== startCase(tag)
+                                        (t) => t !== tag
                                       )
                                     );
                                   } else {
-                                    onChange([...value, startCase(tag)]);
+                                    onChange([...value, tag]);
                                   }
                                 }}
                               >
-                                {value.includes(tag.toLowerCase()) ||
-                                value.includes(startCase(tag)) ? (
+                                {value.includes(tag)
+                               ? (
                                   <CheckIcon />
                                 ) : (
                                   ""
@@ -428,7 +458,7 @@ export default function ProblemFormDialog({
                           onClick={() =>
                             onChange(
                               value.filter(
-                                (t) => startCase(t) !== startCase(tag)
+                                (t) => t !== tag
                               )
                             )
                           }

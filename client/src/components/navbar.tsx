@@ -10,7 +10,7 @@ import {
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
 import { Bell, BellDot, Moon, Sun } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import NotificationCard from "./notification-card";
 import { useNotifications } from "@/context/notification-provider";
 
@@ -18,6 +18,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { notificationLength } = useNotifications();
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <header
@@ -28,12 +29,12 @@ export default function Navbar() {
         border-grid sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
       "
     >
-      <Link
-        to="/"
+      <span
+        onClick={() => navigate("/")}
         className="text-2xl font-black text-inherit cursor-pointer select-none"
       >
         LööP
-      </Link>
+      </span>
 
       <nav className="flex items-center space-x-4">
         <Toggle
