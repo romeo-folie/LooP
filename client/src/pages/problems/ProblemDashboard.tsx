@@ -51,7 +51,7 @@ import {
 } from "@/components/credenza";
 import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
-import { bulkAddProblems, clearOldProblems, getAllProblems } from "@/lib/db";
+import { bulkAddProblems, clearOldProblems, deleteLocalProblem, getAllProblems } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
 export interface ReminderResponse {
@@ -113,10 +113,18 @@ const fetchProblems = async (
 };
 
 const deleteProblem = async function (
-  problem_id: number,
-  apiClient: AxiosInstance
+  problem_id: number | string,
+  apiClient: AxiosInstance,
+  isOnline: boolean,
 ): Promise<APISuccessResponse> {
   try {
+    if (!isOnline) {
+      await deleteLocalProblem(problem_id);
+      return {
+        message: "Problem deleted offline",
+      }
+    }
+
     const { data } = await apiClient.delete(`/problems/${problem_id}`);
     return data;
   } catch (error) {
@@ -266,9 +274,9 @@ export default function ProblemsDashboard() {
   const mutation = useMutation<
     APISuccessResponse,
     AxiosError<APIErrorResponse>,
-    number
+    number | string
   >({
-    mutationFn: (problem_id: number) => deleteProblem(problem_id, apiClient),
+    mutationFn: (problem_id: number | string) => deleteProblem(problem_id, apiClient, isOnline),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({ title: "Success", description: message });
@@ -286,7 +294,7 @@ export default function ProblemsDashboard() {
   });
 
   const handleProblemDelete = () => {
-    mutation.mutate(selectedProblem!.problem_id!);
+    mutation.mutate(selectedProblem!.problem_id as number || selectedProblem!.local_id as string);
   };
 
   // Sync filters with URL query params

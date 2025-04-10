@@ -31,11 +31,12 @@ export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined
     const handleOnline = () => {
+      logger.info("device online");
       setIsOnline(true);
       timer = setTimeout(() => {
         logger.info("triggered outbox sync");
         navigator.serviceWorker.controller?.postMessage({ type: "SYNC_OUTBOX" });
-      }, 30000)
+      }, 20000)
     }
 
     const handleOffline = () => {

@@ -56,7 +56,7 @@ function getRoute(
   resourceId: number | string,
 ) {
   // the update action is only performed on entities with DB assigned IDs
-  if (type === ActionType.Update) {
+  if (type === ActionType.Update || type === ActionType.Delete) {
     return {
       url:
         resource === ResourceType.Problem

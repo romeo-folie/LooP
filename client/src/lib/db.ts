@@ -3,7 +3,7 @@ import {
   ProblemResponse,
   ReminderResponse,
 } from "@/pages/problems/ProblemDashboard";
-import { isString } from "lodash";
+import { isInteger, isString } from "lodash";
 
 export enum ActionType {
   Create = "POST",
@@ -64,9 +64,7 @@ db.version(1).stores({
   meta: "key",
 });
 
-export async function bulkAddProblems(
-  problems: ProblemSchema[]
-) {
+export async function bulkAddProblems(problems: ProblemSchema[]) {
   return await db.problems.bulkAdd(problems);
 }
 
@@ -98,6 +96,21 @@ export async function updateLocalProblem(problem: ProblemSchema) {
     problem.local_id as string,
     problem as Payload
   );
+}
+
+export async function deleteLocalProblem(id: string | number) {
+  await db.problems
+    .where(isString(id) ? "local_id" : "problem_id")
+    .equals(id)
+    .delete();
+  // queue an outbox action if a problem_id was passed in here
+  if (isInteger(id)) {
+    return await addOutboxEntry(ActionType.Delete, ResourceType.Problem, {
+      problem_id: id,
+    } as Payload);
+  }
+
+  return await deleteOutboxEntry(id);
 }
 
 export async function clearOldProblems(): Promise<void> {
@@ -136,6 +149,10 @@ export async function updateOutboxPayload(
 ) {
   const record = await getOutboxEntry(resourceId);
   return await db.outbox.update(record?.id as number, { ...record, payload });
+}
+
+export async function deleteOutboxEntry(resourceId: string | number) {
+  return await db.outbox.where("resourceId").equals(resourceId).delete();
 }
 
 export async function setMeta<T>(key: string, value: T) {

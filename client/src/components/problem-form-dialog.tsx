@@ -69,7 +69,7 @@ const problemSchema = z.object({
   date_solved: z.date({
     required_error: "Please indicate the solve date",
   }).refine((date) => date.getTime() < Date.now(), {
-    message: "Date must be in the past",
+    message: "Date solved cannot be in the future",
   }),
   notes: z.string().nonempty("Add a note"),
 });
