@@ -30,7 +30,7 @@ export default function Navbar() {
       "
     >
       <span
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/problems")}
         className="text-2xl font-black text-inherit cursor-pointer select-none"
       >
         LööP

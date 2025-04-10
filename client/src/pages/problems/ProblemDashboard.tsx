@@ -295,7 +295,7 @@ export default function ProblemsDashboard() {
     const params = new URLSearchParams(location.search);
     setSearch(params.get("search") || "");
     setSelectedDifficulty(params.get("difficulty") || null);
-    // setSelectedTag(params.get("tag") || null);
+    setSelectedTag(params.get("tag") || null); // TODO: sets a url encoded version of tags that are more than one word long in app memory. this makes me lose the original tag value and makes the search inaccurate 
     setSelectedDate(
       params.get("date_solved")
         ? parseISO(params.get("date_solved")!)
