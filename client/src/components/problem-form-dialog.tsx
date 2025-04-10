@@ -68,6 +68,8 @@ const problemSchema = z.object({
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   date_solved: z.date({
     required_error: "Please indicate the solve date",
+  }).refine((date) => date.getTime() < Date.now(), {
+    message: "Date must be in the past",
   }),
   notes: z.string().nonempty("Add a note"),
 });
@@ -196,7 +198,7 @@ export default function ProblemFormDialog({
             difficulty: problem.difficulty as (typeof difficultyLevels)[number],
             tags: problem.tags,
             date_solved: problem.date_solved
-              ? new Date(problem.date_solved) // convert from string to Date
+              ? new Date(problem.date_solved)
               : undefined,
             notes: problem.notes || "",
           }

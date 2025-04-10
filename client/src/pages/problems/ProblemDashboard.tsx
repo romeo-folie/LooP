@@ -295,7 +295,7 @@ export default function ProblemsDashboard() {
     const params = new URLSearchParams(location.search);
     setSearch(params.get("search") || "");
     setSelectedDifficulty(params.get("difficulty") || null);
-    setSelectedTag(params.get("tag") || null);
+    // setSelectedTag(params.get("tag") || null);
     setSelectedDate(
       params.get("date_solved")
         ? parseISO(params.get("date_solved")!)

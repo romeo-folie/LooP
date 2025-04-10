@@ -29,10 +29,13 @@ export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined
     const handleOnline = () => {
       setIsOnline(true);
-      logger.info("triggered outbox sync");
-      navigator.serviceWorker.controller?.postMessage({ type: "SYNC_OUTBOX" });
+      timer = setTimeout(() => {
+        logger.info("triggered outbox sync");
+        navigator.serviceWorker.controller?.postMessage({ type: "SYNC_OUTBOX" });
+      }, 30000)
     }
 
     const handleOffline = () => {
@@ -44,6 +47,7 @@ export const NetworkStatusProvider = ({ children }: { children: ReactNode }) => 
     window.addEventListener("offline", handleOffline)
 
     return () => { 
+      clearTimeout(timer);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     }

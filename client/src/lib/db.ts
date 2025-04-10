@@ -64,7 +64,7 @@ export async function bulkAddProblems(
   problems: ProblemSchema[]
 ): Promise<void> {
   return await db.transaction("rw", db.problems, async () => {
-    await db.problems.bulkAdd(problems);
+    await db.problems.bulkPut(problems);
   });
 }
 
