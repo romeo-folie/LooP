@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!storedUser) throw new Error("Failed to retrieve local user");
         setUser(storedUser as User);
       } catch (error) {
-        logger.error(`Error setting user in app memory ${error}`);
+        logger.error(`Error setting user in memory ${error}`);
       }
     }
 

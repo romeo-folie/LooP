@@ -255,8 +255,7 @@ export default function ProblemsDashboard() {
   if (problems.length) {
     tags = problems.reduce((accumulator: string[], problem) => {
       accumulator.push(
-        ...problem.tags
-          .filter((tag) => !accumulator.includes(tag))
+        ...problem.tags.filter((tag) => !accumulator.includes(tag))
       );
       return accumulator;
     }, []);
@@ -295,7 +294,7 @@ export default function ProblemsDashboard() {
     const params = new URLSearchParams(location.search);
     setSearch(params.get("search") || "");
     setSelectedDifficulty(params.get("difficulty") || null);
-    setSelectedTag(params.get("tag") || null); // TODO: sets a url encoded version of tags that are more than one word long in app memory. this makes me lose the original tag value and makes the search inaccurate 
+    setSelectedTag(decodeURIComponent(params.get("tag") as string || '') || null);
     setSelectedDate(
       params.get("date_solved")
         ? parseISO(params.get("date_solved")!)
