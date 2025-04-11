@@ -66,11 +66,13 @@ const problemSchema = z.object({
     errorMap: () => ({ message: "Select a difficulty level" }),
   }),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
-  date_solved: z.date({
-    required_error: "Please indicate the solve date",
-  }).refine((date) => date.getTime() < Date.now(), {
-    message: "Date solved cannot be in the future",
-  }),
+  date_solved: z
+    .date({
+      required_error: "Please indicate the solve date",
+    })
+    .refine((date) => date.getTime() < Date.now(), {
+      message: "Date solved cannot be in the future",
+    }),
   notes: z.string().nonempty("Add a note"),
 });
 
@@ -105,6 +107,7 @@ async function createProblem(
         problem: localProblem,
       };
     }
+
     const { data } = await apiClient.post("/problems", payload);
     return data;
   } catch (error) {
@@ -114,11 +117,10 @@ async function createProblem(
 }
 
 async function updateProblem(
-  problemId: number,
+  problemId: number | string,
   formData: ProblemFormData,
   apiClient: AxiosInstance,
-  isOnline: boolean,
-  localId: string
+  isOnline: boolean
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -128,9 +130,7 @@ async function updateProblem(
   };
   try {
     if (!isOnline) {
-      const problemToEdit = await getLocalProblem(
-        problemId ? problemId : localId
-      );
+      const problemToEdit = await getLocalProblem(problemId);
       const problemWithUpdates = Object.assign(
         { ...(problemToEdit as ProblemSchema) },
         {
@@ -139,11 +139,10 @@ async function updateProblem(
         }
       );
       await updateLocalProblem(problemWithUpdates);
-      const updatedProblem = await getLocalProblem(problemId ? problemId : localId);
       return {
-        message: 'Problem updated offline',
-        problem: updatedProblem as ProblemSchema,
-      }
+        message: "Problem updated offline",
+        problem: {} as ProblemSchema,
+      };
     }
     const { data } = await apiClient.put(`/problems/${problemId}`, payload);
     return data;
@@ -239,11 +238,10 @@ export default function ProblemFormDialog({
     mutationFn: (formData) => {
       if (mode === "edit" && problem) {
         return updateProblem(
-          problem.problem_id as number,
+          problem.problem_id as number || problem.local_id as string,
           formData,
           apiClient,
-          isOnline,
-          problem.local_id as string
+          isOnline
         );
       } else {
         return createProblem(formData, apiClient, isOnline);
@@ -412,25 +410,14 @@ export default function ProblemFormDialog({
                               <CommandItem
                                 key={tag}
                                 onSelect={() => {
-                                  if (
-                                    value.includes(tag)
-                                  ) {
-                                    onChange(
-                                      value.filter(
-                                        (t) => t !== tag
-                                      )
-                                    );
+                                  if (value.includes(tag)) {
+                                    onChange(value.filter((t) => t !== tag));
                                   } else {
                                     onChange([...value, tag]);
                                   }
                                 }}
                               >
-                                {value.includes(tag)
-                               ? (
-                                  <CheckIcon />
-                                ) : (
-                                  ""
-                                )}
+                                {value.includes(tag) ? <CheckIcon /> : ""}
                                 {startCase(tag)}
                               </CommandItem>
                             ))}
@@ -458,11 +445,7 @@ export default function ProblemFormDialog({
                         <button
                           type="button"
                           onClick={() =>
-                            onChange(
-                              value.filter(
-                                (t) => t !== tag
-                              )
-                            )
+                            onChange(value.filter((t) => t !== tag))
                           }
                         >
                           <X className="h-3 w-3 ml-1" />

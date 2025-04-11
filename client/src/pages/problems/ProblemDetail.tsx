@@ -19,6 +19,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { logger } from "@/lib/logger";
+import { useNetworkStatus } from "@/context/network-status-provider";
+import { deleteLocalReminder } from "@/lib/db";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -28,11 +30,19 @@ const difficultyColors: Record<string, string> = {
 };
 
 const deleteReminder = async function (
-  reminder_id: number,
-  apiClient: AxiosInstance
+  reminderId:  number | string,
+  problemId: number | string,
+  apiClient: AxiosInstance,
+  isOnline: boolean,
 ): Promise<APISuccessResponse> {
   try {
-    const { data } = await apiClient.delete(`/reminders/${reminder_id}`);
+    if (!isOnline) {
+      await deleteLocalReminder(reminderId, problemId);
+      return {
+        message: "Reminder deleted offline",
+      }
+    }
+    const { data } = await apiClient.delete(`/reminders/${reminderId}`);
     return data;
   } catch (error) {
     logger.error(`error requesting reminder deletion ${error}`);
@@ -49,6 +59,7 @@ interface ProblemDetailProps {
 const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   const queryClient = useQueryClient();
   const apiClient = useAxios();
+  const { isOnline } = useNetworkStatus();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
@@ -72,9 +83,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   const mutation = useMutation<
     APISuccessResponse,
     AxiosError<APIErrorResponse>,
-    number
+    number | string
   >({
-    mutationFn: (reminder_id: number) => deleteReminder(reminder_id, apiClient),
+    mutationFn: (reminderId: number | string) => deleteReminder(reminderId, problem.problem_id ?? problem.local_id, apiClient, isOnline),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({ title: "Success", description: message });
@@ -92,7 +103,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   });
 
   const handleConfirmReminderDelete = () => {
-    mutation.mutate(editingReminder!.reminder_id);
+    mutation.mutate(editingReminder!.reminder_id as number || editingReminder!.local_id as string);
   };
 
   return (
@@ -172,7 +183,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
         isOpen={isReminderDialogOpen}
         onOpenChange={setIsReminderDialogOpen}
         mode="edit"
-        problemId={problem.problem_id as number}
+        problemId={problem.problem_id as number || problem.local_id as string}
         reminder={editingReminder}
       />
 

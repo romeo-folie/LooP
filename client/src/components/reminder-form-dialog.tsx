@@ -8,7 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
-import type { ReminderResponse } from "@/pages/problems/ProblemDashboard";
+import type { ReminderResponse, ReminderResponseData } from "@/pages/problems/ProblemDashboard";
 import DateTimePicker from "./date-time-picker";
 import {
   Credenza,
@@ -18,6 +18,8 @@ import {
   CredenzaTitle,
 } from "@/components/credenza";
 import { logger } from "@/lib/logger";
+import { addLocalReminder, ReminderSchema, updateLocalReminder } from "@/lib/db";
+import { useNetworkStatus } from "@/context/network-status-provider";
 
 const reminderSchema = z.object({
   due_datetime: z
@@ -30,12 +32,27 @@ const reminderSchema = z.object({
 type ReminderFormData = z.infer<typeof reminderSchema>;
 
 async function createReminder(
-  problemId: number,
+  problemId: number | string,
   formData: ReminderFormData,
-  apiClient: AxiosInstance
-): Promise<ReminderResponse> {
+  apiClient: AxiosInstance,
+  isOnline: boolean,
+): Promise<ReminderResponseData> {
   const payload = { due_datetime: formData.due_datetime };
   try {
+    if (!isOnline) {
+      const localReminder = {
+        ...payload,
+        is_sent: false,
+        isOffline: 1,
+        local_id: `offline-${Date.now()}`,
+      } as ReminderSchema;
+      await addLocalReminder(problemId, localReminder);
+      return {
+        message: 'Reminder created offline',
+        reminder: localReminder,
+      }
+    }
+
     const { data } = await apiClient.post(`/reminders/${problemId}`, payload);
     return data;
   } catch (error) {
@@ -46,13 +63,22 @@ async function createReminder(
 }
 
 async function updateReminder(
-  reminder_id: number,
+  reminderId: number | string,
+  problemId: number | string,
   formData: ReminderFormData,
-  apiClient: AxiosInstance
-): Promise<ReminderResponse> {
+  apiClient: AxiosInstance,
+  isOnline: boolean,
+): Promise<ReminderResponseData> {
   const payload = { due_datetime: formData.due_datetime };
   try {
-    const { data } = await apiClient.put(`/reminders/${reminder_id}`, payload);
+    if (!isOnline) {
+      await updateLocalReminder(reminderId, problemId, payload);   
+      return {
+        message: 'Reminder updated offline',
+        reminder: {} as ReminderSchema,
+      }
+    }
+    const { data } = await apiClient.put(`/reminders/${reminderId}`, payload);
     return data;
   } catch (error) {
     logger.error(`error requesting reminder update ${error}`);
@@ -64,7 +90,7 @@ interface ReminderDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "new" | "edit";
-  problemId: number;
+  problemId: number | string;
   reminder?: ReminderResponse;
 }
 
@@ -77,6 +103,7 @@ const ReminderFormDialog = ({
 }: ReminderDialogProps) => {
   const apiClient = useAxios();
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
 
   const defaultVals: Partial<ReminderFormData> = useMemo(
     () =>
@@ -102,19 +129,21 @@ const ReminderFormDialog = ({
   });
 
   const mutation = useMutation<
-    ReminderResponse,
+    ReminderResponseData,
     AxiosError<APIErrorResponse>,
     ReminderFormData
   >({
     mutationFn: (formData) => {
       if (mode === "edit") {
         return updateReminder(
-          reminder?.reminder_id as number,
+          reminder?.reminder_id as number || reminder?.local_id as string,
+          problemId,
           formData,
-          apiClient
+          apiClient,
+          isOnline,
         );
       } else {
-        return createReminder(problemId, formData, apiClient);
+        return createReminder(problemId, formData, apiClient, isOnline);
       }
     },
     onSuccess: ({ message }) => {

@@ -51,7 +51,7 @@ import {
 } from "@/components/credenza";
 import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
-import { bulkAddProblems, clearOldProblems, deleteLocalProblem, getAllProblems } from "@/lib/db";
+import { bulkAddProblems, clearOldProblems, deleteLocalProblem, getAllProblems, ReminderSchema } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
 export interface ReminderResponse {
@@ -63,6 +63,11 @@ export interface ReminderResponse {
   is_sent: boolean;
   sent_at: Date;
   created_at: Date;
+}
+
+export interface ReminderResponseData {
+  message: string;
+  reminder: ReminderResponse | ReminderSchema;
 }
 export interface ProblemResponse {
   problem_id: number;
@@ -619,7 +624,7 @@ export default function ProblemsDashboard() {
             isOpen={isReminderDialogOpen}
             onOpenChange={setIsReminderDialogOpen}
             mode="new"
-            problemId={selectedProblem?.problem_id as number}
+            problemId={selectedProblem?.problem_id as number || selectedProblem?.local_id as string}
           />
 
           {/* The permission dialog */}

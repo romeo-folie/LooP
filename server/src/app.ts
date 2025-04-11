@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import webpush from 'web-push'
 
 const app: Application = express();
-const corsOptions = { origin: process.env.CLIENT_URL as string, credentials: true, allowedHeaders: "Content-Type, Authorization, X-CSRF-TOKEN" }
+const corsOptions = { origin: process.env.CLIENT_URL as string, credentials: true, allowedHeaders: "Content-Type, Authorization, X-CSRF-TOKEN, X-SYNC-ORIGIN" }
 
 webpush.setVapidDetails(
   process.env.CONTACT_EMAIL as string, 

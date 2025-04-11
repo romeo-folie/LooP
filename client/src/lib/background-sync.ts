@@ -1,5 +1,13 @@
 import { createAxiosInstance } from "@/lib/api-client";
-import { ActionType, db, getMeta, ResourceType, StatusType } from "./db";
+import {
+  ActionType,
+  db,
+  getMeta,
+  ProblemSchema,
+  ReminderSchema,
+  ResourceType,
+  StatusType,
+} from "./db";
 import { logger } from "./logger";
 import { decrypt } from "./web-crypto";
 import { User } from "@/context/auth-provider";
@@ -17,8 +25,9 @@ export default async function syncOutbox() {
   );
 
   for (const record of records) {
-    const { type, resource, resourceId, retryCount, lastAttemptAt } = record;
-    const { method, url } = getRoute(type, resource, resourceId);
+    const { type, resource, resourceId, payload, retryCount, lastAttemptAt } =
+      record;
+    const { method, url } = getRoute(type, resource, payload, resourceId);
     const delay = Math.min(2 ** retryCount * 1000, 60000);
     const now = Date.now();
 
@@ -26,6 +35,7 @@ export default async function syncOutbox() {
 
     try {
       await axiosInstance({
+        headers: { "X-SYNC-ORIGIN": "service-worker" },
         method,
         url,
         data: record.payload,
@@ -53,23 +63,28 @@ export default async function syncOutbox() {
 function getRoute(
   type: ActionType,
   resource: ResourceType,
-  resourceId: number | string,
+  payload: ProblemSchema | ReminderSchema,
+  resourceId: number | string
 ) {
-  // the update action is only performed on entities with DB assigned IDs
-  if (type === ActionType.Update || type === ActionType.Delete) {
+  if (resource === ResourceType.Problem) {
+    if (type === ActionType.Create) {
+      return { url: "/problems", method: type };
+    }
+
+    return { url: `/problems/${resourceId as number}`, method: type };
+  } else {
+    if (type === ActionType.Create) {
+      return {
+        url: `/reminders/${(payload as ReminderSchema).problem_id as number}`,
+        method: type,
+      };
+    }
+
     return {
-      url:
-        resource === ResourceType.Problem
-          ? `/problems/${resourceId as number}`
-          : `/reminders/${resourceId as number}`,
+      url: `/reminders/${(payload as ReminderSchema).reminder_id as number}`,
       method: type,
     };
   }
-
-  return {
-    url: resource === ResourceType.Problem ? "/problems" : "/reminders",
-    method: type,
-  };
 }
 
 async function retrieveTokens() {
