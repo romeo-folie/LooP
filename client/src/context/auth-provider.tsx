@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const updateLocalToken = useCallback(
+  const updateLocalTokens = useCallback(
     async function (token: string, csrf: string) {
       try {
         let user = await getMeta("user");
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const csrf = getCsrfToken();
         setAccessToken(newToken);
         setCsrfToken(csrf);
-        updateLocalToken(newToken, csrf as string);
+        updateLocalTokens(newToken, csrf as string);
       }
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsAuthLoading(false);
     }
-  }, [navigate, updateLocalToken]);
+  }, [navigate, updateLocalTokens]);
 
   useEffect(() => {
     bc.onmessage = (event) => {
@@ -165,33 +165,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
   }, [bc, localLogout, navigate, refreshToken]);
-
-  useEffect(() => {
-    // If redirected from GitHub OAuth login
-    if (location.pathname.includes("/auth/github/success")) {
-      const params = new URLSearchParams(location.search);
-      const encodedUser = params.get("user");
-
-      if (encodedUser) {
-        try {
-          const decoded = decodeURIComponent(encodedUser);
-          const userObj = JSON.parse(decoded);
-          // TODO: INSPECT USER OBJECT HERE
-          setUser(userObj);
-        } catch (error: unknown) {
-          const message =
-            error instanceof AxiosError
-              ? error.response?.data?.error || error.response?.data?.message
-              : "Failed to parse GitHub user data";
-          logger.error(message);
-        }
-      }
-      refreshToken().then(() => {
-        navigate("/");
-      });
-      bc.postMessage({ type: "LOGIN" });
-    }
-  }, [refreshToken, navigate, bc]);
 
   const logout = useCallback(async () => {
     try {
@@ -215,16 +188,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [bc, localLogout]);
 
-  const login = (user: User) => {
+  const login = useCallback((user: User) => {
     setAccessToken(user.token as string);
     setUser(user);
-    // TODO: get csrf token, set on user object and in memory
     const csrfToken = getCsrfToken();
     setCsrfToken(csrfToken);
     user.csrfToken = csrfToken;
     saveUserLocally(user);
     bc.postMessage({ type: "LOGIN" });
-  };
+  }, [bc, saveUserLocally]);
+
+  useEffect(() => {
+    // If redirected from GitHub OAuth login
+    if (location.pathname.includes("/auth/github/success")) {
+      const params = new URLSearchParams(location.search);
+      const encodedUser = params.get("user");
+
+      if (encodedUser) {
+        try {
+          const decoded = decodeURIComponent(encodedUser);
+          const userObj = JSON.parse(decoded);
+          login(userObj);
+          navigate("/");
+          bc.postMessage({ type: "LOGIN" });
+        } catch (error: unknown) {
+          const message =
+            error instanceof AxiosError
+              ? error.response?.data?.error || error.response?.data?.message
+              : "Failed to parse GitHub user data";
+          logger.error(message);
+        }
+      }
+    }
+  }, [navigate, bc, login]);
 
   const saveEmail = (email: string) => {
     browserStore.set("forgotPasswordEmail", email);

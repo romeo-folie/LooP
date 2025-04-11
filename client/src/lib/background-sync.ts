@@ -108,6 +108,6 @@ async function retrieveTokens() {
     );
     return { accessToken: token, csrfToken: user.csrfToken as string };
   } catch (error) {
-    logger.error(`Error retrieving token for background sync ${error}`);
+    logger.error(`Error retrieving tokens for background sync ${error}`);
   }
 }

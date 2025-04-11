@@ -371,8 +371,35 @@ export const getAccessToken: RequestHandler = async (
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    const newAccessToken = jwt.sign(
+      { userId: existingUser.user_id, email: existingUser.email },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "1h" }
+    );
+
+    const csrfToken = jwt.sign({
+      userId:existingUser.user_id,
+      email:existingUser.email,
+      issuedAt: Date.now(),
+    }, process.env.CSRF_SECRET_KEY as string)
+
+
+    res.cookie("CSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
+
+    res.cookie("XSRF-TOKEN", csrfToken, {
+      domain: `.${process.env.DOMAIN as string}`,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    })
+
     // make a new query to get all the user's details
-    const user = { user_id: existingUser.user_id, name: existingUser.name, email: existingUser.email };
+    const user = { user_id: existingUser.user_id, name: existingUser.name, email: existingUser.email, token: newAccessToken };
 
     const encodedUser = encodeURIComponent(JSON.stringify(user));
 
