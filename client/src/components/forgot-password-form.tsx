@@ -104,6 +104,7 @@ const ForgotPasswordForm: React.FC = () => {
                 placeholder="abc@example.com"
                 className="h-12 px-4"
                 {...register("email")}
+                autoComplete="email"
               />
               {errors.email && (
                 <p className="text-red-500 text-sm">{errors.email.message}</p>

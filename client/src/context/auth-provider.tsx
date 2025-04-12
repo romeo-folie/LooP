@@ -26,7 +26,7 @@ export interface User {
 }
 interface AuthContextType {
   accessToken: string | null;
-  csrfToken: string | null,
+  csrfToken: string | null;
   passwordResetToken: string | null;
   isAuthLoading: boolean;
   user: User | null;
@@ -174,8 +174,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { withCredentials: true }
       );
       setUser(null);
-      setMeta("user", null)
-      setMeta("exportedKey", null)
+      setMeta("user", null);
+      setMeta("exportedKey", null);
     } catch (error: unknown) {
       const message =
         error instanceof AxiosError
@@ -188,15 +188,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [bc, localLogout]);
 
-  const login = useCallback((user: User) => {
-    setAccessToken(user.token as string);
-    setUser(user);
-    const csrfToken = getCsrfToken();
-    setCsrfToken(csrfToken);
-    user.csrfToken = csrfToken;
-    saveUserLocally(user);
-    bc.postMessage({ type: "LOGIN" });
-  }, [bc, saveUserLocally]);
+  const login = useCallback(
+    (user: User) => {
+      setAccessToken(user.token as string);
+      setUser(user);
+      const csrfToken = getCsrfToken();
+      setCsrfToken(csrfToken);
+      user.csrfToken = csrfToken;
+      saveUserLocally(user);
+      bc.postMessage({ type: "LOGIN" });
+    },
+    [bc, saveUserLocally]
+  );
 
   useEffect(() => {
     // If redirected from GitHub OAuth login
@@ -232,8 +235,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // On mount/new tab => try to get an access token using refresh cookie
-    refreshToken();
+    // should only run on mount if user is in auth page
+    if (location.pathname === "/auth") refreshToken();
   }, [refreshToken]);
 
   useEffect(() => {

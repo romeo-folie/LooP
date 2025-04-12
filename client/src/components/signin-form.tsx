@@ -26,8 +26,6 @@ import { logger } from "@/lib/logger";
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 interface SigninResponse {
-  message: string;
-  token: string;
   user: User;
 }
 
@@ -116,6 +114,7 @@ const SigninForm: React.FC = () => {
                 type="email"
                 placeholder="abc@example.com"
                 className="h-10 px-4"
+                autoComplete="email"
                 {...register("email")}
               />
             </div>
@@ -123,6 +122,7 @@ const SigninForm: React.FC = () => {
               name="password"
               register={register}
               error={errors.password?.message}
+              autoComplete="current-password"
             />
             <Button
               className="w-full"

@@ -125,6 +125,7 @@ const PasswordResetForm: React.FC = () => {
               name="new_password"
               register={register}
               error={errors.new_password?.message}
+              autoComplete="new-password autocomplete"
             />
             <PasswordInput
               label="Confirm New Password"
@@ -132,6 +133,7 @@ const PasswordResetForm: React.FC = () => {
               name="confirm_password"
               register={register}
               error={errors.confirm_password?.message}
+              autoComplete="new-password autocomplete"
             />
             <Button
               type="submit"
