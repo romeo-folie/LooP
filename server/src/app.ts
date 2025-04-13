@@ -15,19 +15,14 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY as string
 );
 
-app.set('trust proxy', true);
-app.use(cookieParser());
-app.use(express.json());
-app.use(httpLogger);
-app.use(cors(corsOptions));
-app.use('/api', router);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       'default-src': ["'self'"],
       'script-src': ["'self'"],
-      'style-src': ["'self'"],
+      'style-src': ["'self'", "'unsafe-inline'"],
       'img-src': ["'self'", 'data:'],
+      'font-src': ["'self'", 'data:'],
       'connect-src': ["'self'", `${process.env.SERVER_URL}`],
       'form-action': ["'self'", `${process.env.SERVER_URL}`],
       'base-uri': ["'none'"],
@@ -37,6 +32,14 @@ app.use(helmet({
     reportOnly: process.env.NODE_ENV !== 'production',
   }
 }));
+
+app.set('trust proxy', true);
+app.use(cookieParser());
+app.use(express.json());
+app.use(httpLogger);
+app.use(cors(corsOptions));
+app.use('/api', router);
+
 
 
 export default app;

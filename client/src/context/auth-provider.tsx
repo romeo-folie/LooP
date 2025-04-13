@@ -234,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               error instanceof AxiosError
                 ? error.response?.data?.error || error.response?.data?.message
                 : "Failed to parse GitHub user data";
-            logger.error(message);
+            logger.error(`Github auth failed. error: ${message}`);
           }
         }
       }
