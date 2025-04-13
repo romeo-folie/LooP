@@ -62,20 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    async function retrieveLocalUser() {
-      try {
-        const storedUser = await getMeta("user");
-        if (!storedUser) throw new Error("Failed to retrieve local user");
-        setUser(storedUser as User);
-      } catch (error) {
-        logger.error(`Error setting user in memory ${error}`);
-      }
-    }
-
-    retrieveLocalUser();
-  }, []);
-
   const bc = useMemo(() => new BroadcastChannel("auth"), []);
 
   const encryptAccessToken = async function (token: string) {
@@ -110,9 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         let user = await getMeta("user");
         if (!user) throw new Error("Failed to retrieve local user");
         user = Object.assign({ ...user }, { token, csrfToken: csrf });
-        saveUserLocally(user as User);
+        await saveUserLocally(user as User);
       } catch (error) {
-        logger.error(`Error updating local token ${error}`);
+        logger.error(`Error updating local tokens ${error}`);
       }
     },
     [saveUserLocally]
@@ -120,8 +106,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const localLogout = useCallback(() => {
     setAccessToken(null);
+    setIsAuthLoading(false);
     navigate("/auth?tab=sign-in");
   }, [navigate]);
+
+  const retrieveLocalUser = useCallback(async () => {
+    try {
+      const storedUser = await getMeta("user");
+      if (!storedUser) throw new Error("Failed to retrieve local user");
+      setUser(storedUser as User);
+    } catch (error) {
+      logger.error(`Error setting user in memory ${error}`);
+    }
+  }, []);
 
   const refreshToken = useCallback(async () => {
     try {
@@ -136,7 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const csrf = getCsrfToken();
         setAccessToken(newToken);
         setCsrfToken(csrf);
-        updateLocalTokens(newToken, csrf as string);
+        await updateLocalTokens(newToken, csrf as string);
+        await retrieveLocalUser();
       }
       if (window.location.pathname.startsWith("/auth")) {
         navigate("/");
@@ -152,19 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsAuthLoading(false);
     }
-  }, [navigate, updateLocalTokens]);
-
-  useEffect(() => {
-    bc.onmessage = (event) => {
-      if (event.data?.type === "LOGOUT") {
-        localLogout();
-      }
-
-      if (event.data?.type === "LOGIN") {
-        refreshToken();
-      }
-    };
-  }, [bc, localLogout, navigate, refreshToken]);
+  }, [navigate, retrieveLocalUser, updateLocalTokens]);
 
   const logout = useCallback(async () => {
     try {
@@ -189,41 +175,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [bc, localLogout]);
 
   const login = useCallback(
-    (user: User) => {
-      setAccessToken(user.token as string);
-      setUser(user);
-      const csrfToken = getCsrfToken();
-      setCsrfToken(csrfToken);
-      user.csrfToken = csrfToken;
-      saveUserLocally(user);
-      bc.postMessage({ type: "LOGIN" });
-    },
-    [bc, saveUserLocally]
-  );
-
-  useEffect(() => {
-    // If redirected from GitHub OAuth login
-    if (location.pathname.includes("/auth/github/success")) {
-      const params = new URLSearchParams(location.search);
-      const encodedUser = params.get("user");
-
-      if (encodedUser) {
-        try {
-          const decoded = decodeURIComponent(encodedUser);
-          const userObj = JSON.parse(decoded);
-          login(userObj);
-          navigate("/");
-          bc.postMessage({ type: "LOGIN" });
-        } catch (error: unknown) {
-          const message =
-            error instanceof AxiosError
-              ? error.response?.data?.error || error.response?.data?.message
-              : "Failed to parse GitHub user data";
-          logger.error(message);
-        }
+    async (user: User) => {
+      try {
+        setIsAuthLoading(true);
+        setAccessToken(user.token as string);
+        const csrfToken = getCsrfToken();
+        setCsrfToken(csrfToken);
+        user.csrfToken = csrfToken;
+        await saveUserLocally(user);
+        navigate("/");
+        await retrieveLocalUser();
+        bc.postMessage({ type: "LOGIN" });
+      } catch (error) {
+        logger.error(`error logging in user ${user.email}, error: ${error}`)
+        localLogout();
+      } finally {
+        setIsAuthLoading(false);
       }
-    }
-  }, [navigate, bc, login]);
+
+    },
+    [bc, localLogout, navigate, retrieveLocalUser, saveUserLocally]
+  );
 
   const saveEmail = (email: string) => {
     browserStore.set("forgotPasswordEmail", email);
@@ -235,9 +207,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    bc.onmessage = (event) => {
+      if (event.data?.type === "LOGOUT") {
+        localLogout();
+      }
+
+      if (event.data?.type === "LOGIN") {
+        refreshToken();
+      }
+    };
+  }, [bc, localLogout, navigate, refreshToken]);
+
+  useEffect(() => {
+    async function handleGithubLogin() {
+      if (location.pathname.includes("/auth/github/success")) {
+        const params = new URLSearchParams(location.search);
+        const encodedUser = params.get("user");
+
+        if (encodedUser) {
+          try {
+            const decoded = decodeURIComponent(encodedUser);
+            const userObj = JSON.parse(decoded);
+            await login(userObj);
+          } catch (error: unknown) {
+            const message =
+              error instanceof AxiosError
+                ? error.response?.data?.error || error.response?.data?.message
+                : "Failed to parse GitHub user data";
+            logger.error(message);
+          }
+        }
+      }
+    }
+    // If redirected from GitHub OAuth login
+    handleGithubLogin();
+  }, [navigate, bc, login]);
+
+  useEffect(() => {
     // should only run on mount if user is in auth page
-    if (location.pathname === "/auth") refreshToken();
-  }, [refreshToken]);
+    if (location.pathname === "/auth" || !accessToken) refreshToken();
+  }, [accessToken, refreshToken]);
 
   useEffect(() => {
     if (!accessToken) return;
