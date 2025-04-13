@@ -3,5 +3,4 @@ todo.*
 node_modules/
 logs/
 .DS_Store
-Dockerfile
 docker-compose.yml
