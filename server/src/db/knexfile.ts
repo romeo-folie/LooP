@@ -1,26 +1,25 @@
 // Update with your config settings.
-import path from 'path';
-import { Knex } from 'knex';
-import dotenv from 'dotenv';
+import path from "path";
+import { Knex } from "knex";
+import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env')});
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const BASE_CONFIG: Knex.Config = {
-  client: 'pg',
+  client: "pg",
   migrations: {
-    directory: path.resolve(__dirname, '../migrations'),
-    extension: 'ts',
+    directory: path.resolve(__dirname, "../migrations"),
+    extension: "ts",
   },
   seeds: {
-    directory: path.resolve(__dirname, '../seeds'),
+    directory: path.resolve(__dirname, "../seeds"),
   },
 };
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
-const config: {[key: string]: Knex.Config } = {
-
+const config: { [key: string]: Knex.Config } = {
   development: {
     ...BASE_CONFIG,
     connection: {
@@ -32,14 +31,14 @@ const config: {[key: string]: Knex.Config } = {
   },
 
   test: {
-    client: 'sqlite3',
+    client: "sqlite3",
     connection: {
-      filename: ':memory:',
+      filename: ":memory:",
     },
     useNullAsDefault: true,
     migrations: {
-      directory: path.resolve(__dirname, '../migrations'),
-      extension: 'ts',
+      directory: path.resolve(__dirname, "../migrations"),
+      extension: "ts",
     },
   },
 
@@ -47,12 +46,11 @@ const config: {[key: string]: Knex.Config } = {
     ...BASE_CONFIG,
     connection: {
       host: process.env.DB_HOST,
-      user:     process.env.DB_USER,
+      user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
     },
-  }
-
+  },
 };
 
 export default config;

@@ -83,6 +83,15 @@ export const validateProblemUpdate: ValidationChain[] = [
   body("notes").optional().isString().withMessage("Notes must be a string"),
 ];
 
+export const validatePracticeFeedback: ValidationChain[] = [
+  body("quality_score")
+    .exists({ checkFalsy: true })
+    .withMessage("quality_score is required")
+    .bail()
+    .isInt({ min: 1, max: 5 })
+    .withMessage("quality_score must be an integer between 1 and 5"),
+];
+
 export const validateReminderCreation: ValidationChain[] = [
   body("due_datetime")
     .exists({ checkFalsy: true })
@@ -92,7 +101,7 @@ export const validateReminderCreation: ValidationChain[] = [
       "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)"
     ),
 
-    body("is_completed")
+  body("is_completed")
     .optional()
     .isBoolean()
     .withMessage("is_completed must be a boolean"),
@@ -131,43 +140,44 @@ export const validateSubscriptionDeletion: ValidationChain[] = [
 ];
 
 export const forgotPasswordValidator: ValidationChain[] = [
-  body('email')
+  body("email")
     .trim()
     .isEmail()
-    .withMessage('A valid email is required')
-    .normalizeEmail()
+    .withMessage("A valid email is required")
+    .normalizeEmail(),
 ];
 
 export const verifyOtpValidator: ValidationChain[] = [
-  body('email')
+  body("email")
     .trim()
     .isEmail()
-    .withMessage('A valid email is required')
+    .withMessage("A valid email is required")
     .normalizeEmail(),
 
-  body('pin')
+  body("pin")
     .trim()
     .isLength({ min: 6, max: 6 })
-    .withMessage('OTP must be exactly 6 digits')
+    .withMessage("OTP must be exactly 6 digits"),
 ];
 
 export const resetPasswordValidator: ValidationChain[] = [
-  body('password_reset_token')
+  body("password_reset_token")
     .trim()
     .notEmpty()
-    .withMessage('Password reset token is required'),
+    .withMessage("Password reset token is required"),
 
-  body('new_password')
+  body("new_password")
     .trim()
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .withMessage("Password must be at least 6 characters long")
     .matches(/[A-Z]/)
-    .withMessage('Password must contain at least one uppercase letter')
+    .withMessage("Password must contain at least one uppercase letter")
     .matches(/[a-z]/)
-    .withMessage('Password must contain at least one lowercase letter')
+    .withMessage("Password must contain at least one lowercase letter")
     .matches(/\d/)
-    .withMessage('Password must contain at least one number')
+    .withMessage("Password must contain at least one number")
     .matches(/[@$!%*?&#]/)
-    .withMessage('Password must contain at least one special character (@$!%*?&#)')
+    .withMessage(
+      "Password must contain at least one special character (@$!%*?&#)"
+    ),
 ];
-

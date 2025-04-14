@@ -13,7 +13,7 @@ export default function LoadingScreen() {
   }, []);
   
   return (
-    <div className="flex items-center justify-center h-screen w-screen overflow-hidden z-50">
+    <div className="flex items-center fixed inset-0 z-[9999] justify-center w-screen h-screen overflow-hidden">
       <Progress value={progress} className="w-48" />
     </div>
   );

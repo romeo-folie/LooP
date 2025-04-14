@@ -51,8 +51,15 @@ import {
 } from "@/components/credenza";
 import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
-import { bulkAddProblems, clearOldProblems, deleteLocalProblem, getAllProblems, ReminderSchema } from "@/lib/db";
+import {
+  bulkAddProblems,
+  clearOldProblems,
+  deleteLocalProblem,
+  getAllProblems,
+  ReminderSchema,
+} from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
+import ProblemFeedbackDialog from "@/components/problem-feedback-dialog";
 
 export interface ReminderResponse {
   message?: string;
@@ -118,22 +125,38 @@ const fetchProblems = async (
 };
 
 const deleteProblem = async function (
-  problem_id: number | string,
+  problemId: number | string,
   apiClient: AxiosInstance,
-  isOnline: boolean,
+  isOnline: boolean
 ): Promise<APISuccessResponse> {
   try {
     if (!isOnline) {
-      await deleteLocalProblem(problem_id);
+      await deleteLocalProblem(problemId);
       return {
         message: "Problem deleted offline",
-      }
+      };
     }
 
-    const { data } = await apiClient.delete(`/problems/${problem_id}`);
+    const { data } = await apiClient.delete(`/problems/${problemId}`);
     return data;
   } catch (error) {
     logger.error(`error requesting problem deletion ${error}`);
+    throw error;
+  }
+};
+
+const submitPracticeFeedback = async function (
+  qualityScore: number,
+  problemId: number,
+  apiClient: AxiosInstance
+): Promise<APISuccessResponse> {
+  try {
+    const { data } = await apiClient.put(`/problems/${problemId}/practice`, {
+      quality_score: qualityScore,
+    });
+    return data;
+  } catch (error) {
+    logger.error(`error submitting practice feedback ${error}`);
     throw error;
   }
 };
@@ -165,6 +188,9 @@ export default function ProblemsDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
     useState(false);
+  const [isProblemFeedbackOpen, setIsProblemFeedbackOpen] = useState(false);
+  const [feedbackId, setFeedbackId] = useState<number | null>(null);
+
   const lastLocalUpdateRef = useRef<number>(0);
   const lastFetchRef = useRef<number>(0);
 
@@ -176,6 +202,16 @@ export default function ProblemsDashboard() {
       setShowNotificationRequestDialog(true);
     }
   }, []);
+
+  // set feedback id when feedback route is hit
+  useEffect(() => {
+    if (location.search.includes("feedback_id")) {
+      const params = new URLSearchParams(location.search);
+      const feedback_id = params.get("feedback_id");
+      setFeedbackId(Number(feedback_id));
+      setIsProblemFeedbackOpen(true);
+    }
+  }, [location.pathname, location.search]);
 
   const handleDropdownOpen = (opened: boolean) => {
     if (opened && dropdownTriggerRef.current) {
@@ -235,7 +271,11 @@ export default function ProblemsDashboard() {
 
   if (isSuccess) {
     problems = data.problems;
-    if (isOnline && lastFetchRef.current > lastLocalUpdateRef.current) {
+    if (
+      isOnline &&
+      lastFetchRef.current > lastLocalUpdateRef.current &&
+      problems.length
+    ) {
       logger.info("saving problems locally");
       clearOldProblems()
         .then(() => {
@@ -276,12 +316,13 @@ export default function ProblemsDashboard() {
     tags = ["Array", "HashMap", "Sliding Window", "Heap", "Linked List"];
   }
 
-  const mutation = useMutation<
+  const deleteMutation = useMutation<
     APISuccessResponse,
     AxiosError<APIErrorResponse>,
     number | string
   >({
-    mutationFn: (problem_id: number | string) => deleteProblem(problem_id, apiClient, isOnline),
+    mutationFn: (problem_id: number | string) =>
+      deleteProblem(problem_id, apiClient, isOnline),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({ title: "Success", description: message });
@@ -299,7 +340,39 @@ export default function ProblemsDashboard() {
   });
 
   const handleProblemDelete = () => {
-    mutation.mutate(selectedProblem!.problem_id as number || selectedProblem!.local_id as string);
+    deleteMutation.mutate(
+      (selectedProblem!.problem_id as number) ||
+        (selectedProblem!.local_id as string)
+    );
+  };
+
+  const practiceMutation = useMutation<
+    APISuccessResponse,
+    AxiosError<APIErrorResponse>,
+    number
+  >({
+    mutationFn: (qualityScore: number) =>
+      submitPracticeFeedback(qualityScore, feedbackId as number, apiClient),
+    onSuccess: ({ message }) => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      toast({ title: "Success", description: message });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to submit practice feedback.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePracticeSubmit = (qualityScore: number) => {
+    console.log("qualityScore ", qualityScore);
+    console.log("feedback id ", feedbackId);
+    practiceMutation.mutate(qualityScore);
   };
 
   // Sync filters with URL query params
@@ -307,7 +380,9 @@ export default function ProblemsDashboard() {
     const params = new URLSearchParams(location.search);
     setSearch(params.get("search") || "");
     setSelectedDifficulty(params.get("difficulty") || null);
-    setSelectedTag(decodeURIComponent(params.get("tag") as string || '') || null);
+    setSelectedTag(
+      decodeURIComponent((params.get("tag") as string) || "") || null
+    );
     setSelectedDate(
       params.get("date_solved")
         ? parseISO(params.get("date_solved")!)
@@ -624,7 +699,10 @@ export default function ProblemsDashboard() {
             isOpen={isReminderDialogOpen}
             onOpenChange={setIsReminderDialogOpen}
             mode="new"
-            problemId={selectedProblem?.problem_id as number || selectedProblem?.local_id as string}
+            problemId={
+              (selectedProblem?.problem_id as number) ||
+              (selectedProblem?.local_id as string)
+            }
           />
 
           {/* The permission dialog */}
@@ -633,6 +711,13 @@ export default function ProblemsDashboard() {
             onOpenChange={(open) => setShowNotificationRequestDialog(open)}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
+          />
+
+          {/* Problem Feedback Dialog */}
+          <ProblemFeedbackDialog
+            isOpen={isProblemFeedbackOpen}
+            onOpenChange={setIsProblemFeedbackOpen}
+            onSubmit={handlePracticeSubmit}
           />
 
           {/* Delete Confirmation Dialog */}

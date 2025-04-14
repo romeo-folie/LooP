@@ -2,6 +2,7 @@ import { RequestHandler, Response } from "express";
 import { db } from "../db";
 import { AuthenticatedRequest } from "../types/authenticated-request";
 import logger from "../config/winston-config";
+import sm2 from "../utils/sm2-helper";
 
 export const createProblem: RequestHandler = async (
   req: AuthenticatedRequest,
@@ -331,5 +332,89 @@ export const deleteProblem: RequestHandler = async (
       `Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const handlePracticeFeedback: RequestHandler = async (
+  req: AuthenticatedRequest,
+  res
+) => {
+  try {
+    const userId = req.authUser?.userId;
+    const { problem_id } = req.params;
+    const { quality_score } = req.body; // 1–5
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    // Fetch problem & ensure ownership
+    const problem = await db('problems')
+      .where({ problem_id, user_id: userId })
+      .first();
+
+    if (!problem) {
+      res.status(404).json({ error: 'Problem not found' });
+      return;
+    }
+
+    // Parse existing meta or set defaults
+    const meta = problem.practice_meta ?? {};
+    const attemptCount = (meta.attempt_count ?? 0) + 1;
+    const prevEF = meta.ease_factor ?? 2.5;
+    const prevInterval = meta.interval ?? 0;
+
+    // Run SM‑2
+    const { newEF, newInterval } = sm2(
+      prevEF,
+      prevInterval,
+      attemptCount,
+      Number(quality_score)
+    );
+
+    const now = new Date();
+    const nextDue = new Date(now);
+    nextDue.setDate(nextDue.getDate() + newInterval);
+    // set to 09:00 AM
+    nextDue.setHours(9, 0, 0, 0);
+
+    const updatedMeta = {
+      attempt_count: attemptCount,
+      last_attempted_at: now.toISOString(),
+      ease_factor: newEF,
+      interval: newInterval,
+      next_due_at: nextDue.toISOString(),
+      quality_score: Number(quality_score)
+    };
+
+    // Update problem
+    await db('problems')
+      .where({ problem_id })
+      .update({
+        practice_meta: updatedMeta,
+        updated_at: now
+      });
+
+    // Create new reminder
+    await db('reminders').insert({
+      problem_id,
+      user_id: userId,
+      due_datetime: nextDue,
+      created_at: now,
+      updated_at: now
+    });
+
+    logger.info(
+      `Practice recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`
+    );
+
+    res.status(200).json({
+      message: 'Practice data recorded',
+      // practice_meta: updatedMeta
+    });
+  } catch (err) {
+    logger.error(`Error updating problem practice meta ${err}`);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
