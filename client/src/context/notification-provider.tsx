@@ -44,7 +44,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       if (type === "IN_APP_ALERT") {
         browserStore.set("notifications", payload);
         setNotifications((prev) => [...prev, payload]);
-        setNotificationLength((prev) => prev + 1);
         toast({
           title: payload.title,
           description: payload.body.message,
@@ -62,8 +61,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const localNotifications = browserStore.get("notifications");
     setNotifications(localNotifications.reverse());
-    setNotificationLength(localNotifications.length);
   }, []);
+
+  useEffect(() => {
+    setNotificationLength(notifications.length);
+  }, [notifications]);
 
   function removeNotification(problemId: number) {
     const currentNotifications = [...notifications];
@@ -76,7 +78,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   function clearNotifications() {
     browserStore.set("notifications", []);
     setNotifications([]);
-    setNotificationLength(0);
   }
 
   const value: NotificationContextType = {
