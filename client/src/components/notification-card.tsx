@@ -17,13 +17,15 @@ import { requestNotificationPermission } from "@/lib/push-notifications";
 import { useAxios } from "@/hooks/use-axios";
 import { useNotifications } from "@/context/notification-provider";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
   const navigate = useNavigate();
-  const { notifications, removeNotification, clearNotifications } = useNotifications();
+  const { notifications, removeNotification, clearNotifications } =
+    useNotifications();
 
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
 
@@ -34,8 +36,15 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
     else setNotificationsAllowed(false);
   }, []);
 
-  function handleCheckChanged(checked: boolean) {
-    if (checked) requestNotificationPermission(apiClient);
+  async function handleCheckChanged(checked: boolean) {
+    if (checked) {
+      const success = await requestNotificationPermission(apiClient);
+      if (success)
+        toast({
+          title: "Success",
+          description: "Subscribed to push notifications",
+        });
+    }
     browserStore.set("notificationsAllowed", checked.toString());
     setNotificationsAllowed(checked);
   }
@@ -99,10 +108,12 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                 className="text-foreground"
                 onClick={() => {
                   removeNotification(notification.body.meta.problem_id);
-                  navigate(`/problems?feedback_id=${notification.body.meta.problem_id}`);
+                  navigate(
+                    `/problems?feedback_id=${notification.body.meta.problem_id}`
+                  );
                 }}
               >
-                <Check className="h-6 w-6"/>
+                <Check className="h-6 w-6" />
               </Button>
             </div>
           ))}

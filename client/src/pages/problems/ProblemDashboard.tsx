@@ -230,7 +230,7 @@ export default function ProblemsDashboard() {
   //   }
   // }
 
-  const handleConfirm = async () => {
+  const handleNotificationConfirm = async () => {
     browserStore.set("notificationsAllowed", "true");
     // await saveUserNotificationPreference(true);
     const success = await requestNotificationPermission(apiClient);
@@ -242,7 +242,7 @@ export default function ProblemsDashboard() {
     setShowNotificationRequestDialog(false);
   };
 
-  const handleCancel = async () => {
+  const handleNotificationCancel = async () => {
     browserStore.set("notificationsAllowed", "false");
     // await saveUserNotificationPreference(false);
     setShowNotificationRequestDialog(false);
@@ -701,8 +701,8 @@ export default function ProblemsDashboard() {
       <NotificationPermissionDialog
         isOpen={showNotificationRequestDialog}
         onOpenChange={(open) => setShowNotificationRequestDialog(open)}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
+        onConfirm={handleNotificationConfirm}
+        onCancel={handleNotificationCancel}
       />
 
       {/* Problem Feedback Dialog */}
