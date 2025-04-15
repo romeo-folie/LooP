@@ -1,16 +1,51 @@
-# Node Express Server
+## Express Server
 
-## Generate Web Push Vapid Keys
+### Setup
 
+**1. Setup Postgres DB locally**
+
+**2. Generate Web Push Vapid Keys**
 ```
 npm install -g web-push
-
 npx web-push generate-vapid-keys
 ```
 
-## Docker Compose
-
+**3. Touch .env and set environment variables**
 ```
+ PORT=5999
+ DB_HOST=db
+ DB_PORT=5432
+ DB_USER=postgres
+ DB_PASSWORD=
+ DB_NAME=loop-db
+ NODE_ENV=development
+ JWT_SECRET=
+ REFRESH_SECRET=
+ RESET_PASSWORD_SECRET=
+ GITHUB_CLIENT_ID=
+ GITHUB_CLIENT_SECRET=
+ CLIENT_URL=
+ SERVER_URL=
+ RESEND_API_KEY=
+ RESEND_FROM_EMAIL=
+ VAPID_PUBLIC_KEY=
+ VAPID_PRIVATE_KEY=
+ CONTACT_EMAIL=
+ CSRF_SECRET_KEY=
+```
+
+**4. Install dependencies and run**
+```
+npm install
+npm run dev
+```
+
+### Alternative Setup with Docker
+
+**1. Add Environment variables to the following docker-compose template**
+```
+version: '3.9'
+
 services:
   server:
     build: .
@@ -57,10 +92,7 @@ volumes:
   postgres_data:
 ```
 
-## Setup
-
+**2. Build the images and start the containers**
 ```
-npm install
-
-npm run dev
+docker-compose up --build
 ```
