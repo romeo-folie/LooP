@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import LoadingScreen from "@/components/loading-screen";
-import { useIsFetching, useIsMutating } from "@tanstack/react-query";
+import { useIsFetching } from "@tanstack/react-query";
 
 interface LoadingContextType {
   isLoading: boolean;
@@ -22,9 +22,10 @@ export const LoadingStatusProvider = ({
   children: ReactNode;
 }) => {
   const isFetching = useIsFetching();
-  const isMutating = useIsMutating();
+  // const isMutating = useIsMutating();
 
-  const isLoading = isFetching > 0 || isMutating > 0;
+  const isLoading = isFetching > 0;
+  // || isMutating > 0;
 
   const value: LoadingContextType = {
     isLoading,

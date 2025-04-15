@@ -353,7 +353,7 @@ export default function ProblemsDashboard() {
     mutationFn: (qualityScore: number) =>
       submitPracticeFeedback(qualityScore, feedbackId as number, apiClient),
     onSuccess: ({ message }) => {
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      window.location.reload();
       toast({ title: "Success", description: message });
     },
     onError: (error) => {
