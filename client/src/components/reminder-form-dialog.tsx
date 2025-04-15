@@ -147,13 +147,13 @@ const ReminderFormDialog = ({
       }
     },
     onSuccess: ({ message }) => {
+      reset();
+      onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({
         title: "Success",
         description: message,
       });
-      onOpenChange(false);
-      reset();
     },
     onError: (error) => {
       console.error(error);

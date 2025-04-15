@@ -353,7 +353,8 @@ export default function ProblemsDashboard() {
     mutationFn: (qualityScore: number) =>
       submitPracticeFeedback(qualityScore, feedbackId as number, apiClient),
     onSuccess: ({ message }) => {
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["problems"] })
+      navigate("/problems", { replace: true });
       toast({ title: "Success", description: message });
     },
     onError: (error) => {
@@ -369,8 +370,6 @@ export default function ProblemsDashboard() {
   });
 
   const handlePracticeSubmit = (qualityScore: number) => {
-    console.log("qualityScore ", qualityScore);
-    console.log("feedback id ", feedbackId);
     practiceMutation.mutate(qualityScore);
   };
 
