@@ -32,7 +32,6 @@ import {
   useAxios,
 } from "@/hooks/use-axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import LoadingScreen from "@/components/loading-screen";
 import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
 import NotificationPermissionDialog from "@/components/notification-permission-dialog";
@@ -250,7 +249,7 @@ export default function ProblemsDashboard() {
   };
 
   // Problem Dashboard
-  const { data, isLoading, isError, isSuccess, error, refetch } = useQuery<
+  const { data, isError, isSuccess, error, refetch } = useQuery<
     { problems: ProblemResponse[] },
     AxiosError<APIErrorResponse>
   >({
@@ -443,292 +442,283 @@ export default function ProblemsDashboard() {
   );
 
   return (
-    <>
-      {isLoading ? (
-        <LoadingScreen />
-      ) : (
-        <div className="p-4 space-y-6 pb-8 max-h-screen max-w-screen">
-          {/* Header Section (Title & New Button) */}
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Problems</h1>
-            <Button
-              onClick={() => {
-                setProblemFormMode("new");
-                setIsProblemDialogOpen(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New
-            </Button>
-          </div>
-          {/* Search & Filters Section */}
-          <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-center">
-            <Input
-              placeholder="Search problems..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full lg:w-1/3 h-10 md:text-base lg:text-lg"
-            />
+    <div className="p-4 space-y-6 pb-8 max-h-screen max-w-screen">
+      {/* Header Section (Title & New Button) */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Problems</h1>
+        <Button
+          onClick={() => {
+            setProblemFormMode("new");
+            setIsProblemDialogOpen(true);
+          }}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          New
+        </Button>
+      </div>
+      {/* Search & Filters Section */}
+      <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-center">
+        <Input
+          placeholder="Search problems..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full lg:w-1/3 h-10 md:text-base lg:text-lg"
+        />
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2">
-              {/* Difficulty Filter */}
-              <DropdownMenu onOpenChange={handleDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="flex-1"
-                    ref={dropdownTriggerRef}
-                  >
-                    {selectedDifficulty ?? "Difficulty"}{" "}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  style={{
-                    width: dropdownWidth ? `${dropdownWidth}px` : "auto",
-                  }}
-                >
-                  {["Easy", "Medium", "Hard"].map((level) => (
-                    <DropdownMenuItem
-                      key={level}
-                      onClick={() => setSelectedDifficulty(level)}
-                    >
-                      {level}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Tags Filter */}
-              <DropdownMenu onOpenChange={handleDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg" className="flex-1">
-                    {selectedTag ? startCase(selectedTag) : "Tags"}{" "}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className="max-h-40 overflow-y-auto"
-                  style={{
-                    width: dropdownWidth ? `${dropdownWidth}px` : "auto",
-                  }}
-                >
-                  {tags.map((tag) => (
-                    <DropdownMenuItem
-                      key={tag}
-                      onClick={() => setSelectedTag(tag)}
-                    >
-                      {startCase(tag)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Date Solved Filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="lg" className="flex-1">
-                    {selectedDate ? format(selectedDate, "PPP") : "Date Solved"}{" "}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                  />
-                </PopoverContent>
-              </Popover>
-              {/* Reset Filters Button */}
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2">
+          {/* Difficulty Filter */}
+          <DropdownMenu onOpenChange={handleDropdownOpen}>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="flex items-center flex-1"
                 size="lg"
-                onClick={resetFilters}
+                className="flex-1"
+                ref={dropdownTriggerRef}
               >
-                <RotateCcw className="h-4 w-4" /> Reset
+                {selectedDifficulty ?? "Difficulty"}{" "}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              style={{
+                width: dropdownWidth ? `${dropdownWidth}px` : "auto",
+              }}
+            >
+              {["Easy", "Medium", "Hard"].map((level) => (
+                <DropdownMenuItem
+                  key={level}
+                  onClick={() => setSelectedDifficulty(level)}
+                >
+                  {level}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Tags Filter */}
+          <DropdownMenu onOpenChange={handleDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="lg" className="flex-1">
+                {selectedTag ? startCase(selectedTag) : "Tags"}{" "}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="max-h-40 overflow-y-auto"
+              style={{
+                width: dropdownWidth ? `${dropdownWidth}px` : "auto",
+              }}
+            >
+              {tags.map((tag) => (
+                <DropdownMenuItem key={tag} onClick={() => setSelectedTag(tag)}>
+                  {startCase(tag)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Date Solved Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="lg" className="flex-1">
+                {selectedDate ? format(selectedDate, "PPP") : "Date Solved"}{" "}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+              />
+            </PopoverContent>
+          </Popover>
+          {/* Reset Filters Button */}
+          <Button
+            variant="outline"
+            className="flex items-center flex-1"
+            size="lg"
+            onClick={resetFilters}
+          >
+            <RotateCcw className="h-4 w-4" /> Reset
+          </Button>
+        </div>
+      </div>
+      {/* Problems List */}
+      {paginatedProblems.length ? (
+        <>
+          <div className="border rounded-md">
+            {paginatedProblems.map((problem) => (
+              <div
+                key={problem.problem_id ?? problem.local_id}
+                className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
+              >
+                {isDesktop ? (
+                  <>
+                    {/* Display popover for desktop */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        {/* Clickable Problem Title */}
+                        <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
+                          {problem.name}
+                        </span>
+                      </PopoverTrigger>
+                      {/* Popover Content with Problem Detail */}
+                      <PopoverContent align="start" className="w-[500px]">
+                        <ProblemDetail problem={problem} tags={tags} />
+                      </PopoverContent>
+                    </Popover>
+                  </>
+                ) : (
+                  <Credenza>
+                    <CredenzaTrigger asChild>
+                      {/* Clickable Problem Title */}
+                      <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
+                        {problem.name}
+                      </span>
+                    </CredenzaTrigger>
+                    <CredenzaContent className="px-4">
+                      <CredenzaHeader className="p-0">
+                        <CredenzaTitle className="sr-only">
+                          Hidden Title for Screen Readers
+                        </CredenzaTitle>
+                        <CredenzaDescription className="sr-only">
+                          Hidden Description for Screen Readers
+                        </CredenzaDescription>
+                      </CredenzaHeader>
+                      <ProblemDetail problem={problem} tags={tags} />
+                    </CredenzaContent>
+                  </Credenza>
+                )}
+
+                <div className="flex items-center gap-4 ml-4">
+                  {/* Difficulty Badge */}
+                  <Badge
+                    className={`${
+                      difficultyColors[problem.difficulty]
+                    } text-white`}
+                  >
+                    {problem.difficulty}
+                  </Badge>
+
+                  {/* More Options Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedProblem(problem);
+                          setIsReminderDialogOpen(true);
+                        }}
+                      >
+                        Add Reminder
+                      </DropdownMenuItem>
+                      {!isDesktop && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedProblem(problem);
+                            setProblemFormMode("edit");
+                            setIsProblemDialogOpen(true);
+                          }}
+                        >
+                          Edit Problem
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => {
+                          setSelectedProblem(problem);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        Delete Problem
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
+              <Button
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+              >
+                <ArrowLeft className="h-4 w-4" /> Prev
+              </Button>
+              <span className="text-sm font-medium">
+                {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+              >
+                Next <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-          {/* Problems List */}
-          {paginatedProblems.length ? (
-            <>
-              <div className="border rounded-md">
-                {paginatedProblems.map((problem) => (
-                  <div
-                    key={problem.problem_id ?? problem.local_id}
-                    className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
-                  >
-                    {isDesktop ? (
-                      <>
-                        {/* Display popover for desktop */}
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            {/* Clickable Problem Title */}
-                            <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
-                              {problem.name}
-                            </span>
-                          </PopoverTrigger>
-                          {/* Popover Content with Problem Detail */}
-                          <PopoverContent align="start" className="w-[500px]">
-                            <ProblemDetail problem={problem} tags={tags} />
-                          </PopoverContent>
-                        </Popover>
-                      </>
-                    ) : (
-                      <Credenza>
-                        <CredenzaTrigger asChild>
-                          {/* Clickable Problem Title */}
-                          <span className="text-base font-normal lg:text-lg hover:cursor-pointer hover:underline underline-offset-4">
-                            {problem.name}
-                          </span>
-                        </CredenzaTrigger>
-                        <CredenzaContent className="px-4">
-                          <CredenzaHeader className="p-0">
-                            <CredenzaTitle className="sr-only">
-                              Hidden Title for Screen Readers
-                            </CredenzaTitle>
-                            <CredenzaDescription className="sr-only">
-                              Hidden Description for Screen Readers
-                            </CredenzaDescription>
-                          </CredenzaHeader>
-                          <ProblemDetail problem={problem} tags={tags} />
-                        </CredenzaContent>
-                      </Credenza>
-                    )}
-
-                    <div className="flex items-center gap-4 ml-4">
-                      {/* Difficulty Badge */}
-                      <Badge
-                        className={`${
-                          difficultyColors[problem.difficulty]
-                        } text-white`}
-                      >
-                        {problem.difficulty}
-                      </Badge>
-
-                      {/* More Options Dropdown */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedProblem(problem);
-                              setIsReminderDialogOpen(true);
-                            }}
-                          >
-                            Add Reminder
-                          </DropdownMenuItem>
-                          {!isDesktop && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedProblem(problem);
-                                setProblemFormMode("edit");
-                                setIsProblemDialogOpen(true);
-                              }}
-                            >
-                              Edit Problem
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => {
-                              setSelectedProblem(problem);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            Delete Problem
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((prev) => prev - 1)}
-                  >
-                    <ArrowLeft className="h-4 w-4" /> Prev
-                  </Button>
-                  <span className="text-sm font-medium">
-                    {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                  >
-                    Next <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="border rounded-md p-4 text-center text-gray-500">
-              No problems found
-            </div>
           )}
-
-          {/* Problem Form Dialog */}
-          <ProblemFormDialog
-            mode={problemFormMode}
-            problem={selectedProblem}
-            initialTagList={tags}
-            isOpen={isProblemDialogOpen}
-            onOpenChange={setIsProblemDialogOpen}
-          />
-
-          {/* Reminder Form Dialog */}
-          <ReminderFormDialog
-            isOpen={isReminderDialogOpen}
-            onOpenChange={setIsReminderDialogOpen}
-            mode="new"
-            problemId={
-              (selectedProblem?.problem_id as number) ||
-              (selectedProblem?.local_id as string)
-            }
-          />
-
-          {/* The permission dialog */}
-          <NotificationPermissionDialog
-            isOpen={showNotificationRequestDialog}
-            onOpenChange={(open) => setShowNotificationRequestDialog(open)}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
-
-          {/* Problem Feedback Dialog */}
-          <ProblemFeedbackDialog
-            isOpen={isProblemFeedbackOpen}
-            onOpenChange={setIsProblemFeedbackOpen}
-            onSubmit={handlePracticeSubmit}
-          />
-
-          {/* Delete Confirmation Dialog */}
-          <DeleteConfirmationDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            onConfirmDelete={handleProblemDelete}
-            resource="problem"
-          />
+        </>
+      ) : (
+        <div className="border rounded-md p-4 text-center text-gray-500">
+          No problems found
         </div>
       )}
-    </>
+
+      {/* Problem Form Dialog */}
+      <ProblemFormDialog
+        mode={problemFormMode}
+        problem={selectedProblem}
+        initialTagList={tags}
+        isOpen={isProblemDialogOpen}
+        onOpenChange={setIsProblemDialogOpen}
+      />
+
+      {/* Reminder Form Dialog */}
+      <ReminderFormDialog
+        isOpen={isReminderDialogOpen}
+        onOpenChange={setIsReminderDialogOpen}
+        mode="new"
+        problemId={
+          (selectedProblem?.problem_id as number) ||
+          (selectedProblem?.local_id as string)
+        }
+      />
+
+      {/* The permission dialog */}
+      <NotificationPermissionDialog
+        isOpen={showNotificationRequestDialog}
+        onOpenChange={(open) => setShowNotificationRequestDialog(open)}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
+      {/* Problem Feedback Dialog */}
+      <ProblemFeedbackDialog
+        isOpen={isProblemFeedbackOpen}
+        onOpenChange={setIsProblemFeedbackOpen}
+        onSubmit={handlePracticeSubmit}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirmDelete={handleProblemDelete}
+        resource="problem"
+      />
+    </div>
   );
 }

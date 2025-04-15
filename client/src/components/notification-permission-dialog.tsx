@@ -25,15 +25,15 @@ const NotificationPermissionDialog: React.FC<
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent className="gap-y-4 w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-lg lg:text-xl font-semibold flex items-center justify-center gap-2">
-            <BellIcon className="h-5 w-5" />
+          <AlertDialogTitle className="text-lg lg:text-xl flex items-center justify-center sm:justify-start gap-2">
+            <BellIcon className="h-6 w-6" />
             Enable Notifications?
           </AlertDialogTitle>
         </AlertDialogHeader>
-        <AlertDialogDescription className="text-foreground text-base text-center text-gray-500">
-            We use notifications to remind you to revise the problems you solve.
-            By enabling them, you'll never miss a scheduled reminder.            
-          </AlertDialogDescription>
+        <AlertDialogDescription className="text-foreground text-base text-center sm:text-left dark:text-gray-300">
+          We use notifications to remind you to revise the problems you solve.
+          By enabling them, you'll never miss a scheduled reminder.
+        </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>No, thanks</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>Yes, enable</AlertDialogAction>

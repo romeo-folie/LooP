@@ -20,6 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import { deleteLocalReminder } from "@/lib/db";
+import { startCase } from "lodash";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -137,7 +138,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
                   .sort((a, b) => a.length - b.length)
                   .map((tag) => (
                     <Badge key={tag} className="text-nowrap text-xs">
-                      {tag}
+                      {startCase(tag)}
                     </Badge>
                   ))}
               </div>
@@ -145,7 +146,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
           </div>
 
           {/* Notes */}
-          <p className="mt-5">{problem.notes}</p>
+          <p className="mt-5 dark:text-gray-300">{problem.notes}</p>
         </div>
 
         {/* Right Column - Edit, Difficulty & Tags (desktop only) */}
@@ -177,8 +178,8 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
                         display: "block",
                       }}
                     >
-                      {tag}
-                    </Badge>
+                      {startCase(tag)}
+                      </Badge>
                   ))}
               </div>
             </div>

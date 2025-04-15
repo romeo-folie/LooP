@@ -11,9 +11,7 @@ export default function ProtectedRoute() {
 
   if (!accessToken) {
     // If user isn't logged in, redirect to sign-in
-    return (
-      <Navigate to="/auth" state={{ from: location }} replace />
-    );
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // If user is logged in, render child routes
