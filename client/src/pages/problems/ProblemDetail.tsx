@@ -17,7 +17,6 @@ import {
 import { AxiosError, AxiosInstance } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import { deleteLocalReminder } from "@/lib/db";
@@ -30,17 +29,17 @@ const difficultyColors: Record<string, string> = {
 };
 
 const deleteReminder = async function (
-  reminderId:  number | string,
+  reminderId: number | string,
   problemId: number | string,
   apiClient: AxiosInstance,
-  isOnline: boolean,
+  isOnline: boolean
 ): Promise<APISuccessResponse> {
   try {
     if (!isOnline) {
       await deleteLocalReminder(reminderId, problemId);
       return {
         message: "Reminder deleted offline",
-      }
+      };
     }
     const { data } = await apiClient.delete(`/reminders/${reminderId}`);
     return data;
@@ -48,7 +47,6 @@ const deleteReminder = async function (
     logger.error(`error requesting reminder deletion ${error}`);
     throw error;
   }
-
 };
 
 interface ProblemDetailProps {
@@ -60,7 +58,6 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   const queryClient = useQueryClient();
   const apiClient = useAxios();
   const { isOnline } = useNetworkStatus();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
@@ -85,7 +82,13 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
     AxiosError<APIErrorResponse>,
     number | string
   >({
-    mutationFn: (reminderId: number | string) => deleteReminder(reminderId, problem.problem_id ?? problem.local_id, apiClient, isOnline),
+    mutationFn: (reminderId: number | string) =>
+      deleteReminder(
+        reminderId,
+        problem.problem_id ?? problem.local_id,
+        apiClient,
+        isOnline
+      ),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({ title: "Success", description: message });
@@ -103,33 +106,57 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   });
 
   const handleConfirmReminderDelete = () => {
-    mutation.mutate(editingReminder!.reminder_id as number || editingReminder!.local_id as string);
+    mutation.mutate(
+      (editingReminder!.reminder_id as number) ||
+        (editingReminder!.local_id as string)
+    );
   };
 
   return (
     <div className="p-4 space-y-6">
       {/* Header: Title & Edit Button */}
-      <div className="flex justify-between items-start">
-        {/* Title & Notes */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        {/* Left Column - Title and Notes */}
         <div className="flex-auto">
           <h1 className="text-xl lg:text-2xl font-bold">{problem.name}</h1>
+
+          {/* Tags + Difficulty (visible on mobile only) */}
+          <div className="flex flex-wrap gap-4 mt-3 justify-between sm:hidden">
+            <div>
+              <p className="text-gray-500 text-sm font-bold mb-1">Difficulty</p>
+              <Badge
+                className={`${difficultyColors[problem.difficulty]} text-xs`}
+              >
+                {problem.difficulty}
+              </Badge>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-500 text-sm font-bold mb-1">Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {problem.tags
+                  .sort((a, b) => a.length - b.length)
+                  .map((tag) => (
+                    <Badge key={tag} className="text-nowrap text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
           <p className="text-gray-700 mt-5">{problem.notes}</p>
         </div>
 
-        {/* Edit + Difficulty & Tags */}
-        <div className="flex flex-col items-end gap-4 flex-auto">
-          {/* Edit Button */}
-          {isDesktop && (
-            <Button
-              className="flex items-center gap-2"
-              onClick={() => setIsProblemDialogOpen(true)}
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
-          )}
-
-          {/* Difficulty & Tags */}
+        {/* Right Column - Edit, Difficulty & Tags (desktop only) */}
+        <div className="flex-col items-end gap-4 flex-shrink-0 sm:flex-auto sm:ml-2 hidden sm:flex">
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => setIsProblemDialogOpen(true)}
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
           <div className="text-right space-y-2">
             <div className="space-y-2">
               <p className="text-gray-500 text-sm font-bold">Difficulty</p>
@@ -140,9 +167,19 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
             <div className="space-y-2">
               <p className="text-gray-500 text-sm font-bold">Tags</p>
               <div className="flex flex-wrap gap-2 justify-end">
-                {problem.tags.map((tag) => (
-                  <Badge key={tag} className="text-nowrap">{tag}</Badge>
-                ))}
+                {problem.tags
+                  .sort((a, b) => a.length - b.length)
+                  .map((tag) => (
+                    <Badge
+                      key={tag}
+                      className="text-nowrap"
+                      style={{
+                        display: "block",
+                      }}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
               </div>
             </div>
           </div>
@@ -183,7 +220,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
         isOpen={isReminderDialogOpen}
         onOpenChange={setIsReminderDialogOpen}
         mode="edit"
-        problemId={problem.problem_id as number || problem.local_id as string}
+        problemId={
+          (problem.problem_id as number) || (problem.local_id as string)
+        }
         reminder={editingReminder}
       />
 

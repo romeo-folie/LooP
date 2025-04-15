@@ -9,7 +9,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Bell } from "lucide-react";
+import { BellIcon } from "@radix-ui/react-icons";
 
 interface NotificationPermissionDialogProps {
   isOpen: boolean;
@@ -25,12 +25,12 @@ const NotificationPermissionDialog: React.FC<
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent className="gap-y-4 w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-lg lg:text-xl font-semibold flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+          <AlertDialogTitle className="text-lg lg:text-xl font-semibold flex items-center justify-center gap-2">
+            <BellIcon className="h-5 w-5" />
             Enable Notifications?
           </AlertDialogTitle>
         </AlertDialogHeader>
-        <AlertDialogDescription className="text-foreground text-base text-gray-500">
+        <AlertDialogDescription className="text-foreground text-base text-center text-gray-500">
             We use notifications to remind you to revise the problems you solve.
             By enabling them, you'll never miss a scheduled reminder.            
           </AlertDialogDescription>
