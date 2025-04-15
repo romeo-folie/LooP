@@ -410,8 +410,7 @@ export const handlePracticeFeedback: RequestHandler = async (
     );
 
     res.status(200).json({
-      message: 'Practice data recorded',
-      // practice_meta: updatedMeta
+      message: `Next reminder on ${nextDue.toDateString()}`,
     });
   } catch (err) {
     logger.error(`Error updating problem practice meta ${err}`);

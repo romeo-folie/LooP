@@ -118,10 +118,10 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         {/* Left Column - Title and Notes */}
         <div className="flex-auto">
-          <h1 className="text-xl lg:text-2xl font-bold">{problem.name}</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold">{problem.name}</h1>
 
           {/* Tags + Difficulty (visible on mobile only) */}
-          <div className="flex flex-wrap gap-4 mt-3 justify-between sm:hidden">
+          <div className="flex gap-4 mt-3 justify-between sm:hidden">
             <div>
               <p className="text-gray-500 text-sm font-bold mb-1">Difficulty</p>
               <Badge
@@ -130,9 +130,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
                 {problem.difficulty}
               </Badge>
             </div>
-            <div className="text-right">
+            <div className="flex flex-col items-end ml-4">
               <p className="text-gray-500 text-sm font-bold mb-1">Tags</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-end">
                 {problem.tags
                   .sort((a, b) => a.length - b.length)
                   .map((tag) => (
@@ -145,7 +145,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
           </div>
 
           {/* Notes */}
-          <p className="text-gray-700 mt-5">{problem.notes}</p>
+          <p className="mt-5">{problem.notes}</p>
         </div>
 
         {/* Right Column - Edit, Difficulty & Tags (desktop only) */}

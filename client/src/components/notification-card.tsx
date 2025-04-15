@@ -1,4 +1,4 @@
-import { BellRing, Check } from "lucide-react";
+import { BellRing, Check, CircleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,14 @@ import { useEffect, useState } from "react";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { useAxios } from "@/hooks/use-axios";
 import { useNotifications } from "@/context/notification-provider";
+import { useNavigate } from "react-router-dom";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
-  const { notifications, clearNotifications } = useNotifications();
+  const navigate = useNavigate();
+  const { notifications, removeNotification, clearNotifications } = useNotifications();
 
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
 
@@ -75,9 +77,12 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
           {notifications.map((notification, index) => (
             <div
               key={index}
-              className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0"
+              className="mb-4 grid grid-cols-[auto_1fr_auto] items-start gap-4 pb-4 last:mb-0 last:pb-0"
             >
-              <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+              {/* Icon */}
+              <CircleAlert className="h-4 w-4 translate-y-1 stroke-foreground" />
+
+              {/* Message Content */}
               <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">
                   {notification.title}
@@ -86,6 +91,19 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                   {notification.body.message}
                 </p>
               </div>
+
+              {/* Action Button with Check Icon */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-foreground"
+                onClick={() => {
+                  removeNotification(notification.body.meta.problem_id);
+                  navigate(`/problems?feedback_id=${notification.body.meta.problem_id}`);
+                }}
+              >
+                <Check className="h-6 w-6"/>
+              </Button>
             </div>
           ))}
         </div>

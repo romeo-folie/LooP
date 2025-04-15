@@ -10,12 +10,13 @@ import { toast } from "@/hooks/use-toast";
 
 export type Notification = {
   title: string;
-  body: { message: string; due_datetime: Date };
+  body: { message: string; meta: { due_datetime: Date, problem_id: number } };
 };
 
 interface NotificationContextType {
   notifications: Notification[];
   notificationLength: number;
+  removeNotification: (problemId: number) => void;
   clearNotifications: () => void;
 }
 
@@ -64,6 +65,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     setNotificationLength(localNotifications.length);
   }, []);
 
+  function removeNotification(problemId: number) {
+    const currentNotifications = [...notifications];
+    const notificationIndex = currentNotifications.findIndex((notification) => notification.body.meta.problem_id === problemId);
+    currentNotifications.splice(notificationIndex, 1);
+    setNotifications(currentNotifications);
+    browserStore.set("notifications", currentNotifications);
+  }
+
   function clearNotifications() {
     browserStore.set("notifications", []);
     setNotifications([]);
@@ -73,6 +82,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const value: NotificationContextType = {
     notifications,
     notificationLength,
+    removeNotification,
     clearNotifications,
   };
 
