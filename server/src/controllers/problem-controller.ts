@@ -51,7 +51,7 @@ export const createProblem: RequestHandler = async (
       ]);
 
     if (isFromWorker && reminders.length) {
-      const syncReminders = reminders.map((rem: { due_datetime: any }) => ({
+      const syncReminders = reminders.map((rem: { due_datetime: Date }) => ({
         problem_id: newProblem.problem_id,
         user_id: userId,
         due_datetime: rem.due_datetime,

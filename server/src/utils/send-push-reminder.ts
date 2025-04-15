@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import webpush, { WebPushError } from "web-push";
 import { db } from "../db";
 import logger from "../config/winston-config";
 
@@ -27,13 +27,16 @@ async function sendPushReminder(
     try {
       await webpush.sendNotification(subscription, payload);
       logger.info(`Push sent to user ${userId}`);
-    } catch (error: any) {
-      if (error.statusCode === 410 || error.statusCode === 404) {
-        await db("subscriptions")
-          .where({ endpoint: subscription.endpoint })
-          .del();
+    } catch (error: unknown) {
+      if (error instanceof WebPushError) {
+        if (error.statusCode === 410 || error.statusCode === 404) {
+          await db("subscriptions")
+            .where({ endpoint: subscription.endpoint })
+            .del();
+        }
+        logger.error(`WebPushError: ${error.body}`);
       }
-      logger.error(`Failed to send push: ${error.body}`);
+      logger.error(`Failed to send push: ${error}`);
     }
   }
 }

@@ -10,7 +10,7 @@ npm install -g web-push
 npx web-push generate-vapid-keys
 ```
 
-**3. Touch .env and set environment variables**
+**3. touch .env and set environment variables**
 ```
  PORT=5999
  DB_HOST=db
