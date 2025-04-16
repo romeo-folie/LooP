@@ -19,6 +19,7 @@ import { useAuth } from "@/context/auth-provider";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "./password-input";
 import { logger } from "@/lib/logger";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface PasswordResetResponse {
   message: string;
@@ -51,6 +52,7 @@ type RequestValues = PasswordResetFormValues & {
 const PasswordResetForm: React.FC = () => {
   const navigate = useNavigate();
   const apiClient = useAxios();
+  const isMobile = useMediaQuery("(min-width: 320px) and (max-width: 480px)");
   const { passwordResetToken, savePasswordResetToken } = useAuth();
 
   const {
@@ -109,7 +111,7 @@ const PasswordResetForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} className={`${isMobile && 'w-11/12'}`}>
       <Card>
         <CardHeader>
           <CardTitle className="text-xl 2xl:text-2xl">Reset Password</CardTitle>

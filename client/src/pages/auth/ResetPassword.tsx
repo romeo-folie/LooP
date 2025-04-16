@@ -7,7 +7,7 @@ const ResetPassword: React.FC = () => {
     <Container>
       <PasswordResetForm />
     </Container>
-  )
-}
+  );
+};
 
 export default ResetPassword;

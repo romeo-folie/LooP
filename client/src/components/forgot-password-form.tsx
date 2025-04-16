@@ -20,6 +20,7 @@ import { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-provider";
 import { logger } from "@/lib/logger";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export interface ForgotPasswordResponse {
   message: string;
@@ -32,9 +33,11 @@ const ForgotPasswordSchema = z.object({
 export type ForgotPasswordFormValues = z.infer<typeof ForgotPasswordSchema>;
 
 const ForgotPasswordForm: React.FC = () => {
+  const isMobile = useMediaQuery("(min-width: 320px) and (max-width: 480px)");
   const navigate = useNavigate();
   const apiClient = useAxios();
   const { saveEmail } = useAuth();
+  
 
   const {
     register,
@@ -86,7 +89,7 @@ const ForgotPasswordForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} className={`${isMobile && 'w-11/12'}`}>
       <Card>
         <CardHeader>
           <CardTitle className="text-xl 2xl:text-2xl">Forgot Password</CardTitle>

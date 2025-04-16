@@ -119,7 +119,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         {/* Left Column - Title and Notes */}
         <div className="flex-auto">
-          <h1 className="text-2xl lg:text-3xl font-bold">{problem.name}</h1>
+          <h1 className="text-xl lg:text-2xl font-bold">{startCase(problem.name)}</h1>
 
           {/* Tags + Difficulty (visible on mobile only) */}
           <div className="flex gap-4 mt-3 justify-between sm:hidden">
