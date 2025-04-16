@@ -266,7 +266,8 @@ export default function ProblemsDashboard() {
     if (!isOnline) {
       refetch();
     }
-  }, [isOnline, refetch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline]);
 
   let problems: ProblemResponse[] = [];
 

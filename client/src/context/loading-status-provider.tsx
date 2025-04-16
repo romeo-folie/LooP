@@ -22,10 +22,8 @@ export const LoadingStatusProvider = ({
   children: ReactNode;
 }) => {
   const isFetching = useIsFetching();
-  // const isMutating = useIsMutating();
 
   const isLoading = isFetching > 0;
-  // || isMutating > 0;
 
   const value: LoadingContextType = {
     isLoading,
@@ -33,7 +31,8 @@ export const LoadingStatusProvider = ({
 
   return (
     <LoadingContext.Provider value={value}>
-      {isLoading ? <LoadingScreen /> : children}
+      {isLoading && <LoadingScreen />}
+      {children}
     </LoadingContext.Provider>
   );
 };
