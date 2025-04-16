@@ -8,7 +8,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
 import { APIErrorResponse, useAxios } from "@/hooks/use-axios";
-import type { ReminderResponse, ReminderResponseData } from "@/pages/problems/ProblemDashboard";
+import type {
+  ReminderResponse,
+  ReminderResponseData,
+} from "@/pages/problems/ProblemDashboard";
 import DateTimePicker from "./date-time-picker";
 import {
   Credenza,
@@ -18,7 +21,11 @@ import {
   CredenzaTitle,
 } from "@/components/credenza";
 import { logger } from "@/lib/logger";
-import { addLocalReminder, ReminderSchema, updateLocalReminder } from "@/lib/db";
+import {
+  addLocalReminder,
+  ReminderSchema,
+  updateLocalReminder,
+} from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
 const reminderSchema = z.object({
@@ -48,9 +55,9 @@ async function createReminder(
       } as ReminderSchema;
       await addLocalReminder(problemId, localReminder);
       return {
-        message: 'Reminder created offline',
+        message: "Reminder created offline",
         reminder: localReminder,
-      }
+      };
     }
 
     const { data } = await apiClient.post(`/reminders/${problemId}`, payload);
@@ -59,7 +66,6 @@ async function createReminder(
     logger.error(`error requesting reminder creation ${error}`);
     throw error;
   }
-
 }
 
 async function updateReminder(
@@ -72,11 +78,11 @@ async function updateReminder(
   const payload = { due_datetime: formData.due_datetime };
   try {
     if (!isOnline) {
-      await updateLocalReminder(reminderId, problemId, payload);   
+      await updateLocalReminder(reminderId, problemId, payload);
       return {
-        message: 'Reminder updated offline',
+        message: "Reminder updated offline",
         reminder: {} as ReminderSchema,
-      }
+      };
     }
     const { data } = await apiClient.put(`/reminders/${reminderId}`, payload);
     return data;
@@ -114,7 +120,7 @@ const ReminderFormDialog = ({
         : {
             date: undefined,
           },
-    [mode, reminder]
+    [mode, reminder],
   );
 
   const {
@@ -136,7 +142,7 @@ const ReminderFormDialog = ({
     mutationFn: (formData) => {
       if (mode === "edit") {
         return updateReminder(
-          reminder?.reminder_id as number || reminder?.local_id as string,
+          (reminder?.reminder_id as number) || (reminder?.local_id as string),
           problemId,
           formData,
           apiClient,

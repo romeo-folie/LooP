@@ -73,7 +73,7 @@ export async function addLocalProblem(problem: ProblemSchema): Promise<number> {
   return await addOutboxEntry(
     ActionType.Create,
     ResourceType.Problem,
-    problem as ProblemSchema
+    problem as ProblemSchema,
   );
 }
 
@@ -90,11 +90,11 @@ export async function updateLocalProblem(problem: ProblemSchema) {
     return await addOutboxEntry(
       ActionType.Update,
       ResourceType.Problem,
-      problem as ProblemSchema
+      problem as ProblemSchema,
     );
   return await updateOutboxPayload(
     problem.local_id as string,
-    problem as Payload
+    problem as Payload,
   );
 }
 
@@ -123,7 +123,7 @@ export async function getAllProblems(): Promise<ProblemSchema[]> {
 
 export async function addLocalReminder(
   problemId: number | string,
-  newReminder: ReminderSchema
+  newReminder: ReminderSchema,
 ) {
   const problemToUpdate = await db.problems
     .where(isString(problemId) ? "local_id" : "problem_id")
@@ -136,7 +136,7 @@ export async function addLocalReminder(
   const updatedProblem = {
     ...problemToUpdate,
     reminders,
-  }
+  };
   await db.problems.update(problemToUpdate.id, updatedProblem);
 
   // add outbox entry for reminder creation if problemId is number
@@ -145,7 +145,7 @@ export async function addLocalReminder(
     return await addOutboxEntry(
       ActionType.Create,
       ResourceType.Reminder,
-      newReminder as ReminderSchema
+      newReminder as ReminderSchema,
     );
   }
 
@@ -155,11 +155,11 @@ export async function addLocalReminder(
 export async function updateLocalReminder(
   reminderId: number | string,
   problemId: number | string,
-  payload: ReminderSchema
+  payload: ReminderSchema,
 ) {
   async function performReminderUpdate(
     reminderId: number | string,
-    problemId: number | string
+    problemId: number | string,
   ) {
     // query the problem table
     const problem = (await db.problems
@@ -172,12 +172,12 @@ export async function updateLocalReminder(
     const reminderToUpdate = reminders.find((reminder) =>
       isString(reminderId)
         ? reminder.local_id === reminderId
-        : reminder.reminder_id === reminderId
+        : reminder.reminder_id === reminderId,
     ) as ReminderResponse;
     const reminderIndex = reminders.findIndex((reminder) =>
       isString(reminderId)
         ? reminder.local_id === reminderId
-        : reminder.reminder_id === reminderId
+        : reminder.reminder_id === reminderId,
     );
 
     // update the reminder in the problem's reminders array
@@ -193,7 +193,7 @@ export async function updateLocalReminder(
 
   const { updatedProblem, updatedReminder } = await performReminderUpdate(
     reminderId,
-    problemId
+    problemId,
   );
 
   // CASE 1: Updated unsynced reminder in unsynced problem
@@ -216,18 +216,18 @@ export async function updateLocalReminder(
     return await addOutboxEntry(
       ActionType.Update,
       ResourceType.Reminder,
-      updatedReminder as ReminderSchema
+      updatedReminder as ReminderSchema,
     );
   }
 }
 
 export async function deleteLocalReminder(
   reminderId: number | string,
-  problemId: number | string
+  problemId: number | string,
 ) {
   async function performReminderDelete(
     reminderId: number | string,
-    problemId: number | string
+    problemId: number | string,
   ) {
     const problem = (await db.problems
       .where(isString(problemId) ? "local_id" : "problem_id")
@@ -237,7 +237,7 @@ export async function deleteLocalReminder(
     const reminderIndex = reminders.findIndex((reminder) =>
       isString(reminderId)
         ? reminder.local_id === reminderId
-        : reminder.reminder_id === reminderId
+        : reminder.reminder_id === reminderId,
     );
     reminders.splice(reminderIndex, 1);
     const updatedProblem = { ...problem, reminders };
@@ -286,7 +286,7 @@ function getResourceId(resource: ResourceType, payload: Payload) {
 export async function addOutboxEntry(
   type: ActionType,
   resource: ResourceType,
-  payload: Payload
+  payload: Payload,
 ) {
   const entry = {
     type,
@@ -307,7 +307,7 @@ export async function getOutboxEntry(resourceId: string | number) {
 
 export async function updateOutboxPayload(
   resourceId: string,
-  payload: Payload
+  payload: Payload,
 ) {
   const record = await getOutboxEntry(resourceId);
   return await db.outbox.update(record?.id as number, { ...record, payload });

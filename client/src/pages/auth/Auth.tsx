@@ -13,7 +13,7 @@ const Auth = () => {
   const activeTab = searchParams.get("tab") || "sign-in";
 
   useEffect(() => {
-    navigate(`/auth?tab=${activeTab}`, {replace: true });
+    navigate(`/auth?tab=${activeTab}`, { replace: true });
   }, [navigate, activeTab]);
 
   const handleTabChange = (value: string) => {
@@ -22,26 +22,26 @@ const Auth = () => {
 
   return (
     <Container>
-        <Tabs
-          className="w-[90vw] sm:w-[380px] md:w-[400px] lg:w-[450px] xl:w-[480px]"
-          value={activeTab}
-          onValueChange={handleTabChange}
-        >
-          <TabsList className="grid w-full grid-cols-2 h-12">
-            <TabsTrigger value="sign-in" className="py-2">
-              Sign In
-            </TabsTrigger>
-            <TabsTrigger value="sign-up" className="py-2">
-              Sign Up
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="sign-in">
-            <SigninForm />
-          </TabsContent>
-          <TabsContent value="sign-up">
-            <SignupForm />
-          </TabsContent>
-        </Tabs>
+      <Tabs
+        className="w-[90vw] sm:w-[380px] md:w-[400px] lg:w-[450px] xl:w-[480px]"
+        value={activeTab}
+        onValueChange={handleTabChange}
+      >
+        <TabsList className="grid w-full grid-cols-2 h-12">
+          <TabsTrigger value="sign-in" className="py-2">
+            Sign In
+          </TabsTrigger>
+          <TabsTrigger value="sign-up" className="py-2">
+            Sign Up
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="sign-in">
+          <SigninForm />
+        </TabsContent>
+        <TabsContent value="sign-up">
+          <SignupForm />
+        </TabsContent>
+      </Tabs>
     </Container>
   );
 };

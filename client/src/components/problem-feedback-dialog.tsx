@@ -47,7 +47,9 @@ const ProblemFeedbackDialog: React.FC<ProblemFeedbackDialogProps> = ({
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent className="w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-lg lg:text-xl font-bold">How well did you recall this problem?</AlertDialogTitle>
+          <AlertDialogTitle className="text-lg lg:text-xl font-bold">
+            How well did you recall this problem?
+          </AlertDialogTitle>
           <AlertDialogDescription>
             Your feedback helps us optimize future reminders.
           </AlertDialogDescription>
@@ -62,7 +64,9 @@ const ProblemFeedbackDialog: React.FC<ProblemFeedbackDialogProps> = ({
             >
               <Star
                 className={`w-6 h-6 ${
-                  rating && i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                  rating && i < rating
+                    ? "text-yellow-400 fill-yellow-400"
+                    : "text-gray-300"
                 }`}
               />
             </button>

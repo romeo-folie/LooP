@@ -106,7 +106,7 @@ const difficultyColors: Record<string, string> = {
 const fetchProblems = async (
   apiClient: AxiosInstance,
   isOnline: boolean,
-  lastFetchRef: React.RefObject<number>
+  lastFetchRef: React.RefObject<number>,
 ) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
@@ -127,7 +127,7 @@ const fetchProblems = async (
 const deleteProblem = async function (
   problemId: number | string,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<APISuccessResponse> {
   try {
     if (!isOnline) {
@@ -148,7 +148,7 @@ const deleteProblem = async function (
 const submitPracticeFeedback = async function (
   qualityScore: number,
   problemId: number,
-  apiClient: AxiosInstance
+  apiClient: AxiosInstance,
 ): Promise<APISuccessResponse> {
   try {
     const { data } = await apiClient.put(`/problems/${problemId}/practice`, {
@@ -174,7 +174,7 @@ export default function ProblemsDashboard() {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
-    null
+    null,
   );
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -266,7 +266,7 @@ export default function ProblemsDashboard() {
     if (!isOnline) {
       refetch();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline]);
 
   let problems: ProblemResponse[] = [];
@@ -310,7 +310,7 @@ export default function ProblemsDashboard() {
   if (problems.length) {
     tags = problems.reduce((accumulator: string[], problem) => {
       accumulator.push(
-        ...problem.tags.filter((tag) => !accumulator.includes(tag))
+        ...problem.tags.filter((tag) => !accumulator.includes(tag)),
       );
       return accumulator;
     }, []);
@@ -344,7 +344,7 @@ export default function ProblemsDashboard() {
   const handleProblemDelete = () => {
     deleteMutation.mutate(
       (selectedProblem!.problem_id as number) ||
-        (selectedProblem!.local_id as string)
+        (selectedProblem!.local_id as string),
     );
   };
 
@@ -357,7 +357,7 @@ export default function ProblemsDashboard() {
       submitPracticeFeedback(qualityScore, feedbackId as number, apiClient),
     onSuccess: ({ message }) => {
       removeNotification(feedbackId as number);
-      queryClient.invalidateQueries({ queryKey: ["problems"] })
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
       navigate("/problems", { replace: true });
       toast({ title: "Success", description: message });
     },
@@ -383,12 +383,12 @@ export default function ProblemsDashboard() {
     setSearch(params.get("search") || "");
     setSelectedDifficulty(params.get("difficulty") || null);
     setSelectedTag(
-      decodeURIComponent((params.get("tag") as string) || "") || null
+      decodeURIComponent((params.get("tag") as string) || "") || null,
     );
     setSelectedDate(
       params.get("date_solved")
         ? parseISO(params.get("date_solved")!)
-        : undefined
+        : undefined,
     );
     setCurrentPage(Number(params.get("page")) || 1);
   }, [location.search]);
@@ -441,7 +441,7 @@ export default function ProblemsDashboard() {
   const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
   const paginatedProblems = filteredProblems.slice(
     (currentPage - 1) * problemsPerPage,
-    currentPage * problemsPerPage
+    currentPage * problemsPerPage,
   );
 
   return (

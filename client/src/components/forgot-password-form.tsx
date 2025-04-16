@@ -37,7 +37,6 @@ const ForgotPasswordForm: React.FC = () => {
   const navigate = useNavigate();
   const apiClient = useAxios();
   const { saveEmail } = useAuth();
-  
 
   const {
     register,
@@ -54,13 +53,15 @@ const ForgotPasswordForm: React.FC = () => {
   >({
     mutationFn: async (emailData: ForgotPasswordFormValues) => {
       try {
-        const { data } = await apiClient.post("/auth/forgot-password", emailData);
+        const { data } = await apiClient.post(
+          "/auth/forgot-password",
+          emailData,
+        );
         return data;
       } catch (error) {
         logger.error(`error submitting email ${error}`);
         throw error;
       }
-
     },
     onSuccess: ({ message }) => {
       toast({
@@ -89,10 +90,15 @@ const ForgotPasswordForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={`${isMobile && 'w-11/12'}`}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className={`${isMobile && "w-11/12"}`}
+    >
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl 2xl:text-2xl">Forgot Password</CardTitle>
+          <CardTitle className="text-xl 2xl:text-2xl">
+            Forgot Password
+          </CardTitle>
           <CardDescription>
             Please enter the email address associated with your account
           </CardDescription>

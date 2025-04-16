@@ -51,7 +51,7 @@ describe("authentication tests", () => {
             msg: "Password must contain at least one symbol",
             path: "password",
           }),
-        ])
+        ]),
       );
     });
 
@@ -67,7 +67,7 @@ describe("authentication tests", () => {
       expect(response.body.errors).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ msg: "Invalid email address" }),
-        ])
+        ]),
       );
     });
 
@@ -143,7 +143,7 @@ describe("authentication tests", () => {
         expect.arrayContaining([
           expect.objectContaining({ msg: "Invalid email address" }),
           expect.objectContaining({ msg: "Password is required" }),
-        ])
+        ]),
       );
     });
 
@@ -178,7 +178,7 @@ describe("authentication tests", () => {
       expect(res.status).toBe(403);
       expect(res.body).toHaveProperty(
         "error",
-        "Invalid or expired refresh token"
+        "Invalid or expired refresh token",
       );
     });
 
@@ -191,7 +191,7 @@ describe("authentication tests", () => {
       expect(res.status).toBe(403);
       expect(res.body).toHaveProperty(
         "error",
-        "Invalid or expired refresh token"
+        "Invalid or expired refresh token",
       );
     });
 
@@ -215,7 +215,7 @@ describe("authentication tests", () => {
       const cookies = loginRes.headers["set-cookie"];
       const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
       const refreshTokenCookie = cookieArray.find((cookie: string) =>
-        cookie.startsWith("refresh_token")
+        cookie.startsWith("refresh_token"),
       );
 
       expect(refreshTokenCookie).toBeDefined();
@@ -248,7 +248,7 @@ describe("authentication tests", () => {
                 msg: "A valid email is required",
                 path: "email",
               }),
-            ])
+            ]),
           );
         });
       });
@@ -263,7 +263,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(200);
           expect(res.body).toHaveProperty(
             "message",
-            "If the email exists, an OTP has been sent."
+            "If the email exists, an OTP has been sent.",
           );
         });
       });
@@ -277,7 +277,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(200);
           expect(res.body).toHaveProperty(
             "message",
-            "If the email exists, an OTP has been sent."
+            "If the email exists, an OTP has been sent.",
           );
 
           const user = await db("users").where({ email: validEmail }).first();
@@ -299,7 +299,7 @@ describe("authentication tests", () => {
           expect(firstRes.status).toBe(200);
 
           const [{ otpRecordCountBefore }] = await db(
-            "password_reset_tokens"
+            "password_reset_tokens",
           ).count("* as otpRecordCountBefore");
 
           // Immediately request again
@@ -309,11 +309,11 @@ describe("authentication tests", () => {
 
           expect(secondRes.status).toBe(200);
           const [{ otpRecordCountAfter }] = await db(
-            "password_reset_tokens"
+            "password_reset_tokens",
           ).count("* as otpRecordCountAfter");
           expect(
             parseInt(otpRecordCountAfter as string) ===
-              parseInt(otpRecordCountBefore as string) + 1
+              parseInt(otpRecordCountBefore as string) + 1,
           );
         });
       });
@@ -336,7 +336,7 @@ describe("authentication tests", () => {
                 msg: "OTP must be exactly 6 digits",
                 path: "pin",
               }),
-            ])
+            ]),
           );
         });
       });
@@ -433,7 +433,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(200);
           expect(res.body).toHaveProperty(
             "message",
-            "OTP verified successfully"
+            "OTP verified successfully",
           );
           expect(res.body).toHaveProperty("password_reset_token");
         });
@@ -441,11 +441,14 @@ describe("authentication tests", () => {
     });
 
     describe("Resetting Password", () => {
-      const validToken = generatePasswordResetToken({
-        userId: 4,
-        email: validEmail4,
-      }, "1s");
-      
+      const validToken = generatePasswordResetToken(
+        {
+          userId: 4,
+          email: validEmail4,
+        },
+        "1s",
+      );
+
       describe("No Reset Token or No New Password", () => {
         it("should return 400 if token is missing", async () => {
           const res = await request(app)
@@ -460,7 +463,7 @@ describe("authentication tests", () => {
                 msg: "Password reset token is required",
                 path: "password_reset_token",
               }),
-            ])
+            ]),
           );
         });
 
@@ -493,7 +496,7 @@ describe("authentication tests", () => {
                 msg: "Password must contain at least one special character (@$!%*?&#)",
                 path: "new_password",
               }),
-            ])
+            ]),
           );
         });
       });
@@ -502,7 +505,7 @@ describe("authentication tests", () => {
         it("should return 403 if token is invalid or expired", async () => {
           const expiredToken = generatePasswordResetToken(
             { userId: 4, email: validEmail4 },
-            "-1s"
+            "-1s",
           );
 
           const res = await request(app).post("/api/auth/reset-password").send({
@@ -542,7 +545,7 @@ describe("authentication tests", () => {
                 msg: "Password must contain at least one special character (@$!%*?&#)",
                 path: "new_password",
               }),
-            ])
+            ]),
           );
         });
       });
@@ -563,7 +566,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(200);
           expect(res.body).toHaveProperty(
             "message",
-            "Password reset successfully. You can now log in."
+            "Password reset successfully. You can now log in.",
           );
 
           const user = await db("users").where({ user_id: 4 }).first();
@@ -572,22 +575,20 @@ describe("authentication tests", () => {
         });
       });
 
-      describe('Token Reuse', () => {
-        it('should fail if attempting to reuse the same token again', async () => {
+      describe("Token Reuse", () => {
+        it("should fail if attempting to reuse the same token again", async () => {
           // TODO:Might cause failures
           // set token to expire after a second, so should be expired by the test runner gets here
           // not the best implementation but works for now
           const usedToken = validToken;
-    
-          const res = await request(app)
-            .post('/api/auth/reset-password')
-            .send({
-              password_reset_token: usedToken,
-              new_password: 'AnotherStrongPass1!'
-            });
-    
+
+          const res = await request(app).post("/api/auth/reset-password").send({
+            password_reset_token: usedToken,
+            new_password: "AnotherStrongPass1!",
+          });
+
           expect(res.status).toBe(403);
-          expect(res.body).toHaveProperty('error', 'Invalid or expired token');
+          expect(res.body).toHaveProperty("error", "Invalid or expired token");
         });
       });
     });

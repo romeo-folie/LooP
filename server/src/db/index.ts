@@ -1,9 +1,9 @@
-import pgPromise from 'pg-promise';
-import dotenv from 'dotenv';
-import knex from 'knex';
-import knexConfig from './knexfile';
-import cron from 'node-cron';
-import reminderJob from '../jobs/reminder-job';
+import pgPromise from "pg-promise";
+import dotenv from "dotenv";
+import knex from "knex";
+import knexConfig from "./knexfile";
+import cron from "node-cron";
+import reminderJob from "../jobs/reminder-job";
 
 dotenv.config();
 
@@ -21,33 +21,33 @@ export const postgres = pgp({
 const runMigrations = async () => {
   try {
     await knex(knexConfig[environment]).migrate.latest();
-    console.log('✅ Database migrations applied');
+    console.log("✅ Database migrations applied");
   } catch (error) {
-    console.error('❌ Error running migrations:', error);
+    console.error("❌ Error running migrations:", error);
   }
 };
 
-export const connectDB = function() {
+export const connectDB = function () {
   // Test Database Connection
-  postgres.connect()
+  postgres
+    .connect()
     .then(async (obj) => {
       obj.done(); // Release connection
-      console.log('✅ Connected to PostgreSQL database');
+      console.log("✅ Connected to PostgreSQL database");
       await runMigrations();
-      cron.schedule('* * * * *', reminderJob);
+      cron.schedule("* * * * *", reminderJob);
     })
     .catch((error) => {
-      console.error('❌ Database connection error:', error.message);
+      console.error("❌ Database connection error:", error.message);
     });
-}
-
+};
 
 // Initialize knex query builder
 export const db = knex(knexConfig[environment]);
 
-if (environment === 'development') {
+if (environment === "development") {
   // Enable SQL query logging
-  db.on('query', (queryData) => {
+  db.on("query", (queryData) => {
     console.log(`📝 SQL Query: ${queryData.sql}`);
     if (queryData.bindings) {
       console.log(`🔗 Bindings: ${JSON.stringify(queryData.bindings)}`);

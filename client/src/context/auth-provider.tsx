@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [passwordResetToken, setPasswordResetToken] = useState<string | null>(
-    null
+    null,
   );
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!encryptedData) throw new Error("Failed to encrypt access token");
       user = Object.assign(
         { ...user },
-        { token: encryptedData.token, iv: encryptedData.iv }
+        { token: encryptedData.token, iv: encryptedData.iv },
       );
       await setMeta("user", user);
     } catch (error) {
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logger.error(`Error updating local tokens ${error}`);
       }
     },
-    [saveUserLocally]
+    [saveUserLocally],
   );
 
   const localLogout = useCallback(() => {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await axios.post(
         `${SERVER_URL}/auth/refresh-token`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       const newToken = response.data.token;
       if (newToken) {
@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await axios.post(
         `${SERVER_URL}/auth/logout`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       setUser(null);
       setMeta("user", null);
@@ -187,14 +187,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await retrieveLocalUser();
         bc.postMessage({ type: "LOGIN" });
       } catch (error) {
-        logger.error(`error logging in user ${user.email}, error: ${error}`)
+        logger.error(`error logging in user ${user.email}, error: ${error}`);
         localLogout();
       } finally {
         setIsAuthLoading(false);
       }
-
     },
-    [bc, localLogout, navigate, retrieveLocalUser, saveUserLocally]
+    [bc, localLogout, navigate, retrieveLocalUser, saveUserLocally],
   );
 
   const saveEmail = (email: string) => {

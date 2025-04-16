@@ -6,7 +6,7 @@ import sm2 from "../utils/sm2-helper";
 
 export const createProblem: RequestHandler = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const {
@@ -27,7 +27,7 @@ export const createProblem: RequestHandler = async (
     }
 
     logger.info(
-      `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`
+      `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`,
     );
 
     const [newProblem] = await db("problems")
@@ -76,7 +76,7 @@ export const createProblem: RequestHandler = async (
     }
 
     logger.info(
-      `Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.problem_id}`
+      `Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.problem_id}`,
     );
 
     res.status(201).json({
@@ -85,7 +85,7 @@ export const createProblem: RequestHandler = async (
     });
   } catch (error: unknown) {
     logger.error(
-      `Problem creation error for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+      `Problem creation error for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -93,7 +93,7 @@ export const createProblem: RequestHandler = async (
 
 export const getProblems: RequestHandler = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = req.authUser?.userId;
@@ -118,7 +118,7 @@ export const getProblems: RequestHandler = async (
         "tags",
         "date_solved",
         "notes",
-        "created_at"
+        "created_at",
       );
 
     // Apply filters if present
@@ -148,7 +148,7 @@ export const getProblems: RequestHandler = async (
         "sent_at",
         // 'is_completed',
         // 'completed_at',
-        "created_at"
+        "created_at",
       );
 
     // Map reminders to their corresponding problems
@@ -160,7 +160,7 @@ export const getProblems: RequestHandler = async (
         acc[reminder.problem_id].push(reminder);
         return acc;
       },
-      {} as Record<number, any[]>
+      {} as Record<number, any[]>,
     );
 
     // Attach reminders to their respective problems
@@ -170,13 +170,13 @@ export const getProblems: RequestHandler = async (
     }));
 
     logger.info(
-      `Successfully fetched ${problems.length} problems for User ID: ${userId}`
+      `Successfully fetched ${problems.length} problems for User ID: ${userId}`,
     );
 
     res.status(200).json({ problems: problemsWithReminders });
   } catch (error: unknown) {
     logger.error(
-      `Error fetching problems for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+      `Error fetching problems for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -184,7 +184,7 @@ export const getProblems: RequestHandler = async (
 
 export const getProblemById: RequestHandler = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = req.authUser?.userId;
@@ -210,13 +210,13 @@ export const getProblemById: RequestHandler = async (
     }
 
     logger.info(
-      `Successfully fetched Problem ID ${problem_id} for User ID: ${userId}`
+      `Successfully fetched Problem ID ${problem_id} for User ID: ${userId}`,
     );
 
     res.status(200).json({ problem });
   } catch (error: unknown) {
     logger.error(
-      `Error fetching problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+      `Error fetching problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -224,7 +224,7 @@ export const getProblemById: RequestHandler = async (
 
 export const updateProblem: RequestHandler = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = req.authUser?.userId;
@@ -233,14 +233,14 @@ export const updateProblem: RequestHandler = async (
 
     if (!userId) {
       logger.warn(
-        `Unauthorized problem update attempt for ID: ${userId} from IP: ${req.ip}`
+        `Unauthorized problem update attempt for ID: ${userId} from IP: ${req.ip}`,
       );
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
     logger.info(
-      `Updating transaction ID: ${problem_id} for User ID: ${userId}`
+      `Updating transaction ID: ${problem_id} for User ID: ${userId}`,
     );
 
     const existingProblem = await db("problems")
@@ -274,7 +274,7 @@ export const updateProblem: RequestHandler = async (
       ]);
 
     logger.info(
-      `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`
+      `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`,
     );
 
     res.status(200).json({
@@ -283,7 +283,7 @@ export const updateProblem: RequestHandler = async (
     });
   } catch (error: unknown) {
     logger.error(
-      `Problem update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+      `Problem update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -291,7 +291,7 @@ export const updateProblem: RequestHandler = async (
 
 export const deleteProblem: RequestHandler = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ) => {
   try {
     const userId = req.authUser?.userId;
@@ -299,7 +299,7 @@ export const deleteProblem: RequestHandler = async (
 
     if (!userId) {
       logger.warn(
-        `Unauthorized problem deletion attempt for ID: ${problem_id} from IP: ${req.ip}`
+        `Unauthorized problem deletion attempt for ID: ${problem_id} from IP: ${req.ip}`,
       );
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -323,13 +323,13 @@ export const deleteProblem: RequestHandler = async (
     await db("problems").where({ problem_id }).del();
 
     logger.info(
-      `Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`
+      `Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`,
     );
 
     res.status(200).json({ message: "Problem deleted successfully" });
   } catch (error: unknown) {
     logger.error(
-      `Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+      `Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -337,7 +337,7 @@ export const deleteProblem: RequestHandler = async (
 
 export const handlePracticeFeedback: RequestHandler = async (
   req: AuthenticatedRequest,
-  res
+  res,
 ) => {
   try {
     const userId = req.authUser?.userId;
@@ -345,17 +345,17 @@ export const handlePracticeFeedback: RequestHandler = async (
     const { quality_score } = req.body; // 1–5
 
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
     // Fetch problem & ensure ownership
-    const problem = await db('problems')
+    const problem = await db("problems")
       .where({ problem_id, user_id: userId })
       .first();
 
     if (!problem) {
-      res.status(404).json({ error: 'Problem not found' });
+      res.status(404).json({ error: "Problem not found" });
       return;
     }
 
@@ -370,7 +370,7 @@ export const handlePracticeFeedback: RequestHandler = async (
       prevEF,
       prevInterval,
       attemptCount,
-      Number(quality_score)
+      Number(quality_score),
     );
 
     const now = new Date();
@@ -385,28 +385,26 @@ export const handlePracticeFeedback: RequestHandler = async (
       ease_factor: newEF,
       interval: newInterval,
       next_due_at: nextDue.toISOString(),
-      quality_score: Number(quality_score)
+      quality_score: Number(quality_score),
     };
 
     // Update problem
-    await db('problems')
-      .where({ problem_id })
-      .update({
-        practice_meta: updatedMeta,
-        updated_at: now
-      });
+    await db("problems").where({ problem_id }).update({
+      practice_meta: updatedMeta,
+      updated_at: now,
+    });
 
     // Create new reminder
-    await db('reminders').insert({
+    await db("reminders").insert({
       problem_id,
       user_id: userId,
       due_datetime: nextDue,
       created_at: now,
-      updated_at: now
+      updated_at: now,
     });
 
     logger.info(
-      `Practice recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`
+      `Practice recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`,
     );
 
     res.status(200).json({
@@ -414,6 +412,6 @@ export const handlePracticeFeedback: RequestHandler = async (
     });
   } catch (err) {
     logger.error(`Error updating problem practice meta ${err}`);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };

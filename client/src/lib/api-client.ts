@@ -1,7 +1,11 @@
 import axios, { AxiosInstance } from "axios";
 import { logger } from "@/lib/logger";
 
-export function createAxiosInstance(accessToken: string | null, csrfToken: string | null, logoutFn?: () => void): AxiosInstance {
+export function createAxiosInstance(
+  accessToken: string | null,
+  csrfToken: string | null,
+  logoutFn?: () => void,
+): AxiosInstance {
   const instance = axios.create({
     baseURL: import.meta.env.VITE_SERVER_URL,
     withCredentials: true,
@@ -26,7 +30,7 @@ export function createAxiosInstance(accessToken: string | null, csrfToken: strin
     (response) => {
       logger.info(
         { status: response.status, url: response.config.url },
-        "API Response"
+        "API Response",
       );
       return response;
     },
@@ -36,13 +40,13 @@ export function createAxiosInstance(accessToken: string | null, csrfToken: strin
           error: error.response?.data?.message || error.response?.data?.error,
           url: error.config?.url,
         },
-        "API Error"
+        "API Error",
       );
       if (error.response?.status === 401) {
-        if (logoutFn) logoutFn()
+        if (logoutFn) logoutFn();
       }
       return Promise.reject(error);
-    }
+    },
   );
 
   return instance;

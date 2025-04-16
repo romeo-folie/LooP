@@ -34,7 +34,7 @@ self.addEventListener("push", (event: PushEvent) => {
           {
             type: "window",
             includeUncontrolled: true,
-          }
+          },
         );
 
         allClients.forEach((client: WindowClient) => {
@@ -43,7 +43,7 @@ self.addEventListener("push", (event: PushEvent) => {
             payload: data,
           });
         });
-      })()
+      })(),
     );
   }
 });
@@ -67,7 +67,7 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
         if (self.clients.openWindow) {
           return self.clients.openWindow(`/problems?feedback_id=${problem_id}`);
         }
-      })
+      }),
   );
 });
 

@@ -5,7 +5,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { UseFormRegister } from "react-hook-form";
 
-
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -13,12 +12,17 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
   register?: UseFormRegister<any>;
 }
 
-const PasswordInput: React.FC<Props> = ({ label, register, error, ...props }) => {
+const PasswordInput: React.FC<Props> = ({
+  label,
+  register,
+  error,
+  ...props
+}) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="flex flex-col space-y-1.5">
-      <Label htmlFor={props.id || "password"}>{ label || "Password" }</Label>
+      <Label htmlFor={props.id || "password"}>{label || "Password"}</Label>
       <div className="relative">
         <Input
           id={props.id || "password"}

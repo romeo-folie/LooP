@@ -1,0 +1,30 @@
+{
+  "name": "loop",
+  "version": "1.0.0",
+  "description": "A full‑stack, offline‑capable PWA for logging DSA problems and scheduling review reminders. Designed for developers, it delivers spaced‑repetition or on‑demand notifications to reinforce learning and long‑term retention.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky",
+    "test:server": "cd server && npm test",
+    "lint:client": "cd client && npm run lint",
+    "lint:server": "cd server && npm run lint",
+    "format": "prettier --write \"./**/*.{js,ts,tsx,json}\"",
+    "lint": "npm run lint:client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romeo-folie/LooP.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/romeo-folie/LooP/issues"
+  },
+  "homepage": "https://github.com/romeo-folie/LooP#readme",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "^3.5.3"
+  }
+}

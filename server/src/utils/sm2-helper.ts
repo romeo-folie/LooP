@@ -2,10 +2,11 @@ export default function sm2(
   prevEF: number,
   prevInterval: number,
   attempt: number,
-  qualityScore: number
+  qualityScore: number,
 ): { newEF: number; newInterval: number } {
   // Update ease factor
-  let EF = prevEF + (0.1 - (5 - qualityScore) * (0.08 + (5 - qualityScore) * 0.02));
+  let EF =
+    prevEF + (0.1 - (5 - qualityScore) * (0.08 + (5 - qualityScore) * 0.02));
   if (EF < 1.3) EF = 1.3;
 
   let interval: number;

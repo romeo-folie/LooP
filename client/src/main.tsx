@@ -40,5 +40,5 @@ createRoot(document.getElementById("root")!).render(
         </ThemeProvider>
       </NetworkStatusProvider>
     </ErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

@@ -34,7 +34,7 @@ const PasswordResetSchema = z
       .regex(/\d/, "Password must contain at least one digit")
       .regex(
         /[!@#$%^&*(),.?":{}|<>]/,
-        "Password must contain at least one special character (@$!%*?&)"
+        "Password must contain at least one special character (@$!%*?&)",
       ),
     confirm_password: z.string(),
   })
@@ -72,14 +72,13 @@ const PasswordResetForm: React.FC = () => {
       try {
         const { data } = await apiClient.post(
           "/auth/reset-password",
-          passwordResetData
+          passwordResetData,
         );
         return data;
       } catch (error) {
-        logger.error(`error requesting password reset ${error}`)
+        logger.error(`error requesting password reset ${error}`);
         throw error;
       }
-
     },
     onSuccess: ({ message }) => {
       toast({
@@ -111,7 +110,10 @@ const PasswordResetForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={`${isMobile && 'w-11/12'}`}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className={`${isMobile && "w-11/12"}`}
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl 2xl:text-2xl">Reset Password</CardTitle>

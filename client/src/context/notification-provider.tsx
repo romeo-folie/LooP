@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 
 export type Notification = {
   title: string;
-  body: { message: string; meta: { due_datetime: Date, problem_id: number } };
+  body: { message: string; meta: { due_datetime: Date; problem_id: number } };
 };
 
 interface NotificationContextType {
@@ -21,14 +21,14 @@ interface NotificationContextType {
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
     throw new Error(
-      "useNotifications must be used within a NotificationProvider"
+      "useNotifications must be used within a NotificationProvider",
     );
   }
   return context;
@@ -49,13 +49,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           description: payload.body.message,
         });
       }
-    }
+    };
 
     if (navigator.serviceWorker) {
       navigator.serviceWorker.addEventListener("message", listener);
     }
 
-    return () => navigator.serviceWorker.removeEventListener("message", listener);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", listener);
   }, []);
 
   useEffect(() => {
@@ -69,7 +70,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   function removeNotification(problemId: number) {
     const currentNotifications = [...notifications];
-    const notificationIndex = currentNotifications.findIndex((notification) => notification.body.meta.problem_id === problemId);
+    const notificationIndex = currentNotifications.findIndex(
+      (notification) => notification.body.meta.problem_id === problemId,
+    );
     currentNotifications.splice(notificationIndex, 1);
     setNotifications(currentNotifications);
     browserStore.set("notifications", currentNotifications);

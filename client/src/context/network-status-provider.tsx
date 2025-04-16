@@ -20,7 +20,7 @@ export const useNetworkStatus = () => {
 
   if (!context) {
     throw new Error(
-      "useNetworkStatus must be used within a NetworkStatusProvider"
+      "useNetworkStatus must be used within a NetworkStatusProvider",
     );
   }
 

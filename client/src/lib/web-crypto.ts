@@ -6,7 +6,7 @@ export async function generateKey(): Promise<CryptoKey> {
       length: 256,
     },
     true, // extractable so we can export it if needed
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -14,7 +14,7 @@ export async function generateKey(): Promise<CryptoKey> {
 // It returns an object containing the IV and the ciphertext as Uint8Arrays.
 export async function encrypt(
   plaintext: string | undefined,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<{
   iv: Uint8Array<ArrayBuffer>;
   ciphertext: Uint8Array<ArrayBuffer>;
@@ -33,7 +33,7 @@ export async function encrypt(
       iv, // use the generated IV
     },
     key,
-    data
+    data,
   );
 
   // Convert the ArrayBuffer to a Uint8Array for easier storage
@@ -50,7 +50,7 @@ export async function decrypt(
     iv,
     ciphertext,
   }: { iv: Uint8Array<ArrayBuffer>; ciphertext: Uint8Array<ArrayBuffer> },
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<string> {
   // Decrypt the data using the same IV and key
   const decryptedBuffer = await crypto.subtle.decrypt(
@@ -59,7 +59,7 @@ export async function decrypt(
       iv, // must be the same IV used during encryption
     },
     key,
-    ciphertext
+    ciphertext,
   );
 
   // Convert the decrypted ArrayBuffer back into a string

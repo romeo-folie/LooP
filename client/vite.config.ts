@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       strategies: "injectManifest",
       injectManifest: {
-        swDest: 'dist/sw.js',
-        globPatterns: ['**/*.{js,css,html,png,svg}'],
+        swDest: "dist/sw.js",
+        globPatterns: ["**/*.{js,css,html,png,svg}"],
       },
       srcDir: "src",
       filename: "sw.ts",
@@ -34,11 +34,11 @@ export default defineConfig({
           },
           {
             src: "/logo.svg",
-            type: "image/svg+xml"
+            type: "image/svg+xml",
           },
           {
             src: "/logo-white.svg",
-            type: "image/svg+xml"
+            type: "image/svg+xml",
           },
           {
             src: "/pwa-64x64.png",

@@ -33,7 +33,7 @@ const deleteReminder = async function (
   reminderId: number | string,
   problemId: number | string,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<APISuccessResponse> {
   try {
     if (!isOnline) {
@@ -88,7 +88,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
         reminderId,
         problem.problem_id ?? problem.local_id,
         apiClient,
-        isOnline
+        isOnline,
       ),
     onSuccess: ({ message }) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
@@ -109,7 +109,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   const handleConfirmReminderDelete = () => {
     mutation.mutate(
       (editingReminder!.reminder_id as number) ||
-        (editingReminder!.local_id as string)
+        (editingReminder!.local_id as string),
     );
   };
 
@@ -119,7 +119,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         {/* Left Column - Title and Notes */}
         <div className="flex-auto">
-          <h1 className="text-xl lg:text-2xl font-bold">{startCase(problem.name)}</h1>
+          <h1 className="text-xl lg:text-2xl font-bold">
+            {startCase(problem.name)}
+          </h1>
 
           {/* Tags + Difficulty (visible on mobile only) */}
           <div className="flex gap-4 mt-3 justify-between sm:hidden">
@@ -179,7 +181,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
                       }}
                     >
                       {startCase(tag)}
-                      </Badge>
+                    </Badge>
                   ))}
               </div>
             </div>

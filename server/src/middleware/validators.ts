@@ -98,7 +98,7 @@ export const validateReminderCreation: ValidationChain[] = [
     .withMessage("due_datetime is required")
     .isISO8601()
     .withMessage(
-      "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)"
+      "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)",
     ),
 
   body("is_completed")
@@ -112,7 +112,7 @@ export const validateReminderUpdate: ValidationChain[] = [
     .optional()
     .isISO8601()
     .withMessage(
-      "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)"
+      "Invalid datetime format, must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)",
     ),
 
   body("is_completed")
@@ -178,6 +178,6 @@ export const resetPasswordValidator: ValidationChain[] = [
     .withMessage("Password must contain at least one number")
     .matches(/[@$!%*?&#]/)
     .withMessage(
-      "Password must contain at least one special character (@$!%*?&#)"
+      "Password must contain at least one special character (@$!%*?&#)",
     ),
 ];

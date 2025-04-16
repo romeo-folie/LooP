@@ -68,10 +68,9 @@ const InputOTPForm: React.FC = () => {
         const { data } = await apiClient.post("/auth/verify-otp", otpData);
         return data;
       } catch (error) {
-        logger.error(`error submitting otp for verification ${error}`)
+        logger.error(`error submitting otp for verification ${error}`);
         throw error;
       }
-
     },
     onSuccess: ({ message, password_reset_token }) => {
       savePasswordResetToken(password_reset_token);
@@ -101,13 +100,15 @@ const InputOTPForm: React.FC = () => {
   >({
     mutationFn: async (emailData: ForgotPasswordFormValues) => {
       try {
-        const { data } = await apiClient.post("/auth/forgot-password", emailData);
+        const { data } = await apiClient.post(
+          "/auth/forgot-password",
+          emailData,
+        );
         return data;
       } catch (error) {
         logger.error(`error requesting otp resend ${error}`);
         throw error;
       }
-
     },
     onSuccess: ({ message }) => {
       toast({

@@ -86,7 +86,7 @@ interface ProblemResponseData {
 async function createProblem(
   formData: ProblemFormData,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -120,7 +120,7 @@ async function updateProblem(
   problemId: number | string,
   formData: ProblemFormData,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -136,7 +136,7 @@ async function updateProblem(
         {
           ...payload,
           isOffline: 1,
-        }
+        },
       );
       await updateLocalProblem(problemWithUpdates);
       return {
@@ -208,7 +208,7 @@ export default function ProblemFormDialog({
             date_solved: undefined,
             notes: "",
           },
-    [mode, problem]
+    [mode, problem],
   );
 
   // React Hook Form setup
@@ -238,10 +238,10 @@ export default function ProblemFormDialog({
     mutationFn: (formData) => {
       if (mode === "edit" && problem) {
         return updateProblem(
-          problem.problem_id as number || problem.local_id as string,
+          (problem.problem_id as number) || (problem.local_id as string),
           formData,
           apiClient,
-          isOnline
+          isOnline,
         );
       } else {
         return createProblem(formData, apiClient, isOnline);
@@ -281,7 +281,7 @@ export default function ProblemFormDialog({
   // Add typed tag
   const handleAddNewTag = (
     onChange: (tags: string[]) => void,
-    currentTags: string[]
+    currentTags: string[],
   ) => {
     const val = inputValue.trim();
     if (val && !tagOptions.includes(val)) {

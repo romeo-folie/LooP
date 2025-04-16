@@ -38,7 +38,7 @@ const signInSchema = z.object({
     .regex(/\d/, "Password must contain at least one digit")
     .regex(
       /[!@#$%^&*(),.?":{}|<>]/,
-      "Password must contain at least one special character (@$!%*?&)"
+      "Password must contain at least one special character (@$!%*?&)",
     ),
 });
 
@@ -46,13 +46,13 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 
 const signInUser = async (
   userCredentials: SignInFormValues,
-  apiClient: AxiosInstance
+  apiClient: AxiosInstance,
 ) => {
   try {
     const response = await apiClient.post("/auth/login", userCredentials);
     return response.data;
   } catch (error) {
-    logger.error(`error logging in ${error}`)
+    logger.error(`error logging in ${error}`);
     throw error;
   }
 };
@@ -89,7 +89,11 @@ const SigninForm: React.FC = () => {
       navigate("/");
     },
     onError: (error) => {
-      const message = error.response?.data?.message || error.response?.data?.error || error.message  || "Sign in failed, please try again.";
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Sign in failed, please try again.";
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
@@ -172,9 +176,7 @@ const SigninForm: React.FC = () => {
         <Button
           variant="link"
           className="ml-auto"
-          onClick={
-            () => navigate('/auth/forgot-password')
-          }
+          onClick={() => navigate("/auth/forgot-password")}
         >
           Forgot your password?
         </Button>

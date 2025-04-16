@@ -21,7 +21,7 @@ export default async function syncOutbox() {
   if (!tokens) return;
   const axiosInstance = createAxiosInstance(
     tokens.accessToken,
-    tokens.csrfToken
+    tokens.csrfToken,
   );
 
   for (const record of records) {
@@ -42,13 +42,13 @@ export default async function syncOutbox() {
       });
       await db.outbox.delete(record.id);
       logger.info(
-        `successfully synced ${resource as string} with id ${record.id}`
+        `successfully synced ${resource as string} with id ${record.id}`,
       );
     } catch (error) {
       logger.error(
         `failed to sync ${resource as string} with id ${
           record.id
-        }, error: ${error}`
+        }, error: ${error}`,
       );
       await db.outbox.update(record.id, {
         ...record,
@@ -64,7 +64,7 @@ function getRoute(
   type: ActionType,
   resource: ResourceType,
   payload: ProblemSchema | ReminderSchema,
-  resourceId: number | string
+  resourceId: number | string,
 ) {
   if (resource === ResourceType.Problem) {
     if (type === ActionType.Create) {
@@ -100,11 +100,11 @@ async function retrieveTokens() {
         length: 256,
       },
       true,
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
     const token = await decrypt(
       { iv: user.iv!, ciphertext: user.token as Uint8Array<ArrayBuffer> },
-      decryptionKey
+      decryptionKey,
     );
     return { accessToken: token, csrfToken: user.csrfToken as string };
   } catch (error) {

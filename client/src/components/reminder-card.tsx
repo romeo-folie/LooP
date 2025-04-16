@@ -16,7 +16,11 @@ interface ReminderCardProps {
   onDelete: (reminder: ReminderResponse) => void;
 }
 
-const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit, onDelete }) => {
+const ReminderCard: React.FC<ReminderCardProps> = ({
+  reminder,
+  onEdit,
+  onDelete,
+}) => {
   // Format the date components
   // eslint-disable-next-line prefer-const
   let { due_datetime, is_sent } = reminder;
@@ -56,7 +60,12 @@ const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit, onDelete 
                 Reschedule
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-red-600" onClick={() => onDelete(reminder)}>Delete</DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => onDelete(reminder)}
+            >
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
