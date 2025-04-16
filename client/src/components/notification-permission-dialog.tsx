@@ -9,7 +9,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { BellIcon } from "@radix-ui/react-icons";
 
 interface NotificationPermissionDialogProps {
   isOpen: boolean;
@@ -26,7 +25,6 @@ const NotificationPermissionDialog: React.FC<
       <AlertDialogContent className="gap-y-4 w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-lg lg:text-xl flex items-center justify-center sm:justify-start gap-2">
-            <BellIcon className="h-6 w-6" />
             Enable Notifications?
           </AlertDialogTitle>
         </AlertDialogHeader>
