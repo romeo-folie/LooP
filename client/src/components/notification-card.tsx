@@ -24,7 +24,7 @@ type CardProps = React.ComponentProps<typeof Card>;
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
   const navigate = useNavigate();
-  const { notifications, removeNotification, clearNotifications } =
+  const { notifications, clearNotifications } =
     useNotifications();
 
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
@@ -107,7 +107,6 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                 size="icon"
                 className="text-foreground"
                 onClick={() => {
-                  removeNotification(notification.body.meta.problem_id);
                   navigate(
                     `/problems?feedback_id=${notification.body.meta.problem_id}`
                   );

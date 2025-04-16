@@ -59,6 +59,7 @@ import {
 } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import ProblemFeedbackDialog from "@/components/problem-feedback-dialog";
+import { useNotifications } from "@/context/notification-provider";
 
 export interface ReminderResponse {
   message?: string;
@@ -166,6 +167,7 @@ export default function ProblemsDashboard() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
+  const { removeNotification } = useNotifications();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [isProblemDialogOpen, setIsProblemDialogOpen] = useState(false);
@@ -353,6 +355,7 @@ export default function ProblemsDashboard() {
     mutationFn: (qualityScore: number) =>
       submitPracticeFeedback(qualityScore, feedbackId as number, apiClient),
     onSuccess: ({ message }) => {
+      removeNotification(feedbackId as number);
       queryClient.invalidateQueries({ queryKey: ["problems"] })
       navigate("/problems", { replace: true });
       toast({ title: "Success", description: message });
