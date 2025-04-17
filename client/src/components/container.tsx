@@ -7,7 +7,7 @@ interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 const Container: React.FC<ContainerProps> = ({ children, ...props }) => {
   return (
     <div
-      className="bg-background text-foreground flex items-center justify-center min-h-screen w-screen py-8"
+      className="bg-background text-foreground flex items-center justify-center min-h-screen w-screen py-8 overflow-x-hidden overflow-y-auto"
       {...props}
     >
       {children}

@@ -2,9 +2,9 @@
 
 ### Setup
 
-**1. Setup Postgres DB locally**
+**1. Setup postgres DB locally**
 
-**2. Generate Web Push Vapid Keys**
+**2. Generate web push vapid keys**
 ```
 npm install -g web-push
 npx web-push generate-vapid-keys
@@ -40,9 +40,9 @@ npm install
 npm run dev
 ```
 
-### Alternative Setup with Docker
+### Alternative setup with Docker
 
-**1. Add Environment variables to the following docker-compose template**
+**1. Add environment variables to the following docker-compose template**
 ```
 version: '3.9'
 

@@ -22,7 +22,7 @@ const NotificationPermissionDialog: React.FC<
 > = ({ isOpen, onOpenChange, onConfirm, onCancel }) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="gap-y-4 w-[90vw] sm:max-w-md rounded-lg">
+      <AlertDialogContent className="gap-y-1 w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-lg lg:text-xl flex items-center justify-center sm:justify-start gap-2">
             Enable Notifications?
@@ -32,7 +32,7 @@ const NotificationPermissionDialog: React.FC<
           We use notifications to remind you to revise the problems you solve.
           By enabling them, you'll never miss a scheduled reminder.
         </AlertDialogDescription>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="mt-2">
           <AlertDialogCancel onClick={onCancel}>No, thanks</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>Yes, enable</AlertDialogAction>
         </AlertDialogFooter>
