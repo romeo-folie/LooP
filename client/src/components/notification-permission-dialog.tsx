@@ -32,7 +32,7 @@ const NotificationPermissionDialog: React.FC<
           We use notifications to remind you to revise the problems you solve.
           By enabling them, you'll never miss a scheduled reminder.
         </AlertDialogDescription>
-        <AlertDialogFooter className="mt-2">
+        <AlertDialogFooter className="mt-4">
           <AlertDialogCancel onClick={onCancel}>No, thanks</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>Yes, enable</AlertDialogAction>
         </AlertDialogFooter>

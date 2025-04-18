@@ -18,6 +18,7 @@ import { useAxios } from "@/hooks/use-axios";
 import { useNotifications } from "@/context/notification-provider";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { ScrollArea } from "./ui/scroll-area";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
@@ -60,9 +61,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
           You have {notifications.length} unread messages.
         </CardDescription>
       </CardHeader>
-      <CardContent
-        className={`grid gap-4 ${!notifications.length ? "pb-0" : ""}`}
-      >
+      <CardContent className={`grid gap-4 ${!notifications.length && "pb-0"}`}>
         {!notificationsAllowed && (
           <div className="flex items-center space-x-4 rounded-md border p-4">
             <BellRing />
@@ -82,39 +81,43 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
           </div>
         )}
         <div>
-          {notifications.map((notification, index) => (
-            <div
-              key={index}
-              className="mb-4 grid grid-cols-[auto_1fr_auto] items-start gap-4 pb-4 last:mb-0 last:pb-0"
-            >
-              {/* Icon */}
-              <CircleAlert className="h-4 w-4 translate-y-1 stroke-foreground" />
+          <ScrollArea className="max-h-80 overflow-y-scroll">
+            <div className="pr-4">
+              {notifications.map((notification, index) => (
+                <div
+                  key={index}
+                  className="mb-4 grid grid-cols-[auto_1fr_auto] items-start gap-4 pb-4 last:mb-0 last:pb-0"
+                >
+                  {/* Icon */}
+                  <CircleAlert className="h-4 w-4 translate-y-1 stroke-foreground" />
 
-              {/* Message Content */}
-              <div className="space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {notification.title}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {notification.body.message}
-                </p>
-              </div>
+                  {/* Message Content */}
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.body.message}
+                    </p>
+                  </div>
 
-              {/* Action Button with Check Icon */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-foreground"
-                onClick={() => {
-                  navigate(
-                    `/problems?feedback_id=${notification.body.meta.problem_id}`,
-                  );
-                }}
-              >
-                <Check className="h-6 w-6" />
-              </Button>
+                  {/* Action Button with Check Icon */}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-foreground"
+                    onClick={() => {
+                      navigate(
+                        `/problems?feedback_id=${notification.body.meta.problem_id}`,
+                      );
+                    }}
+                  >
+                    <Check className="h-6 w-6" />
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
+          </ScrollArea>
         </div>
       </CardContent>
       {!!notifications.length && (

@@ -2,7 +2,7 @@ import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 
 export default function LoadingScreen() {
-  const [progress, setProgress] = useState(50);
+  const [progress, setProgress] = useState(20);
 
   useEffect(() => {
     const interval = setInterval(() => {

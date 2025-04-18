@@ -384,7 +384,10 @@ export default function ProblemFormDialog({
                     modal={true}
                   >
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full h-10">
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 truncate"
+                      >
                         {value?.length > 0
                           ? value.map((val) => startCase(val)).join(", ")
                           : "Select or Add Tags"}{" "}

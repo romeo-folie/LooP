@@ -46,10 +46,10 @@ export default function Navbar() {
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Toggle>
 
-        <DropdownMenu>
+        <DropdownMenu modal={true}>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-10 h-10 p-0 rounded-full bg-accent"
             >
               {notificationLength ? (
@@ -66,7 +66,7 @@ export default function Navbar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="p-0 rounded-full">
+            <Button variant="outline" className="p-0 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
                   {user?.name?.charAt(0).toUpperCase() ?? "U"}

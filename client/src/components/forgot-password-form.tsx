@@ -111,7 +111,7 @@ const ForgotPasswordForm: React.FC = () => {
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                className="h-12 px-4"
+                className="h-10 px-4"
                 {...register("email")}
                 autoComplete="email"
               />
