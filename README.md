@@ -4,14 +4,14 @@ A full‑stack, offline‑capable PWA for logging DSA problems and scheduling re
 
 ## Features
 
+- 📱 Minimal, Themed, and Fully responsive UI with drawer-based mobile UX.
 - 🔒 Authentication via GitHub OAuth and Email.
+- ✅ Log problems with difficulty levels and tags.
+- 🧠 Smart filters (search, tags, difficulty, and solve date).
+- 🔔 Receive intelligent reminders for problems based on previous recall feedback fed to the SM-2 algorithm. This is how we're able to remind you to revise just before you forget, consequently boosting long-term retention.
+- 🔔 Set manual reminders for problems (push notifications supported).
 - 📶 Offline support backed by IndexedDB + Service Worker APIs.
 - 🔃 Background sync to reconcile offline actions when back online.
-- 📱 Minimal, Themed, and Fully responsive UI with drawer-based mobile UX.
-- ✅ Log problems with difficulty levels and tags.
-- 🔔 Receive intelligent reminders for problems based on previous recall feedback and the SM-2 algorithm. This way, you are always reminded to revise just before you forget, consequently boosting long-term retention.
-- 🔔 Set manual reminders for problems (push notifications supported).
-- 🧠 Smart filters (search, tags, difficulty, and solve date).
 - 📦 PWA installable experience with native push support.
 
 ## 👥 Contributing

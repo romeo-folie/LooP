@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const refreshToken = useCallback(async () => {
+  const refreshTokens = useCallback(async () => {
     try {
       setIsAuthLoading(true);
       const response = await axios.post(
@@ -212,10 +212,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event.data?.type === "LOGIN") {
-        refreshToken();
+        refreshTokens();
       }
     };
-  }, [bc, localLogout, navigate, refreshToken]);
+  }, [bc, localLogout, navigate, refreshTokens]);
 
   useEffect(() => {
     async function handleGithubLogin() {
@@ -244,8 +244,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // should only run on mount if user is in auth page
-    if (location.pathname === "/auth" || !accessToken) refreshToken();
-  }, [accessToken, refreshToken]);
+    if (location.pathname === "/auth" || !accessToken || !csrfToken)
+      refreshTokens();
+  }, [accessToken, csrfToken, refreshTokens]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -266,13 +267,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let timeoutId: ReturnType<typeof setTimeout>;
     if (refreshBefore > 0) {
-      timeoutId = setTimeout(refreshToken, refreshBefore);
+      timeoutId = setTimeout(refreshTokens, refreshBefore);
     } else {
-      refreshToken(); // refresh immediately if token is close to or past expiry
+      refreshTokens(); // refresh immediately if token is close to or past expiry
     }
 
     return () => clearTimeout(timeoutId);
-  }, [accessToken, refreshToken]);
+  }, [accessToken, refreshTokens]);
 
   const value: AuthContextType = {
     user,

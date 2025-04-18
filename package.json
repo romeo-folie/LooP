@@ -10,7 +10,10 @@
     "lint:client": "cd client && npm run lint",
     "lint:server": "cd server && npm run lint",
     "format": "prettier --write \"./**/*.{js,ts,tsx,json}\"",
-    "lint": "npm run lint:client"
+    "lint": "npm run lint:client",
+    "install:client": "cd client && npm install",
+    "install:server": "cd server && npm install",
+    "install-deps": "npm install && npm run install:client && npm run install:server"
   },
   "repository": {
     "type": "git",
