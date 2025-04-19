@@ -37,10 +37,8 @@ export const register: RequestHandler = async (req: Request, res: Response) => {
       message: "User registered successfully",
       user: newUser,
     });
-  } catch (error: unknown) {
-    logger.error(
-      `Register Error: ${error instanceof Error ? error.message : error}`,
-    );
+  } catch (error) {
+    logger.error(`Register Error: ${error}`);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -208,11 +206,7 @@ export const refreshToken: RequestHandler = async (
       token: newAccessToken,
     });
   } catch (error: unknown) {
-    logger.error(
-      `Refresh token error from IP: ${req.ip} - ${
-        error instanceof Error ? error.message : error
-      }`,
-    );
+    logger.error(`Refresh token error from IP: ${req.ip} - ${error}`);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -252,9 +246,7 @@ export const getProfile: RequestHandler = async (
     res.status(200).json({ user });
   } catch (error: unknown) {
     logger.error(
-      `Profile fetch error for User ID: ${req.authUser?.userId || "unknown"}: ${
-        error instanceof Error ? error.message : error
-      }`,
+      `Profile fetch error for User ID: ${req.authUser?.userId || "unknown"}: ${error}`,
     );
     res.status(500).json({ error: "Internal server error" });
   }
@@ -420,10 +412,7 @@ export const getAccessToken: RequestHandler = async (
       `${process.env.CLIENT_URL}/auth/github/success?user=${encodedUser}`,
     );
   } catch (error: unknown) {
-    logger.error(
-      "GitHub OAuth Callback Error: ",
-      error instanceof Error ? error.message : error,
-    );
+    logger.error(`GitHub OAuth Callback Error: ${error}`);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -547,7 +536,7 @@ export const verifyOtp: RequestHandler = async (
       password_reset_token: passwordResetToken,
     });
   } catch (error) {
-    logger.error("OTP verification error", error);
+    logger.error(`OTP verification error ${error}`);
     res.status(500).json({ error: "Internal server error" });
   }
 };
