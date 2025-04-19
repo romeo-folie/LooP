@@ -23,9 +23,9 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <NetworkStatusProvider>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ErrorBoundary>
+        <NetworkStatusProvider>
           <QueryClientProvider client={queryClient}>
             <NotificationProvider>
               <BrowserRouter>
@@ -37,8 +37,8 @@ createRoot(document.getElementById("root")!).render(
               </BrowserRouter>
             </NotificationProvider>
           </QueryClientProvider>
-        </ThemeProvider>
-      </NetworkStatusProvider>
-    </ErrorBoundary>
+        </NetworkStatusProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   </StrictMode>,
 );
