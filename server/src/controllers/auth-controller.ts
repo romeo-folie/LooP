@@ -276,8 +276,7 @@ export const getAccessToken: RequestHandler = async (
 
     if (!code) {
       logger.warn("No code returned from GitHub");
-      res.status(400).json({ error: "Missing code parameter" });
-      return;
+      throw new Error("Missing code parameter");
     }
 
     // Exchange code for access token
@@ -296,8 +295,7 @@ export const getAccessToken: RequestHandler = async (
     const accessToken = tokenResponse.data.access_token;
     if (!accessToken) {
       logger.error("No access token received from GitHub");
-      res.status(500).json({ error: "Failed to obtain access token" });
-      return;
+      throw new Error("Failed to obtain access token");
     }
 
     // Fetch user profile from GitHub
@@ -413,7 +411,7 @@ export const getAccessToken: RequestHandler = async (
     );
   } catch (error: unknown) {
     logger.error(`GitHub OAuth Callback Error: ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    res.redirect(`${process.env.CLIENT_URL}/auth/github/error`);
   }
 };
 

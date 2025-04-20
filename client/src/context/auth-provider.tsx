@@ -14,6 +14,7 @@ import browserStore from "@/lib/browser-storage";
 import { encrypt, generateKey } from "@/lib/web-crypto";
 import { getMeta, setMeta } from "@/lib/db";
 import { getCsrfToken } from "@/lib/cookies";
+import ErrorScreen from "@/components/error-screen";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export interface User {
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const storedEmail = browserStore.get("forgotPasswordEmail");
   const [email, setEmail] = useState<string | null>(storedEmail);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -205,6 +207,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPasswordResetToken(token);
   };
 
+  const clearAuthError = () => {
+    setAuthError(null);
+  };
+
   useEffect(() => {
     bc.onmessage = (event) => {
       if (event.data?.type === "LOGOUT") {
@@ -236,6 +242,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             logger.error(`Github auth failed. error: ${message}`);
           }
         }
+      } else if (location.pathname === "/auth/github/error") {
+        setAuthError("Github Oauth Failed");
       }
     }
     // If redirected from GitHub OAuth login
@@ -289,5 +297,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     savePasswordResetToken,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {authError && <ErrorScreen onReload={clearAuthError} />}
+      {children}
+    </AuthContext.Provider>
+  );
 };
