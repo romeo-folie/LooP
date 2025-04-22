@@ -58,7 +58,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
         <CardDescription>
-          You have {notifications.length} unread messages.
+          You have {notifications.length} unchecked notifications.
         </CardDescription>
       </CardHeader>
       <CardContent className={`grid gap-4 ${!notifications.length && "pb-0"}`}>
@@ -81,7 +81,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
           </div>
         )}
         <div>
-          <ScrollArea className="max-h-80 overflow-y-scroll">
+          <ScrollArea className="max-h-80 overflow-y-auto overflow-x-hidden">
             <div className="pr-4">
               {notifications.map((notification, index) => (
                 <div
@@ -127,7 +127,7 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
             className="w-full"
             onClick={handleMarkAllAsRead}
           >
-            <Check /> Mark all as read
+            Clear All Notifications
           </Button>
         </CardFooter>
       )}

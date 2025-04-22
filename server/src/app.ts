@@ -25,7 +25,7 @@ app.use(
       directives: {
         "default-src": ["'self'"],
         "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         "img-src": ["'self'", "data:"],
         "font-src": ["'self'", "data:"],
         "connect-src": ["'self'", `${process.env.SERVER_URL}`],
