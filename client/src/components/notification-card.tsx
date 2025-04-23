@@ -25,7 +25,8 @@ type CardProps = React.ComponentProps<typeof Card>;
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
   const navigate = useNavigate();
-  const { notifications, clearNotifications } = useNotifications();
+  const { notifications, notificationLength, clearNotifications } =
+    useNotifications();
 
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
 
@@ -58,7 +59,8 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
         <CardDescription>
-          You have {notifications.length} unchecked notifications.
+          You have {notificationLength} unchecked notification
+          {notificationLength !== 1 && "s"}.
         </CardDescription>
       </CardHeader>
       <CardContent className={`grid gap-4 ${!notifications.length && "pb-0"}`}>

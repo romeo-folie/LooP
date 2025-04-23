@@ -18,9 +18,9 @@ interface ProblemFeedbackDialogProps {
 
 const ratingDescriptions = [
   "I blanked",
-  "I recalled some of it but my answer was wrong",
-  "It was hard to recall, but my answer was correct",
-  "I recalled most of it and my answer was correct",
+  "I recalled some of it, but I arrived at a wrong answer",
+  "It was hard to recall, but I arrived at the correct answer",
+  "I recalled most of it and arrived at the correct answer",
   "I recalled it perfectly",
 ];
 
