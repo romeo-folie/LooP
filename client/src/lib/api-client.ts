@@ -9,7 +9,7 @@ export function createAxiosInstance(
   const instance = axios.create({
     baseURL: import.meta.env.VITE_SERVER_URL,
     withCredentials: true,
-    timeout: 5000,
+    timeout: 15000,
     timeoutErrorMessage: "Request timed out",
   });
 

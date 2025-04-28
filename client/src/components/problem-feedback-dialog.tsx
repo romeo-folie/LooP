@@ -47,10 +47,10 @@ const ProblemFeedbackDialog: React.FC<ProblemFeedbackDialogProps> = ({
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent className="w-[90vw] sm:max-w-md rounded-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-lg lg:text-xl font-bold">
-            How well did you recall this problem?
+          <AlertDialogTitle className="text-lg lg:text-xl font-bold text-center">
+            How well did you recall this solution?
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-center dark:text-gray-300">
             Your feedback helps us optimize future reminders.
           </AlertDialogDescription>
         </AlertDialogHeader>
