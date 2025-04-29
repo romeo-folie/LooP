@@ -114,7 +114,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-8">
       {/* Header: Title & Edit Button */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         {/* Left Column - Title and Notes */}
