@@ -31,7 +31,7 @@ export default async function reminderJob() {
         reminder.user_id,
         `Time to revisit: ${reminder.problem_name}`,
         {
-          due_datetime: reminder.due_datetime,
+          due_datetime: new Date(reminder.due_datetime).getTime(),
           problem_id: reminder.problem_id,
         },
       );

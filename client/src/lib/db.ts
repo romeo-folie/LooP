@@ -4,6 +4,7 @@ import {
   ReminderResponse,
 } from "@/pages/problems/ProblemDashboard";
 import { isNumber, isString } from "lodash";
+import type { Notification } from "@/context/notification-provider";
 
 export enum ActionType {
   Create = "POST",
@@ -31,6 +32,8 @@ export type ProblemSchema = Partial<ProblemResponse> & SchemaDefaults;
 
 export type ReminderSchema = Partial<ReminderResponse> & SchemaDefaults;
 
+export type NotificationSchema = Notification & { problem_id: number };
+
 type Payload = ProblemSchema | ReminderSchema;
 
 interface OutboxSchema {
@@ -54,6 +57,7 @@ export const db = new Dexie("loopDB") as Dexie & {
   problems: EntityTable<ProblemSchema, "id">;
   outbox: EntityTable<OutboxSchema, "id">;
   meta: EntityTable<MetaSchema, "key">;
+  notifications: EntityTable<NotificationSchema, "problem_id">;
 };
 
 db.version(1).stores({
@@ -62,6 +66,7 @@ db.version(1).stores({
   outbox:
     "++id, type, resource, resourceId, payload, status, createdAt, lastAttemptAt",
   meta: "key",
+  notifications: "problem_id, title, body, body.meta.due_datetime",
 });
 
 export async function bulkAddProblems(problems: ProblemSchema[]) {
@@ -188,7 +193,7 @@ export async function updateLocalReminder(
     const updatedProblem = { ...problem, reminders };
     await db.problems.update(problem.id, updatedProblem as ProblemSchema);
 
-    return { updatedReminder, updatedProblem };
+    return { updatedProblem, updatedReminder };
   }
 
   const { updatedProblem, updatedReminder } = await performReminderUpdate(
@@ -324,4 +329,28 @@ export async function setMeta<T>(key: string, value: T) {
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   const record = await db.meta.get(key);
   return record?.value as T | undefined;
+}
+
+export async function addLocalNotification(notificationPayload: Notification) {
+  const {
+    body: {
+      meta: { problem_id },
+    },
+  } = notificationPayload;
+  return await db.notifications.put({ ...notificationPayload, problem_id });
+}
+
+export async function fetchLocalNotifications() {
+  return await db.notifications
+    .orderBy("body.meta.due_datetime")
+    .reverse()
+    .toArray();
+}
+
+export async function deleteLocalNotification(problemId: number) {
+  return await db.notifications.where("problem_id").equals(problemId).delete();
+}
+
+export async function clearLocalNotifications() {
+  return await db.notifications.clear();
 }

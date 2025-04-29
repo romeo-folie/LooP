@@ -5,7 +5,7 @@ import logger from "../config/winston-config";
 async function sendPushReminder(
   userId: number,
   message: string,
-  meta: { due_datetime: Date; problem_id: number },
+  meta: { due_datetime: number; problem_id: number },
 ) {
   const subscriptions = await db("subscriptions").where({
     user_id: userId,

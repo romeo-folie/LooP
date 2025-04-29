@@ -3,6 +3,7 @@
 
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import syncOutbox from "./lib/background-sync";
+import { addLocalNotification } from "./lib/db";
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -11,12 +12,19 @@ cleanupOutdatedCaches();
 
 interface NotificationData {
   title: string;
-  body: { message: string; meta: { due_datetime: Date; problem_id: number } };
+  body: { message: string; meta: { due_datetime: number; problem_id: number } };
 }
 
 self.addEventListener("push", (event: PushEvent) => {
   if (event.data) {
-    const data: NotificationData = event.data.json() || {};
+    let data: NotificationData = {} as NotificationData;
+
+    try {
+      data = event.data.json();
+    } catch (error) {
+      console.log("failed to parse notification", error);
+      return;
+    }
 
     event.waitUntil(
       (async (): Promise<void> => {
@@ -29,6 +37,9 @@ self.addEventListener("push", (event: PushEvent) => {
           icon: iconUrl,
         });
 
+        // save notification locally
+        addLocalNotification(data);
+
         // broadcast a message to open tabs (clients) to display in app alert
         const allClients: readonly WindowClient[] = await self.clients.matchAll(
           {
@@ -37,12 +48,14 @@ self.addEventListener("push", (event: PushEvent) => {
           },
         );
 
-        allClients.forEach((client: WindowClient) => {
-          client.postMessage({
-            type: "IN_APP_ALERT",
-            payload: data,
+        if (allClients.length) {
+          allClients.forEach((client: WindowClient) => {
+            client.postMessage({
+              type: "IN_APP_ALERT",
+              payload: data,
+            });
           });
-        });
+        }
       })(),
     );
   }
@@ -57,14 +70,15 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList: readonly WindowClient[]) => {
         // If an existing window is open, focus it
-        for (const client of clientList) {
-          if (client.url.includes("/problems") && "focus" in client) {
-            client.navigate(`/problems?feedback_id=${problem_id}`);
-            return client.focus();
+        if (clientList.length) {
+          for (const client of clientList) {
+            if (client.url.includes("/problems") && "focus" in client) {
+              client.navigate(`/problems?feedback_id=${problem_id}`);
+              return client.focus();
+            }
           }
-        }
-        // Otherwise, open a new tab
-        if (self.clients.openWindow) {
+        } else if (self.clients.openWindow) {
+          // Otherwise, open a new tab
           return self.clients.openWindow(`/problems?feedback_id=${problem_id}`);
         }
       }),

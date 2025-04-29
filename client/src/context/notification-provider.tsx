@@ -5,12 +5,16 @@ import {
   useEffect,
   useState,
 } from "react";
-import browserStore from "@/lib/browser-storage";
 import { toast } from "@/hooks/use-toast";
+import {
+  clearLocalNotifications,
+  deleteLocalNotification,
+  fetchLocalNotifications,
+} from "@/lib/db";
 
 export type Notification = {
   title: string;
-  body: { message: string; meta: { due_datetime: Date; problem_id: number } };
+  body: { message: string; meta: { due_datetime: number; problem_id: number } };
 };
 
 interface NotificationContextType {
@@ -39,10 +43,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notificationLength, setNotificationLength] = useState<number>(0);
 
   useEffect(() => {
-    const listener = (event: MessageEvent) => {
+    const listener = async (event: MessageEvent) => {
       const { type, payload } = event.data || {};
       if (type === "IN_APP_ALERT") {
-        browserStore.set("notifications", payload);
         setNotifications((prev) => [...prev, payload]);
         toast({
           title: payload.title,
@@ -60,26 +63,30 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const localNotifications = browserStore.get("notifications");
-    setNotifications(localNotifications.reverse());
+    async function retrieveLocalNotifications() {
+      const localNotifications = await fetchLocalNotifications();
+      setNotifications(localNotifications);
+    }
+
+    retrieveLocalNotifications();
   }, []);
 
   useEffect(() => {
     setNotificationLength(notifications.length);
   }, [notifications]);
 
-  function removeNotification(problemId: number) {
+  async function removeNotification(problemId: number) {
     const currentNotifications = [...notifications];
     const notificationIndex = currentNotifications.findIndex(
       (notification) => notification.body.meta.problem_id === problemId,
     );
     currentNotifications.splice(notificationIndex, 1);
     setNotifications(currentNotifications);
-    browserStore.set("notifications", currentNotifications);
+    await deleteLocalNotification(problemId);
   }
 
-  function clearNotifications() {
-    browserStore.set("notifications", []);
+  async function clearNotifications() {
+    await clearLocalNotifications();
     setNotifications([]);
   }
 
