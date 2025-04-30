@@ -5,6 +5,7 @@ import {
 } from "@/pages/problems/ProblemDashboard";
 import { isNumber, isString } from "lodash";
 import type { Notification } from "@/context/notification-provider";
+import { logger } from "./logger";
 
 export enum ActionType {
   Create = "POST",
@@ -72,7 +73,9 @@ db.version(1).stores({
   notifications: "problem_id, title, body, due_datetime",
 });
 
-export async function bulkAddProblems(problems: ProblemSchema[]) {
+export async function bulkAddProblems(
+  problems: ProblemSchema[],
+): Promise<number | undefined> {
   return await db.problems.bulkAdd(problems);
 }
 
@@ -335,26 +338,47 @@ export async function getMeta<T>(key: string): Promise<T | undefined> {
 }
 
 export async function addLocalNotification(notificationPayload: Notification) {
-  const {
-    body: {
-      meta: { problem_id, due_datetime },
-    },
-  } = notificationPayload;
-  return await db.notifications.put({
-    ...notificationPayload,
-    problem_id,
-    due_datetime,
-  });
+  try {
+    const {
+      body: {
+        meta: { problem_id, due_datetime },
+      },
+    } = notificationPayload;
+    return await db.notifications.put({
+      ...notificationPayload,
+      problem_id,
+      due_datetime,
+    });
+  } catch (error) {
+    logger.error(
+      `error adding local notification to indexedDB, error: ${error}`,
+    );
+  }
 }
 
 export async function fetchLocalNotifications() {
-  return await db.notifications.orderBy("due_datetime").reverse().toArray();
+  try {
+    return await db.notifications.orderBy("due_datetime").reverse().toArray();
+  } catch (error) {
+    logger.error(`failed to fetch local notifications, error: ${error}`);
+  }
 }
 
 export async function deleteLocalNotification(problemId: number) {
-  return await db.notifications.where("problem_id").equals(problemId).delete();
+  try {
+    return await db.notifications
+      .where("problem_id")
+      .equals(problemId)
+      .delete();
+  } catch (error) {
+    logger.error(`failed to delete local notification, error: ${error}`);
+  }
 }
 
 export async function clearLocalNotifications() {
-  return await db.notifications.clear();
+  try {
+    return await db.notifications.clear();
+  } catch (error) {
+    logger.error(`failed to clear local notifications, error: ${error}`);
+  }
 }

@@ -65,7 +65,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     async function retrieveLocalNotifications() {
       const localNotifications = await fetchLocalNotifications();
-      setNotifications(localNotifications);
+      setNotifications(localNotifications ?? []);
     }
 
     retrieveLocalNotifications();

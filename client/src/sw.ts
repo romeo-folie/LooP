@@ -4,6 +4,7 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import syncOutbox from "./lib/background-sync";
 import { addLocalNotification } from "./lib/db";
+import { logger } from "./lib/logger";
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -22,7 +23,7 @@ self.addEventListener("push", (event: PushEvent) => {
     try {
       data = event.data.json();
     } catch (error) {
-      console.log("failed to parse notification", error);
+      logger.error(`failed to parse notification, error: ${error}`);
       return;
     }
 
@@ -30,15 +31,15 @@ self.addEventListener("push", (event: PushEvent) => {
       (async (): Promise<void> => {
         const iconUrl: string = "/logo.svg";
 
+        // save notification locally
+        await addLocalNotification(data);
+
         // trigger OS alert
         await self.registration.showNotification(data.title, {
           body: data.body.message,
           data: data.body.meta,
           icon: iconUrl,
         });
-
-        // save notification locally
-        addLocalNotification(data);
 
         // broadcast a message to open tabs (clients) to display in app alert
         const allClients: readonly WindowClient[] = await self.clients.matchAll(
