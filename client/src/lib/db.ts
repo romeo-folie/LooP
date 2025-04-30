@@ -32,7 +32,10 @@ export type ProblemSchema = Partial<ProblemResponse> & SchemaDefaults;
 
 export type ReminderSchema = Partial<ReminderResponse> & SchemaDefaults;
 
-export type NotificationSchema = Notification & { problem_id: number };
+export type NotificationSchema = Notification & {
+  problem_id: number;
+  due_datetime: number;
+};
 
 type Payload = ProblemSchema | ReminderSchema;
 
@@ -66,7 +69,7 @@ db.version(1).stores({
   outbox:
     "++id, type, resource, resourceId, payload, status, createdAt, lastAttemptAt",
   meta: "key",
-  notifications: "problem_id, title, body, body.meta.due_datetime",
+  notifications: "problem_id, title, body, due_datetime",
 });
 
 export async function bulkAddProblems(problems: ProblemSchema[]) {
@@ -334,17 +337,18 @@ export async function getMeta<T>(key: string): Promise<T | undefined> {
 export async function addLocalNotification(notificationPayload: Notification) {
   const {
     body: {
-      meta: { problem_id },
+      meta: { problem_id, due_datetime },
     },
   } = notificationPayload;
-  return await db.notifications.put({ ...notificationPayload, problem_id });
+  return await db.notifications.put({
+    ...notificationPayload,
+    problem_id,
+    due_datetime,
+  });
 }
 
 export async function fetchLocalNotifications() {
-  return await db.notifications
-    .orderBy("body.meta.due_datetime")
-    .reverse()
-    .toArray();
+  return await db.notifications.orderBy("due_datetime").reverse().toArray();
 }
 
 export async function deleteLocalNotification(problemId: number) {
