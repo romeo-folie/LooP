@@ -97,6 +97,3 @@ volumes:
 docker-compose up --build
 ```
 
-TODO
-- Better typing on the server
-- Introduce tests for problem and reminder CRUD

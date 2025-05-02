@@ -502,7 +502,7 @@ export default function ProblemFormDialog({
               render={({ field }) => (
                 <Textarea
                   placeholder="Additional Notes..."
-                  style={{ height: "100px" }}
+                  style={{ height: "200px" }}
                   {...field}
                 />
               )}

@@ -46,7 +46,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const listener = async (event: MessageEvent) => {
       const { type, payload } = event.data || {};
       if (type === "IN_APP_ALERT") {
-        setNotifications((prev) => [...prev, payload]);
+        setNotifications((prev) => [payload, ...prev]);
         toast({
           title: payload.title,
           description: payload.body.message,

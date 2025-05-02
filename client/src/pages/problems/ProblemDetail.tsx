@@ -148,7 +148,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
           </div>
 
           {/* Notes */}
-          <p className="mt-5 dark:text-gray-300">{problem.notes}</p>
+          <p className="mt-5 dark:text-gray-300 whitespace-pre-wrap max-h-72 overflow-auto pr-2">
+            {problem.notes}
+          </p>
         </div>
 
         {/* Right Column - Edit, Difficulty & Tags (desktop only) */}
