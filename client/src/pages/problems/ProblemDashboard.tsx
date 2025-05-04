@@ -69,7 +69,7 @@ export interface ReminderResponse {
   due_datetime: Date;
   is_sent: boolean;
   sent_at: Date;
-  created_at: Date;
+  created_at: number;
 }
 
 export interface ReminderResponseData {
@@ -85,7 +85,7 @@ export interface ProblemResponse {
   tags: string[];
   date_solved: Date;
   notes: string;
-  created_at: Date;
+  created_at: number;
   reminders: ReminderResponse[];
 }
 

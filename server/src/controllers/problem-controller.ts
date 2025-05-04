@@ -118,8 +118,11 @@ export const getProblems: RequestHandler = async (
         "tags",
         "date_solved",
         "notes",
-        "created_at",
-      );
+        db.raw(
+          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT AS created_at",
+        ),
+      )
+      .orderBy("created_at", "desc");
 
     // Apply filters if present
     if (difficulty) {
@@ -148,8 +151,13 @@ export const getProblems: RequestHandler = async (
         "sent_at",
         // 'is_completed',
         // 'completed_at',
-        "created_at",
-      );
+        // "created_at",
+        db.raw(
+          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT AS created_at",
+        ),
+      )
+      .orderBy("is_sent", "asc")
+      .orderBy("due_datetime", "desc");
 
     // Map reminders to their corresponding problems
     const remindersMap = reminders.reduce(
@@ -160,12 +168,14 @@ export const getProblems: RequestHandler = async (
         acc[reminder.problem_id].push(reminder);
         return acc;
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {} as Record<number, any[]>,
     );
 
     // Attach reminders to their respective problems
     const problemsWithReminders = problems.map((problem) => ({
       ...problem,
+      created_at: parseInt(problem.created_at),
       reminders: remindersMap[problem.problem_id] || [],
     }));
 

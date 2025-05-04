@@ -100,6 +100,7 @@ async function createProblem(
         ...payload,
         isOffline: 1,
         local_id: `offline-${Date.now()}`,
+        created_at: Date.now(),
       } as ProblemSchema;
       await addLocalProblem(localProblem);
       return {

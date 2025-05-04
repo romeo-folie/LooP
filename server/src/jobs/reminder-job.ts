@@ -16,7 +16,9 @@ export default async function reminderJob() {
         "reminders.problem_id",
         "reminders.user_id",
         "problems.name as problem_name",
-        "reminders.due_datetime",
+        db.raw(
+          "FLOOR(EXTRACT(EPOCH FROM reminders.due_datetime) * 1000)::BIGINT AS due_datetime_ms",
+        ),
       );
 
     if (dueReminders.length === 0) {
@@ -31,7 +33,7 @@ export default async function reminderJob() {
         reminder.user_id,
         `Time to revisit: ${reminder.problem_name}`,
         {
-          due_datetime: new Date(reminder.due_datetime).getTime(),
+          due_datetime: parseInt(reminder.due_datetime_ms),
           problem_id: reminder.problem_id,
         },
       );

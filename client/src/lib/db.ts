@@ -66,7 +66,7 @@ export const db = new Dexie("loopDB") as Dexie & {
 
 db.version(1).stores({
   problems:
-    "++id, &problem_id, user_id, local_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline",
+    "++id, &problem_id, user_id, local_id, name, difficulty, *tags, date_solved, notes, reminders, isOffline, created_at",
   outbox:
     "++id, type, resource, resourceId, payload, status, createdAt, lastAttemptAt",
   meta: "key",
@@ -129,7 +129,7 @@ export async function clearOldProblems(): Promise<void> {
 }
 
 export async function getAllProblems(): Promise<ProblemSchema[]> {
-  return await db.problems.toArray();
+  return await db.problems.orderBy("created_at").reverse().toArray();
 }
 
 export async function addLocalReminder(
@@ -142,8 +142,8 @@ export async function addLocalReminder(
     .first();
   if (!problemToUpdate) return;
 
-  const reminders = problemToUpdate.reminders ?? [];
-  reminders.push(newReminder as ReminderResponse);
+  let reminders = problemToUpdate.reminders ?? [];
+  reminders = [newReminder as ReminderResponse, ...reminders];
   const updatedProblem = {
     ...problemToUpdate,
     reminders,
