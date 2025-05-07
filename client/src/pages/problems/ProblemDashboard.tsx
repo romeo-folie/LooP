@@ -362,6 +362,8 @@ export default function ProblemsDashboard() {
       toast({ title: "Success", description: message });
     },
     onError: (error) => {
+      if (error.response?.status === 404)
+        removeNotification(feedbackId as number);
       toast({
         title: "Error",
         description:
