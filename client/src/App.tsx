@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/protected-route";
 import ProblemDashboard from "./pages/problems/ProblemDashboard";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyOtp from "./pages/auth/VerifyOtp";
+import SettingsPage from "./pages/settings/Settings";
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/problems" />} />
           <Route path="/dashboard" element={<Navigate to="/problems" />} />
           <Route path="/problems" element={<ProblemDashboard />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
       <Toaster />

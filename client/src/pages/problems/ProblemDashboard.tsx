@@ -220,21 +220,8 @@ export default function ProblemsDashboard() {
     }
   };
 
-  // async function saveUserNotificationPreference(allowed: boolean) {
-  //   try {
-  //     console.log(
-  // TODO:
-  //       "make api call to save user preference. allowed: ",
-  //       allowed.toString()
-  //     );
-  //   } catch (error) {
-  //     console.error("Failed to save user preference on backend", error);
-  //   }
-  // }
-
   const handleNotificationConfirm = async () => {
     browserStore.set("notificationsAllowed", "true");
-    // await saveUserNotificationPreference(true);
     const success = await requestNotificationPermission(apiClient);
     if (success)
       toast({
@@ -246,7 +233,6 @@ export default function ProblemsDashboard() {
 
   const handleNotificationCancel = async () => {
     browserStore.set("notificationsAllowed", "false");
-    // await saveUserNotificationPreference(false);
     setShowNotificationRequestDialog(false);
   };
 

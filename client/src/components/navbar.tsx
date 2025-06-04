@@ -75,12 +75,7 @@ export default function Navbar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => console.log("Navigate to profile...")}
-            >
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => console.log("Open settings...")}>
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>

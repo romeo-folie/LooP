@@ -3,6 +3,7 @@ import problemRouter from "./problem-router";
 import authRouter from "./auth-router";
 import reminderRouter from "./reminder-router";
 import subscriptionRouter from "./subscription-router";
+import preferenceRouter from "./preference-router";
 
 const router: Router = Router();
 
@@ -16,5 +17,6 @@ router.use("/auth", authRouter);
 router.use("/problems", problemRouter);
 router.use("/reminders", reminderRouter);
 router.use("/subscriptions", subscriptionRouter);
+router.use("/preferences", preferenceRouter);
 
 export default router;

@@ -11,6 +11,7 @@ import {
   deleteLocalNotification,
   fetchLocalNotifications,
 } from "@/lib/db";
+import browserStore from "@/lib/browser-storage";
 
 export type Notification = {
   title: string;
@@ -19,9 +20,11 @@ export type Notification = {
 
 interface NotificationContextType {
   notifications: Notification[];
+  notificationsAllowed: boolean;
   notificationLength: number;
   removeNotification: (problemId: number) => void;
   clearNotifications: () => void;
+  setNotificationsAllowed: (checked: boolean) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -39,6 +42,7 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
+  const [notificationsAllowed, setNotificationsAllowed] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationLength, setNotificationLength] = useState<number>(0);
 
@@ -75,6 +79,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     setNotificationLength(notifications.length);
   }, [notifications]);
 
+  // get notification preference from local store
+  useEffect(() => {
+    const notificationsAllowed = browserStore.get("notificationsAllowed");
+    if (notificationsAllowed === "true") setNotificationsAllowed(true);
+    else setNotificationsAllowed(false);
+  }, []);
+
   async function removeNotification(problemId: number) {
     const currentNotifications = [...notifications];
     const notificationIndex = currentNotifications.findIndex(
@@ -93,6 +104,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const value: NotificationContextType = {
     notifications,
     notificationLength,
+    notificationsAllowed,
+    setNotificationsAllowed,
     removeNotification,
     clearNotifications,
   };

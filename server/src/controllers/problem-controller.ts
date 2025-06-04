@@ -50,6 +50,12 @@ export const createProblem: RequestHandler = async (
         "created_at",
       ]);
 
+    const { settings } =
+      (await db("user_preferences")
+        .where({ user_id: userId })
+        .select("settings")
+        .first()) ?? {};
+
     if (isFromWorker && reminders.length) {
       const syncReminders = reminders.map((rem: { due_datetime: Date }) => ({
         problem_id: newProblem.problem_id,
@@ -58,7 +64,7 @@ export const createProblem: RequestHandler = async (
       }));
 
       await db("reminders").insert(syncReminders);
-    } else {
+    } else if (settings && settings.autoReminders) {
       const reminderIntervals = [3, 7, 15];
       const defaultReminders = reminderIntervals.map((interval) => {
         const dueDate = new Date(date_solved);
@@ -80,7 +86,7 @@ export const createProblem: RequestHandler = async (
     );
 
     res.status(201).json({
-      message: "Problem created successfully with scheduled reminders",
+      message: `Problem created successfully ${settings && settings.autoReminders ? "with scheduled reminders" : ""}`,
       problem: newProblem,
     });
   } catch (error: unknown) {

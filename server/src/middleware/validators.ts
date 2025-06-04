@@ -181,3 +181,12 @@ export const resetPasswordValidator: ValidationChain[] = [
       "Password must contain at least one special character (@$!%*?&#)",
     ),
 ];
+
+export const preferencesValidator = [
+  body("settings")
+    .exists({ checkNull: true })
+    .withMessage("settings is required")
+    .bail()
+    .isObject()
+    .withMessage("settings must be a JSON object"),
+];

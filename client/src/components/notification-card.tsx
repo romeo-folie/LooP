@@ -11,31 +11,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import browserStore from "@/lib/browser-storage";
-import { useEffect, useState } from "react";
-import { requestNotificationPermission } from "@/lib/push-notifications";
-import { useAxios } from "@/hooks/use-axios";
 import { useNotifications } from "@/context/notification-provider";
+import { requestNotificationPermission } from "@/lib/push-notifications";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
+import { useAxios } from "@/hooks/use-axios";
+import browserStore from "@/lib/browser-storage";
+import { toast } from "@/hooks/use-toast";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
   const navigate = useNavigate();
-  const { notifications, notificationLength, clearNotifications } =
-    useNotifications();
-
-  const [notificationsAllowed, setNotificationsAllowed] = useState(false);
-
-  // get notification preference from local store
-  useEffect(() => {
-    const notificationsAllowed = browserStore.get("notificationsAllowed");
-    if (notificationsAllowed === "true") setNotificationsAllowed(true);
-    else setNotificationsAllowed(false);
-  }, []);
+  const {
+    notifications,
+    notificationsAllowed,
+    notificationLength,
+    setNotificationsAllowed,
+    clearNotifications,
+  } = useNotifications();
 
   async function handleCheckChanged(checked: boolean) {
     if (checked) {
