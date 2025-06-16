@@ -153,7 +153,7 @@ export default function SettingsPage() {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="p-4 space-y-6 max-w-2xl mx-auto">
         {/* Page Heading */}
-        <h1 className="text-2xl font-bold">Preferences</h1>
+        <h1 className="text-2xl font-bold">Settings</h1>
 
         {/* User Profile Section */}
         <div className="flex items-center gap-6">
