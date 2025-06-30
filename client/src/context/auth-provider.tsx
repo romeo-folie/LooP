@@ -240,6 +240,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ? error.response?.data?.error || error.response?.data?.message
                 : "Failed to parse GitHub user data";
             logger.error(`Github auth failed. error: ${message}`);
+            throw error;
           }
         }
       } else if (location.pathname === "/auth/github/error") {
