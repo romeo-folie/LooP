@@ -20,7 +20,7 @@ export const postgres = pgp({
 
 const runMigrations = async () => {
   try {
-    await knex(knexConfig[environment]).migrate.latest();
+    await knex(knexConfig[environment]!).migrate.latest();
     console.log("✅ Database migrations applied");
   } catch (error) {
     console.error("❌ Error running migrations:", error);
@@ -37,13 +37,16 @@ export const connectDB = function () {
       await runMigrations();
       cron.schedule("* * * * *", reminderJob);
     })
-    .catch((error) => {
-      console.error("❌ Database connection error:", error.message);
+    .catch((error: unknown) => {
+      console.error(
+        "❌ Database connection error: ",
+        error instanceof Error ? error.message : error,
+      );
     });
 };
 
 // Initialize knex query builder
-export const db = knex(knexConfig[environment]);
+export const db = knex(knexConfig[environment]!);
 
 if (environment === "development") {
   // Enable SQL query logging

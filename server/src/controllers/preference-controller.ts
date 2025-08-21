@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { db } from "../db";
 import logger from "../config/winston-config";
-import { AuthenticatedRequest } from "../types/authenticated-request";
+import { AuthenticatedRequest } from "../types";
 
 export const upsertPreferences: RequestHandler = async (
   req: AuthenticatedRequest,

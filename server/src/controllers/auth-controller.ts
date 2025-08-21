@@ -1,21 +1,33 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { Request, Response, RequestHandler } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import dotenv from "dotenv";
 import { db } from "../db";
-import { AuthenticatedRequest } from "../types/authenticated-request";
 import logger from "../config/winston-config";
 import resend from "../config/resend";
 import crypto from "crypto";
+import { IPasswordResetTokensRow, IUserRow } from "../types/knex-tables";
+import { AppRequestHandler, GitHubOAuthAccessTokenSuccess } from "../types";
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
+
+type AuthUser =
+  RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"];
+type UserEmails =
+  RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"];
 
 dotenv.config();
 
-export const register: RequestHandler = async (req: Request, res: Response) => {
+export const register: AppRequestHandler<
+  {},
+  { message?: string; user?: Partial<IUserRow> },
+  { name: string; email: string; password: string }
+> = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const existingUser = await db("users").where({ email }).first();
+    const existingUser = await db<IUserRow>("users").where({ email }).first();
     if (existingUser) {
       res.status(400).json({ message: "Email already in use" });
       return;
@@ -23,7 +35,7 @@ export const register: RequestHandler = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [newUser] = await db("users")
+    const [newUser] = await db<IUserRow>("users")
       .insert({
         name,
         email,
@@ -39,15 +51,19 @@ export const register: RequestHandler = async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(`Register Error: ${error}`);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const login: RequestHandler = async (req: Request, res: Response) => {
+export const login: AppRequestHandler<
+  {},
+  { message?: string; user?: Partial<IUserRow> & { token: string } },
+  { email: string; password: string }
+> = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const existingUser = await db("users").where({ email }).first();
+    const existingUser = await db<IUserRow>("users").where({ email }).first();
     if (!existingUser) {
       logger.warn(`Login failed: User not found - ${email}`);
       res.status(401).json({ message: "Invalid credentials" });
@@ -124,16 +140,16 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     logger.error(
       `Login error for ${req.body?.email || "unknown user"} error: ${error}`,
     );
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const refreshToken: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
+export const refreshToken: AppRequestHandler<
+  {},
+  { message: string; token: string }
+> = async (req, res) => {
   try {
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken = req.cookies.refresh_token;
 
     logger.info(`Refresh token request received from IP: ${req.ip}`);
 
@@ -158,7 +174,9 @@ export const refreshToken: RequestHandler = async (
     }
 
     // Find the user
-    const user = await db("users").where({ email: decoded.email }).first();
+    const user = await db<IUserRow>("users")
+      .where({ email: decoded.email })
+      .first();
     if (!user) {
       logger.warn(
         `Refresh token failed: User not found - User ID: ${decoded.userId}`,
@@ -211,10 +229,10 @@ export const refreshToken: RequestHandler = async (
   }
 };
 
-export const getProfile: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getProfile: AppRequestHandler<
+  {},
+  { user: Partial<IUserRow> }
+> = async (req, res) => {
   try {
     logger.info(
       `Profile fetch request received for User ID: ${req.authUser?.userId} from IP: ${req.ip}`,
@@ -267,10 +285,12 @@ export const getUserIdentity: RequestHandler = async (
   res.redirect(githubAuthUrl);
 };
 
-export const getAccessToken: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
+export const getAccessToken: AppRequestHandler<
+  {},
+  {},
+  {},
+  { code: string }
+> = async (req, res) => {
   try {
     const { code } = req.query;
 
@@ -280,7 +300,7 @@ export const getAccessToken: RequestHandler = async (
     }
 
     // Exchange code for access token
-    const tokenResponse = await axios.post(
+    const tokenResponse = await axios.post<GitHubOAuthAccessTokenSuccess>(
       "https://github.com/login/oauth/access_token",
       {
         client_id: process.env.GITHUB_CLIENT_ID,
@@ -299,24 +319,33 @@ export const getAccessToken: RequestHandler = async (
     }
 
     // Fetch user profile from GitHub
-    const userProfileResp = await axios.get("https://api.github.com/user", {
-      headers: { Authorization: `token ${accessToken}` },
-    });
+    const userProfileResp = await axios.get<AuthUser>(
+      "https://api.github.com/user",
+      {
+        headers: { Authorization: `token ${accessToken}` },
+      },
+    );
     const githubUser = userProfileResp.data;
 
     // Fetch user’s email(s)
-    const emailsResp = await axios.get("https://api.github.com/user/emails", {
-      headers: { Authorization: `token ${accessToken}` },
-    });
+    const emailsResp = await axios.get<UserEmails>(
+      "https://api.github.com/user/emails",
+      {
+        headers: { Authorization: `token ${accessToken}` },
+      },
+    );
     const emails = emailsResp.data;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const primaryEmailObj = emails.find((obj: any) => obj.primary) || emails[0];
+    const primaryEmailObj = emails.find((obj) => obj.primary) || emails[0];
     const userEmail = primaryEmailObj ? primaryEmailObj.email : null;
 
-    // Check if user exists
-    let existingUser = await db("users").where({ email: userEmail }).first();
+    if (!userEmail) throw new Error("Failed to obtain user email");
 
-    let userId: number;
+    // Check if user exists
+    let existingUser: Partial<IUserRow> | undefined = await db("users")
+      .where({ email: userEmail })
+      .first();
+
+    let userId;
     if (existingUser) {
       // Possibly update provider fields if user was local
       userId = existingUser.user_id;
@@ -336,17 +365,19 @@ export const getAccessToken: RequestHandler = async (
     } else {
       // Create a new user
       const displayName = githubUser.name || githubUser.login || "GitHub User";
-      const [newUser] = await db("users")
+      const [newUser] = await db<IUserRow>("users")
         .insert({
           name: displayName,
           email: userEmail || `user-${githubUser.id}@github.local`,
-          password: "", // no local password needed for OAuth
+          password: "",
           provider: "github",
           provider_id: String(githubUser.id),
           created_at: new Date(),
         })
-        .returning(["user_id"]);
+        .returning(["user_id", "email"]);
+      if (!newUser) throw new Error("Failed to create new local user");
       userId = newUser.user_id;
+      existingUser = newUser;
       logger.info(`New user created via GitHub: ${userEmail}`);
     }
 
@@ -415,10 +446,11 @@ export const getAccessToken: RequestHandler = async (
   }
 };
 
-export const forgotPassword: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
+export const forgotPassword: AppRequestHandler<
+  {},
+  { message: string },
+  { email: string }
+> = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -477,10 +509,11 @@ export const forgotPassword: RequestHandler = async (
   }
 };
 
-export const verifyOtp: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
+export const verifyOtp: AppRequestHandler<
+  {},
+  { message: string; password_reset_token: string },
+  { email: string; pin: number }
+> = async (req, res) => {
   try {
     const { email, pin } = req.body;
 
@@ -498,7 +531,7 @@ export const verifyOtp: RequestHandler = async (
     }
 
     // 2. Fetch the latest OTP for this user
-    const otpRecord = await db("password_reset_tokens")
+    const otpRecord = await db<IPasswordResetTokensRow>("password_reset_tokens")
       .where({ user_id: user.user_id })
       .orderBy("created_at", "desc")
       .first();
@@ -509,7 +542,10 @@ export const verifyOtp: RequestHandler = async (
     }
 
     // 3. Hash the provided OTP and compare
-    const hashedOtp = crypto.createHash("sha256").update(pin).digest("hex");
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(pin.toString())
+      .digest("hex");
     if (hashedOtp !== otpRecord.otp_hash) {
       res.status(400).json({ error: "Invalid OTP" });
       return;
@@ -539,10 +575,11 @@ export const verifyOtp: RequestHandler = async (
   }
 };
 
-export const resetPassword: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
+export const resetPassword: AppRequestHandler<
+  {},
+  { message: string },
+  { password_reset_token: string; new_password: string }
+> = async (req, res) => {
   try {
     const { password_reset_token, new_password } = req.body;
 
@@ -573,7 +610,7 @@ export const resetPassword: RequestHandler = async (
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
     // Update password in the database
-    await db("users").where({ user_id: userId, email }).update({
+    await db<IUserRow>("users").where({ user_id: userId, email }).update({
       password: hashedPassword,
       updated_at: new Date(),
     });
@@ -589,7 +626,10 @@ export const resetPassword: RequestHandler = async (
   }
 };
 
-export const logout: RequestHandler = (req: Request, res: Response) => {
+export const logout: AppRequestHandler<{}, {}, { message: string }> = (
+  req,
+  res,
+) => {
   try {
     res.clearCookie("refresh_token", {
       domain: `.${process.env.DOMAIN as string}`,

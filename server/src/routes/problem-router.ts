@@ -1,11 +1,6 @@
 import { Router } from "express";
 import { authenticateJWT } from "../middleware/auth-middleware";
 import {
-  validateProblemCreation,
-  validateProblemUpdate,
-  validatePracticeFeedback,
-} from "../middleware/validators";
-import {
   createProblem,
   getProblemById,
   getProblems,
@@ -13,8 +8,13 @@ import {
   deleteProblem,
   handlePracticeFeedback,
 } from "../controllers/problem-controller";
-import { validateRequest } from "../middleware/validate-request";
 import { verifyCsrfToken } from "../middleware/verify-csrf-token";
+import { zodValidate } from "../middleware/validate-request";
+import {
+  createProblemSchema,
+  practiceFeedbackSchema,
+  updateProblemSchema,
+} from "../middleware/validators";
 
 const router: Router = Router();
 
@@ -24,24 +24,21 @@ router.post(
   "/",
   verifyCsrfToken,
   authenticateJWT,
-  validateProblemCreation,
-  validateRequest,
+  zodValidate({ body: createProblemSchema }),
   createProblem,
 );
 router.put(
   "/:problem_id",
   verifyCsrfToken,
   authenticateJWT,
-  validateProblemUpdate,
-  validateRequest,
+  zodValidate({ body: updateProblemSchema }),
   updateProblem,
 );
 router.put(
   "/:problem_id/practice",
   verifyCsrfToken,
   authenticateJWT,
-  validatePracticeFeedback,
-  validateRequest,
+  zodValidate({ body: practiceFeedbackSchema }),
   handlePracticeFeedback,
 );
 router.delete("/:problem_id", verifyCsrfToken, authenticateJWT, deleteProblem);
