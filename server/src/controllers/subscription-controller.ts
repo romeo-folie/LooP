@@ -1,5 +1,5 @@
 import { RequestHandler, Response } from "express";
-import { AuthenticatedRequest } from "../types/authenticated-request";
+import { AuthenticatedRequest } from "../types";
 import { db } from "../db";
 import logger from "../config/winston-config";
 

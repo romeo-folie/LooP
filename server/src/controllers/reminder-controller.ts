@@ -1,5 +1,5 @@
 import { Response, RequestHandler } from "express";
-import { AuthenticatedRequest } from "../types/authenticated-request";
+import { AuthenticatedRequest } from "../types";
 import { db } from "../db";
 import logger from "../config/winston-config";
 
@@ -189,6 +189,7 @@ export const updateReminder: RequestHandler = async (
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedFields: Record<string, any> = {};
     if (due_datetime) updatedFields.due_datetime = due_datetime;
     if (is_completed !== undefined) {

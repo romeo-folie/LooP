@@ -1,13 +1,20 @@
-import { RequestHandler, Response } from "express";
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
-import { AuthenticatedRequest } from "../types/authenticated-request";
+import { AppRequestHandler, IProblem } from "../types";
 import logger from "../config/winston-config";
 import sm2 from "../utils/sm2-helper";
+import {
+  IProblemRow,
+  IReminderRow,
+  IUserPreferencesRow,
+} from "../types/knex-tables";
 
-export const createProblem: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const createProblem: AppRequestHandler<
+  {},
+  { message: string; problem: Partial<IProblemRow> },
+  IProblem,
+  {}
+> = async (req, res) => {
   try {
     const {
       name,
@@ -30,7 +37,7 @@ export const createProblem: RequestHandler = async (
       `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`,
     );
 
-    const [newProblem] = await db("problems")
+    const [newProblem] = await db<IProblemRow>("problems")
       .insert({
         user_id: userId,
         name,
@@ -50,8 +57,12 @@ export const createProblem: RequestHandler = async (
         "created_at",
       ]);
 
+    if (!newProblem) {
+      throw new Error("failed to insert problem");
+    }
+
     const { settings } =
-      (await db("user_preferences")
+      (await db<IUserPreferencesRow>("user_preferences")
         .where({ user_id: userId })
         .select("settings")
         .first()) ?? {};
@@ -63,13 +74,13 @@ export const createProblem: RequestHandler = async (
         due_datetime: rem.due_datetime,
       }));
 
-      await db("reminders").insert(syncReminders);
+      await db<IReminderRow>("reminders").insert(syncReminders);
     } else if (settings && settings.autoReminders) {
       const reminderIntervals = [3, 7, 15];
       const defaultReminders = reminderIntervals.map((interval) => {
         const dueDate = new Date(date_solved);
         dueDate.setDate(dueDate.getDate() + interval);
-        dueDate.setHours(9, 0, 0, 0); // Set to 09:00 AM
+        dueDate.setHours(9, 0, 0, 0);
 
         return {
           problem_id: newProblem.problem_id,
@@ -78,7 +89,7 @@ export const createProblem: RequestHandler = async (
         };
       });
 
-      await db("reminders").insert(defaultReminders);
+      await db<IReminderRow>("reminders").insert(defaultReminders);
     }
 
     logger.info(
@@ -97,10 +108,12 @@ export const createProblem: RequestHandler = async (
   }
 };
 
-export const getProblems: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getProblems: AppRequestHandler<
+  {},
+  { problems: Partial<IProblemRow>[] },
+  {},
+  { difficulty: string; tags: string; date_solved: string }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
 
@@ -114,7 +127,7 @@ export const getProblems: RequestHandler = async (
 
     // Extract optional query parameters
     const { difficulty, tags, date_solved } = req.query;
-    let query = db("problems")
+    let query = db<IProblemRow>("problems")
       .where({ user_id: userId })
       .select(
         "problem_id",
@@ -124,6 +137,7 @@ export const getProblems: RequestHandler = async (
         "tags",
         "date_solved",
         "notes",
+        "created_at",
         db.raw(
           "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT AS created_at",
         ),
@@ -135,7 +149,7 @@ export const getProblems: RequestHandler = async (
       query = query.where("difficulty", difficulty as string);
     }
     if (tags) {
-      const tagsArray = (tags as string).split(",");
+      const tagsArray = tags.split(",");
       query = query.whereRaw("tags @> ?", [tagsArray]);
     }
     if (date_solved) {
@@ -147,7 +161,7 @@ export const getProblems: RequestHandler = async (
 
     // Fetch reminders for the problems
     const problemIds = problems.map((p) => p.problem_id);
-    const reminders = await db("reminders")
+    const reminders = await db<IReminderRow>("reminders")
       .whereIn("problem_id", problemIds)
       .select(
         "reminder_id",
@@ -171,7 +185,7 @@ export const getProblems: RequestHandler = async (
         if (!acc[reminder.problem_id]) {
           acc[reminder.problem_id] = [];
         }
-        acc[reminder.problem_id].push(reminder);
+        acc[reminder.problem_id]!.push(reminder);
         return acc;
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,7 +195,7 @@ export const getProblems: RequestHandler = async (
     // Attach reminders to their respective problems
     const problemsWithReminders = problems.map((problem) => ({
       ...problem,
-      created_at: parseInt(problem.created_at),
+      created_at: parseInt(problem.created_at as string),
       reminders: remindersMap[problem.problem_id] || [],
     }));
 
@@ -189,6 +203,7 @@ export const getProblems: RequestHandler = async (
       `Successfully fetched ${problems.length} problems for User ID: ${userId}`,
     );
 
+    //TODO: pagination
     res.status(200).json({ problems: problemsWithReminders });
   } catch (error: unknown) {
     logger.error(
@@ -198,10 +213,10 @@ export const getProblems: RequestHandler = async (
   }
 };
 
-export const getProblemById: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getProblemById: AppRequestHandler<
+  { problem_id: string },
+  { problem: IProblemRow }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -215,8 +230,8 @@ export const getProblemById: RequestHandler = async (
     logger.info(`Fetching problem ID: ${problem_id} for User ID: ${userId}`);
 
     // Fetch the problem belonging to the authenticated user
-    const problem = await db("problems")
-      .where({ problem_id, user_id: userId })
+    const problem = await db<IProblemRow>("problems")
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!problem) {
@@ -238,10 +253,17 @@ export const getProblemById: RequestHandler = async (
   }
 };
 
-export const updateProblem: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const updateProblem: AppRequestHandler<
+  { problem_id: string },
+  { message: string; problem: IProblemRow },
+  {
+    name: string;
+    difficulty: string;
+    tags: string[];
+    date_solved: Date;
+    notes: string;
+  }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -260,7 +282,7 @@ export const updateProblem: RequestHandler = async (
     );
 
     const existingProblem = await db("problems")
-      .where({ problem_id, user_id: userId })
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!existingProblem) {
@@ -269,6 +291,7 @@ export const updateProblem: RequestHandler = async (
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedFields: Record<string, any> = {};
     if (name) updatedFields.name = name;
     if (difficulty) updatedFields.difficulty = difficulty;
@@ -276,18 +299,22 @@ export const updateProblem: RequestHandler = async (
     if (date_solved) updatedFields.date_solved = date_solved;
     if (notes) updatedFields.notes = notes;
 
-    const [updatedProblem] = await db("problems")
-      .where({ problem_id, user_id: userId })
+    const [updatedProblem] = await db<IProblemRow>("problems")
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .update(updatedFields)
       .returning([
+        "user_id",
         "problem_id",
         "name",
         "difficulty",
         "tags",
         "date_solved",
         "notes",
+        "created_at",
         "updated_at",
       ]);
+
+    if (!updatedProblem) throw new Error("Failed to update problem");
 
     logger.info(
       `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`,
@@ -305,10 +332,10 @@ export const updateProblem: RequestHandler = async (
   }
 };
 
-export const deleteProblem: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const deleteProblem: AppRequestHandler<
+  { problem_id: string },
+  { message: string }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -322,8 +349,8 @@ export const deleteProblem: RequestHandler = async (
     }
 
     // Ensure the problem exists and belongs to the authenticated user
-    const existingProblem = await db("problems")
-      .where({ problem_id, user_id: userId })
+    const existingProblem = await db<IProblemRow>("problems")
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!existingProblem) {
@@ -333,10 +360,14 @@ export const deleteProblem: RequestHandler = async (
     }
 
     // Delete associated reminders first to maintain integrity
-    await db("reminders").where({ problem_id }).del();
+    await db("reminders")
+      .where({ problem_id: parseInt(problem_id) })
+      .del();
 
     // Delete the problem
-    await db("problems").where({ problem_id }).del();
+    await db("problems")
+      .where({ problem_id: parseInt(problem_id) })
+      .del();
 
     logger.info(
       `Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`,
@@ -351,10 +382,11 @@ export const deleteProblem: RequestHandler = async (
   }
 };
 
-export const handlePracticeFeedback: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res,
-) => {
+export const handlePracticeFeedback: AppRequestHandler<
+  { problem_id: string },
+  { message: string },
+  { quality_score: number }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -367,7 +399,7 @@ export const handlePracticeFeedback: RequestHandler = async (
 
     // Fetch problem & ensure ownership
     const problem = await db("problems")
-      .where({ problem_id, user_id: userId })
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!problem) {
@@ -405,14 +437,16 @@ export const handlePracticeFeedback: RequestHandler = async (
     };
 
     // Update problem
-    await db("problems").where({ problem_id }).update({
-      practice_meta: updatedMeta,
-      updated_at: now,
-    });
+    await db("problems")
+      .where({ problem_id: parseInt(problem_id) })
+      .update({
+        practice_meta: updatedMeta,
+        updated_at: now,
+      });
 
     // Create new reminder
     await db("reminders").insert({
-      problem_id,
+      problem_id: parseInt(problem_id),
       user_id: userId,
       due_datetime: nextDue,
       created_at: now,

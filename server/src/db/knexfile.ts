@@ -16,17 +16,14 @@ const BASE_CONFIG: Knex.Config = {
   },
 };
 
-/**
- * @type { Object.<string, import("knex").Knex.Config> }
- */
 const config: { [key: string]: Knex.Config } = {
   development: {
     ...BASE_CONFIG,
     connection: {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      host: process.env.DB_HOST as string,
+      user: process.env.DB_USER as string,
+      password: process.env.DB_PASSWORD as string,
+      database: process.env.DB_NAME as string,
     },
   },
 
@@ -45,10 +42,10 @@ const config: { [key: string]: Knex.Config } = {
   production: {
     ...BASE_CONFIG,
     connection: {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      host: process.env.DB_HOST as string,
+      user: process.env.DB_USER as string,
+      password: process.env.DB_PASSWORD as string,
+      database: process.env.DB_NAME as string,
     },
   },
 };
