@@ -4,8 +4,8 @@ import {
   upsertPreferences,
 } from "../controllers/preference-controller";
 import { authenticateJWT } from "../middleware/auth-middleware";
-import { validateRequest } from "../middleware/validate-request";
-import { preferencesValidator } from "../middleware/validators";
+import { zodValidate } from "../middleware/validate-request";
+import { preferenceSchema } from "../middleware/validators";
 
 const router = Router();
 
@@ -13,8 +13,7 @@ router.get("/", authenticateJWT, getPreferences);
 router.put(
   "/",
   authenticateJWT,
-  preferencesValidator,
-  validateRequest,
+  zodValidate({ body: preferenceSchema }),
   upsertPreferences,
 );
 

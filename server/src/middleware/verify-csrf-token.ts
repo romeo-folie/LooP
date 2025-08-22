@@ -1,13 +1,14 @@
-import { RequestHandler, Request, Response, NextFunction } from "express";
+import { NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import _ from "lodash";
+import { AppRequestHandler } from "../types";
 
 dotenv.config();
 
-export const verifyCsrfToken: RequestHandler = (
-  req: Request,
-  res: Response,
+export const verifyCsrfToken: AppRequestHandler = (
+  req,
+  res,
   next: NextFunction,
 ) => {
   const tokenInCookie = req.cookies["CSRF-TOKEN"];

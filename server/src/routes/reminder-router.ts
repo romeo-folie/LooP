@@ -7,12 +7,9 @@ import {
   updateReminder,
 } from "../controllers/reminder-controller";
 import { authenticateJWT } from "../middleware/auth-middleware";
-import {
-  validateReminderCreation,
-  validateReminderUpdate,
-} from "../middleware/validators";
-import { validateRequest } from "../middleware/validate-request";
 import { verifyCsrfToken } from "../middleware/verify-csrf-token";
+import { zodValidate } from "../middleware/validate-request";
+import { createReminderSchema } from "../middleware/validators";
 
 const router: Router = Router();
 
@@ -22,16 +19,14 @@ router.post(
   "/:problem_id",
   verifyCsrfToken,
   authenticateJWT,
-  validateReminderCreation,
-  validateRequest,
+  zodValidate({ body: createReminderSchema }),
   createReminder,
 );
 router.put(
   "/:reminder_id",
   verifyCsrfToken,
   authenticateJWT,
-  validateReminderUpdate,
-  validateRequest,
+  zodValidate({ body: createReminderSchema }),
   updateReminder,
 );
 router.delete(

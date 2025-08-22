@@ -21,8 +21,8 @@ export interface IProblemRow {
   tags: string[] | null;
   date_solved: Date;
   notes?: string | null;
-  created_at: Date | string | number;
-  updated_at: Date | string;
+  created_at: Date;
+  updated_at: Date;
   practice_meta?: Record<string, any>;
 }
 export interface IReminderRow {
@@ -37,10 +37,14 @@ export interface IReminderRow {
   created_at: Date;
   updated_at: Date;
 }
+
+export type Settings = {
+  autoReminders?: boolean;
+};
 export interface IUserPreferencesRow {
   preference_id: number;
   user_id: number;
-  settings: Record<string, any>;
+  settings: Settings;
   created_at: Date;
   updated_at: Date;
 }
@@ -52,6 +56,17 @@ export interface IPasswordResetTokensRow {
   created_at: Date;
 }
 
+export interface ISubscriptionRow {
+  subscription_id: number;
+  user_id: number;
+  endpoint: string;
+  public_key: string;
+  auth: string;
+  created_at: Date | number;
+  updated_at: Date | number;
+  is_active: boolean;
+}
+
 declare module "knex/types/tables" {
   interface Tables {
     users: IUserRow;
@@ -59,5 +74,6 @@ declare module "knex/types/tables" {
     reminders: IReminderRow;
     user_preferences: IUserPreferencesRow;
     password_reset_tokens: IPasswordResetTokensRow;
+    subscriptions: ISubscriptionRow;
   }
 }

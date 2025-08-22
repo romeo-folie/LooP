@@ -1,12 +1,14 @@
-import { RequestHandler } from "express";
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
 import logger from "../config/winston-config";
-import { AuthenticatedRequest } from "../types";
+import { AppRequestHandler } from "../types";
+import { Settings } from "../types/knex-tables";
 
-export const upsertPreferences: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res,
-) => {
+export const upsertPreferences: AppRequestHandler<
+  {},
+  { message: string; settings: Settings },
+  { settings: Settings }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     if (!userId) {
@@ -32,6 +34,8 @@ export const upsertPreferences: RequestHandler = async (
         })
         .returning(["settings"]);
 
+      if (!updated) throw new Error("failed to update settings");
+
       res.status(200).json({
         message: "Preferences updated successfully",
         settings: updated.settings,
@@ -47,8 +51,10 @@ export const upsertPreferences: RequestHandler = async (
         })
         .returning(["settings"]);
 
+      if (!inserted) throw new Error("failed to save settings");
+
       res.status(201).json({
-        message: "Preferences created successfully",
+        message: "Preferences saved successfully",
         settings: inserted.settings,
       });
     }
@@ -58,10 +64,10 @@ export const upsertPreferences: RequestHandler = async (
   }
 };
 
-export const getPreferences: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res,
-) => {
+export const getPreferences: AppRequestHandler<
+  {},
+  { settings: Settings }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     if (!userId) {
