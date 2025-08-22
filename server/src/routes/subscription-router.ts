@@ -1,15 +1,15 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { authenticateJWT } from "../middleware/auth-middleware";
-import {
-  validateSubscription,
-  validateSubscriptionDeletion,
-} from "../middleware/validators";
 import {
   createSubscription,
   deleteSubscription,
 } from "../controllers/subscription-controller";
-import { validateRequest } from "../middleware/validate-request";
 import { verifyCsrfToken } from "../middleware/verify-csrf-token";
+import { zodValidate } from "../middleware/validate-request";
+import {
+  createSubscriptionSchema,
+  deleteSubscriptionSchema,
+} from "../middleware/validators";
 
 const router: Router = Router();
 
@@ -17,16 +17,14 @@ router.post(
   "/",
   verifyCsrfToken,
   authenticateJWT,
-  validateSubscription,
-  validateRequest,
+  zodValidate({ body: createSubscriptionSchema }),
   createSubscription,
 );
 router.delete(
   "/",
   verifyCsrfToken,
   authenticateJWT,
-  validateSubscriptionDeletion,
-  validateRequest,
+  zodValidate({ body: deleteSubscriptionSchema }),
   deleteSubscription,
 );
 

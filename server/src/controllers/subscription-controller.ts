@@ -1,12 +1,14 @@
-import { RequestHandler, Response } from "express";
-import { AuthenticatedRequest } from "../types";
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
 import logger from "../config/winston-config";
+import { AppRequestHandler } from "../types";
+import { ISubscriptionRow } from "../types/knex-tables";
 
-export const createSubscription: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const createSubscription: AppRequestHandler<
+  {},
+  { message: string; subscription?: Partial<ISubscriptionRow> },
+  { endpoint: string; public_key: string; auth: string }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { endpoint, public_key, auth } = req.body;
@@ -41,6 +43,8 @@ export const createSubscription: RequestHandler = async (
         })
         .returning(["subscription_id", "user_id", "endpoint", "created_at"]);
 
+      if (!newSubscription) throw new Error("failed to create subscription");
+
       logger.info(`New subscription created for user ${userId}`, {
         subscription_id: newSubscription.subscription_id,
       });
@@ -55,10 +59,11 @@ export const createSubscription: RequestHandler = async (
   }
 };
 
-export const deleteSubscription: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const deleteSubscription: AppRequestHandler<
+  {},
+  { message: string },
+  { endpoint: string }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { endpoint } = req.body;

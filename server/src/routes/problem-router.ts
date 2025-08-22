@@ -13,7 +13,6 @@ import { zodValidate } from "../middleware/validate-request";
 import {
   createProblemSchema,
   practiceFeedbackSchema,
-  updateProblemSchema,
 } from "../middleware/validators";
 
 const router: Router = Router();
@@ -31,7 +30,7 @@ router.put(
   "/:problem_id",
   verifyCsrfToken,
   authenticateJWT,
-  zodValidate({ body: updateProblemSchema }),
+  zodValidate({ body: createProblemSchema }),
   updateProblem,
 );
 router.put(

@@ -3,11 +3,32 @@ import { db } from "../db";
 import { AppRequestHandler, IProblem } from "../types";
 import logger from "../config/winston-config";
 import sm2 from "../utils/sm2-helper";
-import {
-  IProblemRow,
-  IReminderRow,
-  IUserPreferencesRow,
-} from "../types/knex-tables";
+import { IProblemRow, IReminderRow } from "../types/knex-tables";
+
+type ProblemWithMillis = {
+  problem_id: number;
+  user_id: number;
+  name: string;
+  difficulty: IProblemRow["difficulty"];
+  tags: IProblemRow["tags"];
+  date_solved: IProblemRow["date_solved"];
+  notes: IProblemRow["notes"];
+  created_at: IProblemRow["created_at"];
+  created_at_millis: number;
+};
+
+type ReminderWithMillis = {
+  reminder_id: number;
+  problem_id: number;
+  due_datetime: IReminderRow["due_datetime"];
+  is_sent: boolean;
+  sent_at: IReminderRow["sent_at"];
+  created_at_millis: number;
+};
+
+type ProblemWithReminders = ProblemWithMillis & {
+  reminders: ReminderWithMillis[];
+};
 
 export const createProblem: AppRequestHandler<
   {},
@@ -37,7 +58,7 @@ export const createProblem: AppRequestHandler<
       `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`,
     );
 
-    const [newProblem] = await db<IProblemRow>("problems")
+    const [newProblem] = await db("problems")
       .insert({
         user_id: userId,
         name,
@@ -62,7 +83,7 @@ export const createProblem: AppRequestHandler<
     }
 
     const { settings } =
-      (await db<IUserPreferencesRow>("user_preferences")
+      (await db("user_preferences")
         .where({ user_id: userId })
         .select("settings")
         .first()) ?? {};
@@ -74,7 +95,7 @@ export const createProblem: AppRequestHandler<
         due_datetime: rem.due_datetime,
       }));
 
-      await db<IReminderRow>("reminders").insert(syncReminders);
+      await db("reminders").insert(syncReminders);
     } else if (settings && settings.autoReminders) {
       const reminderIntervals = [3, 7, 15];
       const defaultReminders = reminderIntervals.map((interval) => {
@@ -89,7 +110,7 @@ export const createProblem: AppRequestHandler<
         };
       });
 
-      await db<IReminderRow>("reminders").insert(defaultReminders);
+      await db("reminders").insert(defaultReminders);
     }
 
     logger.info(
@@ -110,7 +131,7 @@ export const createProblem: AppRequestHandler<
 
 export const getProblems: AppRequestHandler<
   {},
-  { problems: Partial<IProblemRow>[] },
+  { problems: ProblemWithReminders[] },
   {},
   { difficulty: string; tags: string; date_solved: string }
 > = async (req, res) => {
@@ -129,20 +150,10 @@ export const getProblems: AppRequestHandler<
     const { difficulty, tags, date_solved } = req.query;
     let query = db<IProblemRow>("problems")
       .where({ user_id: userId })
-      .select(
-        "problem_id",
-        "user_id",
-        "name",
-        "difficulty",
-        "tags",
-        "date_solved",
-        "notes",
-        "created_at",
-        db.raw(
-          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT AS created_at",
-        ),
-      )
-      .orderBy("created_at", "desc");
+      .select<
+        ProblemWithMillis[]
+      >("problem_id", "user_id", "name", "difficulty", "tags", "date_solved", "notes", "created_at", db.raw("FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at_millis"))
+      .orderBy("created_at_millis", "desc");
 
     // Apply filters if present
     if (difficulty) {
@@ -158,12 +169,16 @@ export const getProblems: AppRequestHandler<
 
     // Fetch problems
     const problems = await query;
+    if (problems.length === 0) {
+      res.status(200).json({ problems: [] });
+      return;
+    }
 
     // Fetch reminders for the problems
     const problemIds = problems.map((p) => p.problem_id);
     const reminders = await db<IReminderRow>("reminders")
       .whereIn("problem_id", problemIds)
-      .select(
+      .select<ReminderWithMillis[]>(
         "reminder_id",
         "problem_id",
         "due_datetime",
@@ -173,14 +188,14 @@ export const getProblems: AppRequestHandler<
         // 'completed_at',
         // "created_at",
         db.raw(
-          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::BIGINT AS created_at",
+          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at_millis",
         ),
       )
       .orderBy("is_sent", "asc")
       .orderBy("due_datetime", "desc");
 
     // Map reminders to their corresponding problems
-    const remindersMap = reminders.reduce(
+    const remindersMap = reminders.reduce<Record<number, ReminderWithMillis[]>>(
       (acc, reminder) => {
         if (!acc[reminder.problem_id]) {
           acc[reminder.problem_id] = [];
@@ -195,7 +210,6 @@ export const getProblems: AppRequestHandler<
     // Attach reminders to their respective problems
     const problemsWithReminders = problems.map((problem) => ({
       ...problem,
-      created_at: parseInt(problem.created_at as string),
       reminders: remindersMap[problem.problem_id] || [],
     }));
 
@@ -230,7 +244,7 @@ export const getProblemById: AppRequestHandler<
     logger.info(`Fetching problem ID: ${problem_id} for User ID: ${userId}`);
 
     // Fetch the problem belonging to the authenticated user
-    const problem = await db<IProblemRow>("problems")
+    const problem = await db("problems")
       .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
@@ -299,7 +313,7 @@ export const updateProblem: AppRequestHandler<
     if (date_solved) updatedFields.date_solved = date_solved;
     if (notes) updatedFields.notes = notes;
 
-    const [updatedProblem] = await db<IProblemRow>("problems")
+    const [updatedProblem] = await db("problems")
       .where({ problem_id: parseInt(problem_id), user_id: userId })
       .update(updatedFields)
       .returning([
@@ -349,7 +363,7 @@ export const deleteProblem: AppRequestHandler<
     }
 
     // Ensure the problem exists and belongs to the authenticated user
-    const existingProblem = await db<IProblemRow>("problems")
+    const existingProblem = await db("problems")
       .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
@@ -454,7 +468,7 @@ export const handlePracticeFeedback: AppRequestHandler<
     });
 
     logger.info(
-      `Practice recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`,
+      `Practice feedback recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`,
     );
 
     res.status(200).json({

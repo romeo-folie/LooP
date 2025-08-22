@@ -8,7 +8,7 @@ import { db } from "../db";
 import logger from "../config/winston-config";
 import resend from "../config/resend";
 import crypto from "crypto";
-import { IPasswordResetTokensRow, IUserRow } from "../types/knex-tables";
+import { IUserRow } from "../types/knex-tables";
 import { AppRequestHandler, GitHubOAuthAccessTokenSuccess } from "../types";
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
@@ -27,7 +27,7 @@ export const register: AppRequestHandler<
   try {
     const { name, email, password } = req.body;
 
-    const existingUser = await db<IUserRow>("users").where({ email }).first();
+    const existingUser = await db("users").where({ email }).first();
     if (existingUser) {
       res.status(400).json({ message: "Email already in use" });
       return;
@@ -35,7 +35,7 @@ export const register: AppRequestHandler<
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [newUser] = await db<IUserRow>("users")
+    const [newUser] = await db("users")
       .insert({
         name,
         email,
@@ -63,7 +63,7 @@ export const login: AppRequestHandler<
   try {
     const { email, password } = req.body;
 
-    const existingUser = await db<IUserRow>("users").where({ email }).first();
+    const existingUser = await db("users").where({ email }).first();
     if (!existingUser) {
       logger.warn(`Login failed: User not found - ${email}`);
       res.status(401).json({ message: "Invalid credentials" });
@@ -174,9 +174,7 @@ export const refreshToken: AppRequestHandler<
     }
 
     // Find the user
-    const user = await db<IUserRow>("users")
-      .where({ email: decoded.email })
-      .first();
+    const user = await db("users").where({ email: decoded.email }).first();
     if (!user) {
       logger.warn(
         `Refresh token failed: User not found - User ID: ${decoded.userId}`,
@@ -365,7 +363,7 @@ export const getAccessToken: AppRequestHandler<
     } else {
       // Create a new user
       const displayName = githubUser.name || githubUser.login || "GitHub User";
-      const [newUser] = await db<IUserRow>("users")
+      const [newUser] = await db("users")
         .insert({
           name: displayName,
           email: userEmail || `user-${githubUser.id}@github.local`,
@@ -531,7 +529,7 @@ export const verifyOtp: AppRequestHandler<
     }
 
     // 2. Fetch the latest OTP for this user
-    const otpRecord = await db<IPasswordResetTokensRow>("password_reset_tokens")
+    const otpRecord = await db("password_reset_tokens")
       .where({ user_id: user.user_id })
       .orderBy("created_at", "desc")
       .first();
@@ -610,7 +608,7 @@ export const resetPassword: AppRequestHandler<
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
     // Update password in the database
-    await db<IUserRow>("users").where({ user_id: userId, email }).update({
+    await db("users").where({ user_id: userId, email }).update({
       password: hashedPassword,
       updated_at: new Date(),
     });

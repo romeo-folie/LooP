@@ -4,36 +4,6 @@ import { Request, Response, NextFunction } from "express";
 import logger from "../config/winston-config";
 import { ZodType, ZodError } from "zod";
 
-// export const validateRequest = (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   const errors = validationResult(req);
-//   if (!errors.isEmpty()) {
-//     logger.warn(
-//       `${req.method} request to ${req.url} failed due to validation errors: ${JSON.stringify(errors.array())}`,
-//     );
-//     res.status(400).json({ errors: errors.array() });
-//     return;
-//   }
-//   next();
-// };
-
-// export function validateRequest<S extends z.ZodTypeAny>(schema: S) {
-//   return (req: Request, res: Response, next: NextFunction) => {
-//     const parsed = schema.safeParse(req.body);
-//     if (!parsed.success) {
-// logger.warn(
-//   `${req.method} request to ${req.url} failed due to validation errors: ${JSON.stringify(parsed.error.flatten)}`,
-// );
-//       return res.status(400).json({ errors: parsed.error.flatten });
-//     }
-//     req.body = parsed.data as z.infer<S>;
-//     next();
-//   };
-// }
-
 type Schemas = {
   body?: ZodType<any>;
   query?: ZodType<any>;

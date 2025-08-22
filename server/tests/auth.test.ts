@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import request from "supertest";
 import app from "../src/app";
 import { db } from "../src/db";
@@ -36,22 +37,28 @@ describe("authentication tests", () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("errors");
-      expect(response.body.errors).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            msg: "Password must contain at least one uppercase letter",
-            path: "password",
-          }),
-          expect.objectContaining({
-            msg: "Password must contain at least one number",
-            path: "password",
-          }),
-          expect.objectContaining({
-            msg: "Password must contain at least one symbol",
-            path: "password",
-          }),
-        ]),
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          error: "Validation failed",
+          issues: expect.arrayContaining([
+            expect.objectContaining({
+              code: "invalid_format",
+              message: "Password must contain at least one uppercase letter",
+              path: "password", // if your middleware flattens to string
+            }),
+            expect.objectContaining({
+              code: "invalid_format",
+              message: "Password must contain at least one digit",
+              path: "password",
+            }),
+            expect.objectContaining({
+              code: "invalid_format",
+              message:
+                "Password must contain at least one special character (@$!%*?&)",
+              path: "password",
+            }),
+          ]),
+        }),
       );
     });
 
@@ -63,11 +70,17 @@ describe("authentication tests", () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("errors");
-      expect(response.body.errors).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ msg: "Invalid email address" }),
-        ]),
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          error: "Validation failed",
+          issues: expect.arrayContaining([
+            expect.objectContaining({
+              code: "invalid_format",
+              message: "Invalid email address",
+              path: "email",
+            }),
+          ]),
+        }),
       );
     });
 
@@ -138,12 +151,22 @@ describe("authentication tests", () => {
         .send({ email: "" });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("errors");
-      expect(response.body.errors).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ msg: "Invalid email address" }),
-          expect.objectContaining({ msg: "Password is required" }),
-        ]),
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          error: "Validation failed",
+          issues: expect.arrayContaining([
+            expect.objectContaining({
+              code: "invalid_format",
+              message: "Invalid email address",
+              path: "email",
+            }),
+            expect.objectContaining({
+              code: "invalid_type",
+              message: "Invalid input: expected string, received undefined",
+              path: "password",
+            }),
+          ]),
+        }),
       );
     });
 
@@ -241,14 +264,17 @@ describe("authentication tests", () => {
             .send({});
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("errors");
-          expect(res.body.errors).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                msg: "A valid email is required",
-                path: "email",
-              }),
-            ]),
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              error: "Validation failed",
+              issues: expect.arrayContaining([
+                expect.objectContaining({
+                  code: "invalid_type",
+                  message: "a valid email is required",
+                  path: "email", // if your middleware flattens Zod's path
+                }),
+              ]),
+            }),
           );
         });
       });
@@ -282,7 +308,7 @@ describe("authentication tests", () => {
 
           const user = await db("users").where({ email: validEmail }).first();
           const otpRecord = await db("password_reset_tokens")
-            .where({ user_id: user.user_id })
+            .where({ user_id: user!.user_id })
             .orderBy("created_at", "desc")
             .first();
 
@@ -298,9 +324,11 @@ describe("authentication tests", () => {
 
           expect(firstRes.status).toBe(200);
 
-          const [{ otpRecordCountBefore }] = await db(
-            "password_reset_tokens",
-          ).count("* as otpRecordCountBefore");
+          const countBefore = await db("password_reset_tokens")
+            .select<{
+              otpRecordCountBefore: number;
+            }>(db.raw('COUNT(*) AS "otpRecordCountBefore"'))
+            .first();
 
           // Immediately request again
           const secondRes = await request(app)
@@ -308,12 +336,16 @@ describe("authentication tests", () => {
             .send({ email: validEmail });
 
           expect(secondRes.status).toBe(200);
-          const [{ otpRecordCountAfter }] = await db(
-            "password_reset_tokens",
-          ).count("* as otpRecordCountAfter");
+
+          const countAfter = await db("password_reset_tokens")
+            .select<{
+              otpRecordCountAfter: number;
+            }>(db.raw('COUNT(*) AS "otpRecordCountAfter"'))
+            .first();
+
           expect(
-            parseInt(otpRecordCountAfter as string) ===
-              parseInt(otpRecordCountBefore as string) + 1,
+            countAfter?.otpRecordCountAfter ===
+              (countBefore?.otpRecordCountBefore || 0) + 1,
           );
         });
       });
@@ -325,18 +357,22 @@ describe("authentication tests", () => {
           const res = await request(app).post("/api/auth/verify-otp").send({}); // no email, no otp
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("errors");
-          expect(res.body.errors).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                msg: "A valid email is required",
-                path: "email",
-              }),
-              expect.objectContaining({
-                msg: "OTP must be exactly 6 digits",
-                path: "pin",
-              }),
-            ]),
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              error: "Validation failed",
+              issues: expect.arrayContaining([
+                expect.objectContaining({
+                  code: "invalid_type",
+                  message: "a valid email is required",
+                  path: "email",
+                }),
+                expect.objectContaining({
+                  code: "invalid_type",
+                  message: "Invalid input: expected string, received undefined",
+                  path: "pin",
+                }),
+              ]),
+            }),
           );
         });
       });
@@ -373,7 +409,7 @@ describe("authentication tests", () => {
             .digest("hex");
 
           await db("password_reset_tokens").insert({
-            user_id: user.user_id,
+            user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
           });
@@ -397,7 +433,7 @@ describe("authentication tests", () => {
             .digest("hex");
 
           await db("password_reset_tokens").insert({
-            user_id: user.user_id,
+            user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() + 10 * 60 * 1000),
           });
@@ -421,7 +457,7 @@ describe("authentication tests", () => {
             .digest("hex");
 
           await db("password_reset_tokens").insert({
-            user_id: user.user_id,
+            user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() + 10 * 60 * 1000),
           });
@@ -456,14 +492,17 @@ describe("authentication tests", () => {
             .send({ new_password: validPassword });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("errors");
-          expect(res.body.errors).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                msg: "Password reset token is required",
-                path: "password_reset_token",
-              }),
-            ]),
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              error: "Validation failed",
+              issues: expect.arrayContaining([
+                expect.objectContaining({
+                  code: "invalid_type",
+                  message: "Invalid input: expected string, received undefined",
+                  path: "password_reset_token",
+                }),
+              ]),
+            }),
           );
         });
 
@@ -473,30 +512,17 @@ describe("authentication tests", () => {
             .send({ password_reset_token: "someToken" });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("errors");
-          expect(res.body.errors).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                msg: "Password must be at least 6 characters long",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one uppercase letter",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one lowercase letter",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one number",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one special character (@$!%*?&#)",
-                path: "new_password",
-              }),
-            ]),
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              error: "Validation failed",
+              issues: expect.arrayContaining([
+                expect.objectContaining({
+                  code: "invalid_type",
+                  message: "Invalid input: expected string, received undefined",
+                  path: "new_password",
+                }),
+              ]),
+            }),
           );
         });
       });
@@ -526,69 +552,84 @@ describe("authentication tests", () => {
           });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("errors");
-          expect(res.body.errors).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                msg: "Password must be at least 6 characters long",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one uppercase letter",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one number",
-                path: "new_password",
-              }),
-              expect.objectContaining({
-                msg: "Password must contain at least one special character (@$!%*?&#)",
-                path: "new_password",
-              }),
-            ]),
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              error: "Validation failed",
+              issues: expect.arrayContaining([
+                expect.objectContaining({
+                  code: "too_small",
+                  message: "Password must be at least 6 characters long",
+                  path: "new_password",
+                }),
+                expect.objectContaining({
+                  code: "invalid_format",
+                  message:
+                    "Password must contain at least one uppercase letter",
+                  path: "new_password",
+                }),
+                expect.objectContaining({
+                  code: "invalid_format",
+                  message: "Password must contain at least one number",
+                  path: "new_password",
+                }),
+                expect.objectContaining({
+                  code: "invalid_format",
+                  message:
+                    "Password must contain at least one special character (@$!%*?&#)",
+                  path: "new_password",
+                }),
+              ]),
+            }),
           );
         });
-      });
 
-      describe("Successful Password Reset", () => {
-        it("should return 200 and update user’s password in DB", async () => {
-          const validToken = generatePasswordResetToken({
-            userId: 4,
-            email: validEmail4,
+        describe("Successful Password Reset", () => {
+          it("should return 200 and update user’s password in DB", async () => {
+            const validToken = generatePasswordResetToken({
+              userId: 4,
+              email: validEmail4,
+            });
+
+            const newPass = "StrongPass@1!";
+            const res = await request(app)
+              .post("/api/auth/reset-password")
+              .send({
+                password_reset_token: validToken,
+                new_password: newPass,
+              });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty(
+              "message",
+              "Password reset successfully. You can now log in.",
+            );
+
+            const user = await db("users").where({ user_id: 4 }).first();
+            const match = await bcrypt.compare(newPass, user!.password);
+            expect(match).toBe(true);
           });
-
-          const newPass = "StrongPass@1!";
-          const res = await request(app).post("/api/auth/reset-password").send({
-            password_reset_token: validToken,
-            new_password: newPass,
-          });
-
-          expect(res.status).toBe(200);
-          expect(res.body).toHaveProperty(
-            "message",
-            "Password reset successfully. You can now log in.",
-          );
-
-          const user = await db("users").where({ user_id: 4 }).first();
-          const match = await bcrypt.compare(newPass, user.password);
-          expect(match).toBe(true);
         });
-      });
 
-      describe("Token Reuse", () => {
-        it("should fail if attempting to reuse the same token again", async () => {
-          // TODO:Might cause failures
-          // set token to expire after a second, so should be expired by the test runner gets here
-          // not the best implementation but works for now
-          const usedToken = validToken;
+        describe("Token Reuse", () => {
+          it("should fail if attempting to reuse the same token again", async () => {
+            // TODO:Might cause failures
+            // set token to expire after a second, so should be expired by the test runner gets here
+            // not the best implementation but works for now
+            const usedToken = validToken;
 
-          const res = await request(app).post("/api/auth/reset-password").send({
-            password_reset_token: usedToken,
-            new_password: "AnotherStrongPass1!",
+            const res = await request(app)
+              .post("/api/auth/reset-password")
+              .send({
+                password_reset_token: usedToken,
+                new_password: "AnotherStrongPass1!",
+              });
+
+            expect(res.status).toBe(403);
+            expect(res.body).toHaveProperty(
+              "error",
+              "Invalid or expired token",
+            );
           });
-
-          expect(res.status).toBe(403);
-          expect(res.body).toHaveProperty("error", "Invalid or expired token");
         });
       });
     });

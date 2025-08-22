@@ -1,12 +1,12 @@
-import { Response, RequestHandler } from "express";
-import { AuthenticatedRequest } from "../types";
 import { db } from "../db";
 import logger from "../config/winston-config";
+import { AppRequestHandler } from "../types";
+import { IProblemRow, IReminderRow } from "../types/knex-tables";
 
-export const getRemindersByProblem: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getRemindersByProblem: AppRequestHandler<
+  { problem_id: string },
+  { reminders: Partial<IReminderRow>[] }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -23,7 +23,7 @@ export const getRemindersByProblem: RequestHandler = async (
 
     // Ensure the problem exists and belongs to the authenticated user
     const problem = await db("problems")
-      .where({ problem_id, user_id: userId })
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!problem) {
@@ -33,8 +33,8 @@ export const getRemindersByProblem: RequestHandler = async (
     }
 
     // Fetch reminders for the problem
-    const reminders = await db("reminders")
-      .where({ problem_id, user_id: userId })
+    const reminders = await db<IReminderRow>("reminders")
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .select(
         "reminder_id",
         "due_datetime",
@@ -58,10 +58,10 @@ export const getRemindersByProblem: RequestHandler = async (
   }
 };
 
-export const getReminderById: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getReminderById: AppRequestHandler<
+  { reminder_id: string },
+  { reminder: IReminderRow }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
@@ -76,7 +76,7 @@ export const getReminderById: RequestHandler = async (
 
     // Fetch the reminder belonging to the authenticated user
     const reminder = await db("reminders")
-      .where({ reminder_id, user_id: userId })
+      .where({ reminder_id: parseInt(reminder_id), user_id: userId })
       .first();
 
     if (!reminder) {
@@ -98,10 +98,11 @@ export const getReminderById: RequestHandler = async (
   }
 };
 
-export const createReminder: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const createReminder: AppRequestHandler<
+  { problem_id: string },
+  { message: string; reminder: Partial<IReminderRow> },
+  { due_datetime: Date }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -113,8 +114,8 @@ export const createReminder: RequestHandler = async (
       return;
     }
 
-    const existingProblem = await db("problems")
-      .where({ problem_id, user_id: userId })
+    const existingProblem = await db<IProblemRow>("problems")
+      .where({ problem_id: parseInt(problem_id), user_id: userId })
       .first();
 
     if (!existingProblem) {
@@ -129,7 +130,7 @@ export const createReminder: RequestHandler = async (
 
     const [newReminder] = await db("reminders")
       .insert({
-        problem_id,
+        problem_id: parseInt(problem_id),
         user_id: userId,
         due_datetime,
       })
@@ -144,8 +145,10 @@ export const createReminder: RequestHandler = async (
         "created_at",
       ]);
 
+    if (!newReminder) throw new Error("failed to create reminder");
+
     logger.info(
-      `Reminder created successfully Reminder ID: ${newReminder.id} - User ID: ${userId}`,
+      `Reminder created successfully Reminder ID: ${newReminder.reminder_id} - User ID: ${userId}`,
     );
 
     res.status(201).json({
@@ -160,10 +163,11 @@ export const createReminder: RequestHandler = async (
   }
 };
 
-export const updateReminder: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const updateReminder: AppRequestHandler<
+  { reminder_id: string },
+  { message: string; reminder: Partial<IReminderRow> },
+  { due_datetime: Date; is_completed: boolean }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
@@ -178,7 +182,7 @@ export const updateReminder: RequestHandler = async (
     }
 
     const existingReminder = await db("reminders")
-      .where({ reminder_id, user_id: userId })
+      .where({ reminder_id: parseInt(reminder_id), user_id: userId })
       .first();
 
     if (!existingReminder) {
@@ -198,7 +202,7 @@ export const updateReminder: RequestHandler = async (
     }
 
     const [updatedReminder] = await db("reminders")
-      .where({ reminder_id, user_id: userId })
+      .where({ reminder_id: parseInt(reminder_id), user_id: userId })
       .update(updatedFields)
       .returning([
         "reminder_id",
@@ -210,6 +214,8 @@ export const updateReminder: RequestHandler = async (
         // 'completed_at',
         "updated_at",
       ]);
+
+    if (!updatedReminder) throw new Error("failed to update reminder");
 
     logger.info(
       `Reminder ID: ${reminder_id} successfully updated - User ID: ${userId}`,
@@ -227,10 +233,10 @@ export const updateReminder: RequestHandler = async (
   }
 };
 
-export const deleteReminder: RequestHandler = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const deleteReminder: AppRequestHandler<
+  { reminder_id: string; problem_id: string },
+  { message: string }
+> = async (req, res) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
@@ -245,7 +251,7 @@ export const deleteReminder: RequestHandler = async (
 
     // Ensure the reminder exists and belongs to the authenticated user
     const existingReminder = await db("reminders")
-      .where({ reminder_id, user_id: userId })
+      .where({ reminder_id: parseInt(reminder_id), user_id: userId })
       .first();
 
     if (!existingReminder) {
@@ -255,7 +261,9 @@ export const deleteReminder: RequestHandler = async (
     }
 
     // Delete the reminder
-    await db("reminders").where({ reminder_id }).del();
+    await db("reminders")
+      .where({ reminder_id: parseInt(reminder_id) })
+      .del();
 
     logger.info(
       `Reminder ID: ${reminder_id} successfully deleted - User ID: ${userId}`,
