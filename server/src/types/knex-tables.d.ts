@@ -29,7 +29,7 @@ export interface IReminderRow {
   reminder_id: number;
   problem_id: number;
   user_id: number;
-  due_datetime: Date | string;
+  due_datetime: Date;
   is_sent: boolean;
   sent_at?: Date | null;
   is_completed?: boolean;
@@ -52,7 +52,7 @@ export interface IPasswordResetTokensRow {
   id: number;
   user_id: number;
   otp_hash: string;
-  expires_at: Date;
+  expires_at: Date | string;
   created_at: Date;
 }
 
@@ -62,8 +62,8 @@ export interface ISubscriptionRow {
   endpoint: string;
   public_key: string;
   auth: string;
-  created_at: Date | number;
-  updated_at: Date | number;
+  created_at: Date;
+  updated_at: Date;
   is_active: boolean;
 }
 

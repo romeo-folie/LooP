@@ -106,7 +106,7 @@ export const createProblem: AppRequestHandler<
         return {
           problem_id: newProblem.problem_id,
           user_id: userId,
-          due_datetime: dueDate.toISOString(),
+          due_datetime: dueDate,
         };
       });
 
