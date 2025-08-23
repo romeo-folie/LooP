@@ -11,7 +11,7 @@ export async function seed(knex: Knex): Promise<void> {
       name: "Two Sum",
       difficulty: "Easy",
       tags: ["array", "hashmap"],
-      date_solved: "2025-01-20",
+      date_solved: new Date("2025-01-20"),
       notes: "Used a hashmap approach for O(n) time complexity.",
     },
     {
@@ -19,7 +19,7 @@ export async function seed(knex: Knex): Promise<void> {
       name: "Longest Palindromic Substring",
       difficulty: "Medium",
       tags: ["string", "dp"],
-      date_solved: "2025-01-22",
+      date_solved: new Date("2025-01-22"),
       notes: "Explored dynamic programming and expand-from-center approaches.",
     },
     {
@@ -27,7 +27,7 @@ export async function seed(knex: Knex): Promise<void> {
       name: "Binary Tree Inorder Traversal",
       difficulty: "Easy",
       tags: ["tree", "stack"],
-      date_solved: "2025-01-25",
+      date_solved: new Date("2025-01-25"),
       notes: "Practiced both recursive and iterative solutions.",
     },
     {
@@ -35,7 +35,7 @@ export async function seed(knex: Knex): Promise<void> {
       name: "Trapping Rain Water",
       difficulty: "Hard",
       tags: ["array", "two-pointer"],
-      date_solved: "2025-02-01",
+      date_solved: new Date("2025-02-01"),
       notes: "Utilized two-pointer technique to achieve O(n) time complexity.",
     },
     {
@@ -43,7 +43,7 @@ export async function seed(knex: Knex): Promise<void> {
       name: "3Sum",
       difficulty: "Medium",
       tags: ["array", "two-pointer"],
-      date_solved: "2025-03-10",
+      date_solved: new Date("2025-03-10"),
       notes: "Sort + two-pointer approach. Took care of duplicate elements.",
     },
   ]);
