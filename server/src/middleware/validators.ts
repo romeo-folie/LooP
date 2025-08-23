@@ -36,7 +36,7 @@ export const createProblemSchema = z.object({
     "Difficulty must be one of: Easy, Medium, Hard",
   ),
   tags: z.array(z.string()).min(1, "At least one tag is required").default([]),
-  date_solved: z.iso.datetime(),
+  date_solved: z.string(),
   notes: z.string().optional(),
 });
 
@@ -51,7 +51,7 @@ export const createReminderSchema = z.object({
   due_datetime: z.iso.datetime(
     "due_datetime is required and must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)",
   ),
-  is_completed: z.boolean("is_completed must be a boolean"),
+  is_completed: z.boolean("is_completed must be a boolean").optional(),
 });
 
 export const createSubscriptionSchema = z.object({
