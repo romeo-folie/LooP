@@ -5,7 +5,7 @@ import {
   registerSchema,
   resetPasswordSchema,
   verifyOtpSchema,
-} from "../middleware/validators";
+} from "../../middleware/validators";
 import {
   forgotPassword,
   getAccessToken,
@@ -17,9 +17,9 @@ import {
   register,
   resetPassword,
   verifyOtp,
-} from "../controllers/auth-controller";
-import { authenticateJWT } from "../middleware/auth-middleware";
-import { zodValidate } from "../middleware/validate-request";
+} from "../../controllers/auth-controller";
+import { authenticateJWT } from "../../middleware/auth-middleware";
+import { zodValidate } from "../../middleware/validate-request";
 
 const router: Router = Router();
 

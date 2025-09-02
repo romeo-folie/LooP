@@ -1,7 +1,7 @@
 import { NextFunction } from "express";
 import dotenv from "dotenv";
 import { AppRequestHandler } from "../types";
-import { verifyJwt } from "../utils/jwt";
+import { verifyJwt } from "../lib/jwt";
 
 dotenv.config();
 
