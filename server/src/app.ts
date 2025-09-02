@@ -1,10 +1,12 @@
 import express, { Application } from "express";
 import httpLogger from "./middleware/logger-middleware";
-import router from "./routes";
+import v1Router from "./routes/v1";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import webpush from "web-push";
 import helmet from "helmet";
+import { errorHandler } from "./middleware/error-middleware";
+import AppError from "./lib/errors";
 
 const app: Application = express();
 const corsOptions = {
@@ -40,10 +42,18 @@ app.use(
 );
 
 app.set("trust proxy", true);
-app.use(cookieParser());
-app.use(express.json());
-app.use(httpLogger);
 app.use(cors(corsOptions));
-app.use("/api", router);
+app.use(express.json());
+app.use(cookieParser());
+app.use(httpLogger);
+
+app.use("/api/v1", v1Router);
+app.use("/api", v1Router);
+
+app.use((_req, _res, next) => {
+  next(new AppError('NOT_FOUND', 'Route not found'));
+});
+
+app.use(errorHandler);
 
 export default app;

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateJWT } from "../middleware/auth-middleware";
+import { authenticateJWT } from "../../middleware/auth-middleware";
 import {
   createProblem,
   getProblemById,
@@ -7,13 +7,13 @@ import {
   updateProblem,
   deleteProblem,
   handlePracticeFeedback,
-} from "../controllers/problem-controller";
-import { verifyCsrfToken } from "../middleware/verify-csrf-token";
-import { zodValidate } from "../middleware/validate-request";
+} from "../../controllers/problem-controller";
+import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
+import { zodValidate } from "../../middleware/validate-request";
 import {
   createProblemSchema,
   practiceFeedbackSchema,
-} from "../middleware/validators";
+} from "../../middleware/validators";
 
 const router: Router = Router();
 

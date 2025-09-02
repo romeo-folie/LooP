@@ -5,11 +5,11 @@ import {
   getReminderById,
   getRemindersByProblem,
   updateReminder,
-} from "../controllers/reminder-controller";
-import { authenticateJWT } from "../middleware/auth-middleware";
-import { verifyCsrfToken } from "../middleware/verify-csrf-token";
-import { zodValidate } from "../middleware/validate-request";
-import { createReminderSchema } from "../middleware/validators";
+} from "../../controllers/reminder-controller";
+import { authenticateJWT } from "../../middleware/auth-middleware";
+import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
+import { zodValidate } from "../../middleware/validate-request";
+import { createReminderSchema } from "../../middleware/validators";
 
 const router: Router = Router();
 

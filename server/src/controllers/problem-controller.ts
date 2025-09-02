@@ -2,8 +2,9 @@
 import { db } from "../db";
 import { AppRequestHandler, IProblem } from "../types";
 import logger from "../config/winston-config";
-import sm2 from "../utils/sm2-helper";
+import sm2 from "../lib/sm2-helper";
 import { IProblemRow, IReminderRow } from "../types/knex-tables";
+import AppError from "../lib/errors";
 
 type ProblemWithMillis = {
   problem_id: number;
@@ -35,7 +36,7 @@ export const createProblem: AppRequestHandler<
   { message: string; problem: Partial<IProblemRow> },
   IProblem,
   {}
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const {
       name,
@@ -50,12 +51,11 @@ export const createProblem: AppRequestHandler<
 
     if (!userId) {
       logger.warn(`Unauthorized problem creation attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     logger.info(
-      `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`,
+      `Creating problem for User ID: ${userId} - ${JSON.stringify(req.body)}`
     );
 
     const [newProblem] = await db("problems")
@@ -79,7 +79,8 @@ export const createProblem: AppRequestHandler<
       ]);
 
     if (!newProblem) {
-      throw new Error("failed to insert problem");
+      logger.error(`FAILED to create problem record for User ID: ${userId}`);
+      throw new AppError("INTERNAL");
     }
 
     const { settings } =
@@ -114,7 +115,7 @@ export const createProblem: AppRequestHandler<
     }
 
     logger.info(
-      `Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.problem_id}`,
+      `Problem created successfully for User ID: ${userId}, Problem ID: ${newProblem.problem_id}`
     );
 
     res.status(201).json({
@@ -123,9 +124,9 @@ export const createProblem: AppRequestHandler<
     });
   } catch (error: unknown) {
     logger.error(
-      `Problem creation error for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
+      `Problem creation error for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -134,14 +135,13 @@ export const getProblems: AppRequestHandler<
   { problems: ProblemWithReminders[] },
   {},
   { difficulty: string; tags: string; date_solved: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
 
     if (!userId) {
       logger.warn(`Unauthorized problem request attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     logger.info(`Fetching problems for User ID: ${userId}`);
@@ -171,7 +171,6 @@ export const getProblems: AppRequestHandler<
     const problems = await query;
     if (problems.length === 0) {
       res.status(200).json({ problems: [] });
-      return;
     }
 
     // Fetch reminders for the problems
@@ -188,8 +187,8 @@ export const getProblems: AppRequestHandler<
         // 'completed_at',
         // "created_at",
         db.raw(
-          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at_millis",
-        ),
+          "FLOOR(EXTRACT(EPOCH FROM created_at) * 1000)::double precision AS created_at_millis"
+        )
       )
       .orderBy("is_sent", "asc")
       .orderBy("due_datetime", "desc");
@@ -203,8 +202,7 @@ export const getProblems: AppRequestHandler<
         acc[reminder.problem_id]!.push(reminder);
         return acc;
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      {} as Record<number, any[]>,
+      {} as Record<number, ReminderWithMillis[]>
     );
 
     // Attach reminders to their respective problems
@@ -214,31 +212,30 @@ export const getProblems: AppRequestHandler<
     }));
 
     logger.info(
-      `Successfully fetched ${problems.length} problems for User ID: ${userId}`,
+      `Successfully fetched ${problems.length} problems for User ID: ${userId}`
     );
 
     //TODO: pagination
     res.status(200).json({ problems: problemsWithReminders });
   } catch (error: unknown) {
     logger.error(
-      `Error fetching problems for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
+      `Error fetching problems for User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 export const getProblemById: AppRequestHandler<
   { problem_id: string },
   { problem: IProblemRow }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
 
     if (!userId) {
       logger.warn(`Unauthorized problem request attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     logger.info(`Fetching problem ID: ${problem_id} for User ID: ${userId}`);
@@ -250,20 +247,19 @@ export const getProblemById: AppRequestHandler<
 
     if (!problem) {
       logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      throw new AppError("NOT_FOUND", "Problem not found");
     }
 
     logger.info(
-      `Successfully fetched Problem ID ${problem_id} for User ID: ${userId}`,
+      `Successfully fetched Problem ID ${problem_id} for User ID: ${userId}`
     );
 
     res.status(200).json({ problem });
   } catch (error: unknown) {
     logger.error(
-      `Error fetching problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
+      `Error fetching problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -277,7 +273,7 @@ export const updateProblem: AppRequestHandler<
     date_solved: Date;
     notes: string;
   }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -285,14 +281,13 @@ export const updateProblem: AppRequestHandler<
 
     if (!userId) {
       logger.warn(
-        `Unauthorized problem update attempt for ID: ${userId} from IP: ${req.ip}`,
+        `Unauthorized problem update attempt for ID: ${userId} from IP: ${req.ip}`
       );
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     logger.info(
-      `Updating transaction ID: ${problem_id} for User ID: ${userId}`,
+      `Updating transaction ID: ${problem_id} for User ID: ${userId}`
     );
 
     const existingProblem = await db("problems")
@@ -301,8 +296,7 @@ export const updateProblem: AppRequestHandler<
 
     if (!existingProblem) {
       logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      throw new AppError("NOT_FOUND", "Problem Not Found");
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -328,10 +322,10 @@ export const updateProblem: AppRequestHandler<
         "updated_at",
       ]);
 
-    if (!updatedProblem) throw new Error("Failed to update problem");
+    if (!updatedProblem) throw new AppError("INTERNAL", "Failed to update problem");
 
     logger.info(
-      `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`,
+      `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`
     );
 
     res.status(200).json({
@@ -340,26 +334,25 @@ export const updateProblem: AppRequestHandler<
     });
   } catch (error: unknown) {
     logger.error(
-      `Problem update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
+      `Problem update error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 export const deleteProblem: AppRequestHandler<
   { problem_id: string },
   { message: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
 
     if (!userId) {
       logger.warn(
-        `Unauthorized problem deletion attempt for ID: ${problem_id} from IP: ${req.ip}`,
+        `Unauthorized problem deletion attempt for ID: ${problem_id} from IP: ${req.ip}`
       );
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     // Ensure the problem exists and belongs to the authenticated user
@@ -369,8 +362,7 @@ export const deleteProblem: AppRequestHandler<
 
     if (!existingProblem) {
       logger.warn(`Problem ID: ${problem_id} not found for User ID: ${userId}`);
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      throw new AppError("NOT_FOUND", "Problem Not Found");
     }
 
     // Delete associated reminders first to maintain integrity
@@ -384,15 +376,15 @@ export const deleteProblem: AppRequestHandler<
       .del();
 
     logger.info(
-      `Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`,
+      `Problem ID: ${problem_id} successfully deleted for User ID: ${userId}`
     );
 
     res.status(200).json({ message: "Problem deleted successfully" });
   } catch (error: unknown) {
     logger.error(
-      `Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
+      `Problem deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -400,7 +392,7 @@ export const handlePracticeFeedback: AppRequestHandler<
   { problem_id: string },
   { message: string },
   { quality_score: number }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
@@ -417,8 +409,7 @@ export const handlePracticeFeedback: AppRequestHandler<
       .first();
 
     if (!problem) {
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      throw new AppError("NOT_FOUND", "Problem Not Found");
     }
 
     // Parse existing meta or set defaults
@@ -432,7 +423,7 @@ export const handlePracticeFeedback: AppRequestHandler<
       prevEF,
       prevInterval,
       attemptCount,
-      Number(quality_score),
+      Number(quality_score)
     );
 
     const now = new Date();
@@ -458,7 +449,7 @@ export const handlePracticeFeedback: AppRequestHandler<
         updated_at: now,
       });
 
-    // Create new reminder
+    // Create new reminder˝
     await db("reminders").insert({
       problem_id: parseInt(problem_id),
       user_id: userId,
@@ -468,14 +459,16 @@ export const handlePracticeFeedback: AppRequestHandler<
     });
 
     logger.info(
-      `Practice feedback recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`,
+      `Practice feedback recorded for problem ${problem_id} (user ${userId}) — next due ${nextDue.toISOString()}`
     );
 
     res.status(200).json({
       message: `Next reminder on ${nextDue.toDateString()}`,
     });
-  } catch (err) {
-    logger.error(`Error updating problem practice meta ${err}`);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: unknown) {
+    logger.error(
+      `Error updating problem practice meta for PROBLEM ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`
+    );
+    next(error);
   }
 };
