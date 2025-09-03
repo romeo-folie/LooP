@@ -2,6 +2,7 @@ import { NextFunction } from "express";
 import dotenv from "dotenv";
 import { AppRequestHandler } from "../types";
 import { verifyJwt } from "../lib/jwt";
+import AppError from "../types/errors";
 
 dotenv.config();
 
@@ -12,8 +13,7 @@ export const authenticateJWT: AppRequestHandler = (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+    throw new AppError("UNAUTHORIZED");
   }
 
   const token = authHeader.split(" ")[1];
@@ -29,6 +29,6 @@ export const authenticateJWT: AppRequestHandler = (
     req.authUser = decoded;
     next();
   } catch (error: unknown) {
-    res.status(403).json({ error: "Invalid or expired token" });
+    next(new AppError("FORBIDDEN", "Invalid or expired token"));
   }
 };

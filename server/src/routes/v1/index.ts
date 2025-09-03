@@ -7,12 +7,14 @@ import preferenceRouter from "./preference-router";
 
 const router: Router = Router();
 
-router.get("/health", (req: Request, res: Response) => {
+router.get("/health", (_req: Request, res: Response) => {
   res
     .status(200)
     .send({ message: "loop server ok", timestamp: new Date().toISOString() });
 });
-
+router.get("/version", (_req, res) => {
+  res.json({ api: "LooP", version: "v1" });
+});
 router.use("/auth", authRouter);
 router.use("/problems", problemRouter);
 router.use("/reminders", reminderRouter);
