@@ -317,11 +317,9 @@ export default function ProblemsDashboard() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description:
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to delete problem.",
+          error.response?.data?.message || "Failed to delete problem.",
         variant: "destructive",
       });
     },
@@ -351,9 +349,8 @@ export default function ProblemsDashboard() {
       if (error.response?.status === 404)
         removeNotification(feedbackId as number);
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description:
-          error.response?.data?.error ||
           error.response?.data?.message ||
           "Failed to submit practice feedback.",
         variant: "destructive",

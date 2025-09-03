@@ -79,12 +79,13 @@ const InputOTPForm: React.FC = () => {
     },
     onError: (error) => {
       const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "OTP Verification Failed";
+        error.response?.data?.message || "OTP Verification Failed";
       setOtpError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({
+        title: error.response?.data?.error,
+        description: message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -117,13 +118,9 @@ const InputOTPForm: React.FC = () => {
       });
     },
     onError: (error) => {
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to resend OTP";
+      const message = error.response?.data?.message || "Failed to resend OTP";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });

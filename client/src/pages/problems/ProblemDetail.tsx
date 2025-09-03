@@ -96,11 +96,9 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description:
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to delete reminder",
+          error.response?.data?.message || "Failed to delete reminder",
         variant: "destructive",
       });
     },

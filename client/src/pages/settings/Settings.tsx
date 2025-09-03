@@ -133,12 +133,9 @@ export default function SettingsPage() {
     },
     onError: (error) => {
       const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to update preferences";
+        error.response?.data?.message || "Failed to update preferences";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });

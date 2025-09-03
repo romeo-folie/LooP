@@ -58,7 +58,7 @@ const ForgotPasswordForm: React.FC = () => {
           emailData,
         );
         return data;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`error submitting email ${error}`);
         throw error;
       }
@@ -71,13 +71,9 @@ const ForgotPasswordForm: React.FC = () => {
       navigate("/auth/verify-otp");
     },
     onError: (error) => {
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to send OTP";
+      const message = error.response?.data?.message || "Failed to send OTP";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });
