@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Request, Response, NextFunction } from "express";
-import logger from "../config/winston-config";
+import logger from "../lib/winston-config";
 import { ZodType, ZodError } from "zod";
 
 type Schemas = {
@@ -32,7 +32,7 @@ export function zodValidate(schemas: Schemas) {
       );
       if (err instanceof ZodError) {
         res.status(400).json({
-          error: "Validation failed",
+          error: "VALIDATION_FAILED",
           issues: err.issues.map((i) => ({
             path: i.path.join("."),
             message: i.message,

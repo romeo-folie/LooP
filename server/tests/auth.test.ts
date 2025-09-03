@@ -6,7 +6,7 @@ import {
   generateExpiredRefreshToken,
   generatePasswordResetToken,
   generateRefreshToken,
-} from "../src/utils/jwt";
+} from "../src/lib/jwt";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 
@@ -39,7 +39,7 @@ describe("authentication tests", () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual(
         expect.objectContaining({
-          error: "Validation failed",
+          error: "VALIDATION_FAILED",
           issues: expect.arrayContaining([
             expect.objectContaining({
               code: "invalid_format",
@@ -72,7 +72,7 @@ describe("authentication tests", () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual(
         expect.objectContaining({
-          error: "Validation failed",
+          error: "VALIDATION_FAILED",
           issues: expect.arrayContaining([
             expect.objectContaining({
               code: "invalid_format",
@@ -114,15 +114,16 @@ describe("authentication tests", () => {
       expect(response.body.message).toBe("User registered successfully");
     });
 
-    it("should return a 400 if email is already in use", async () => {
+    it("should return a 409 if email is already in use", async () => {
       const response = await request(app).post("/api/auth/register").send({
         name: "Test User",
         email: validEmail,
         password: "testPassw0rD%",
       });
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe("Email already in use");
+      expect(response.status).toBe(409);
+      expect(response.body).toHaveProperty("error", "CONFLICT");
+      expect(response.body).toHaveProperty("message", "Email already in use");
     });
   });
 
@@ -133,7 +134,7 @@ describe("authentication tests", () => {
         .send({ email: "testuser@example.com", password: "testPassw0rd!" });
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe("Invalid credentials");
+      expect(response.body).toHaveProperty("message", "Invalid Credentials");
     });
 
     it("should return 401 if user does not exist", async () => {
@@ -142,7 +143,7 @@ describe("authentication tests", () => {
         .send({ email: "testuser@wrongmail.com", password: "testPassw0rd!" });
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe("Invalid credentials");
+      expect(response.body).toHaveProperty("message", "Invalid Credentials");
     });
 
     it("should return 400 for missing fields", async () => {
@@ -153,7 +154,7 @@ describe("authentication tests", () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual(
         expect.objectContaining({
-          error: "Validation failed",
+          error: "VALIDATION_FAILED",
           issues: expect.arrayContaining([
             expect.objectContaining({
               code: "invalid_format",
@@ -176,7 +177,7 @@ describe("authentication tests", () => {
         .send({ email: "testuser@example.com", password: "testPassw0rD%" });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toBe("Login successful");
+      expect(response.body).toHaveProperty("message", "Login successful");
     });
   });
 
@@ -199,8 +200,9 @@ describe("authentication tests", () => {
         .send();
 
       expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty("error", "FORBIDDEN");
       expect(res.body).toHaveProperty(
-        "error",
+        "message",
         "Invalid or expired refresh token",
       );
     });
@@ -212,8 +214,9 @@ describe("authentication tests", () => {
         .send();
 
       expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty("error", "FORBIDDEN");
       expect(res.body).toHaveProperty(
-        "error",
+        "message",
         "Invalid or expired refresh token",
       );
     });
@@ -222,7 +225,8 @@ describe("authentication tests", () => {
       const res = await request(app).post("/api/auth/refresh-token").send();
 
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty("error", "Refresh token is required");
+      expect(res.body).toHaveProperty("error", "BAD_REQUEST");
+      expect(res.body).toHaveProperty("message", "Refresh token is required");
     });
 
     it("Should return a new access token when refresh token is valid and from a signed in user", async () => {
@@ -266,7 +270,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(400);
           expect(res.body).toEqual(
             expect.objectContaining({
-              error: "Validation failed",
+              error: "VALIDATION_FAILED",
               issues: expect.arrayContaining([
                 expect.objectContaining({
                   code: "invalid_type",
@@ -359,7 +363,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(400);
           expect(res.body).toEqual(
             expect.objectContaining({
-              error: "Validation failed",
+              error: "VALIDATION_FAILED",
               issues: expect.arrayContaining([
                 expect.objectContaining({
                   code: "invalid_type",
@@ -384,7 +388,8 @@ describe("authentication tests", () => {
             .send({ email: "unknown@example.com", pin: "123456" });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("error", "Invalid email or OTP");
+          expect(res.body).toHaveProperty("error", "BAD_REQUEST");
+          expect(res.body).toHaveProperty("message", "Invalid email or OTP");
         });
       });
 
@@ -395,7 +400,8 @@ describe("authentication tests", () => {
             .send({ email: validEmail2, pin: "654321" });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("error", "OTP expired or invalid");
+          expect(res.body).toHaveProperty("error", "BAD_REQUEST");
+          expect(res.body).toHaveProperty("message", "OTP expired or invalid");
         });
       });
 
@@ -419,7 +425,8 @@ describe("authentication tests", () => {
             .send({ email: validEmail2, pin: "222222" });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("error", "OTP expired or invalid");
+          expect(res.body).toHaveProperty("error", "BAD_REQUEST");
+          expect(res.body).toHaveProperty("message", "OTP expired or invalid");
         });
       });
 
@@ -443,7 +450,8 @@ describe("authentication tests", () => {
             .send({ email: validEmail3, pin: "555556" });
 
           expect(res.status).toBe(400);
-          expect(res.body).toHaveProperty("error", "Invalid OTP");
+          expect(res.body).toHaveProperty("error", "BAD_REQUEST");
+          expect(res.body).toHaveProperty("message", "Invalid OTP");
         });
       });
 
@@ -494,7 +502,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(400);
           expect(res.body).toEqual(
             expect.objectContaining({
-              error: "Validation failed",
+              error: "VALIDATION_FAILED",
               issues: expect.arrayContaining([
                 expect.objectContaining({
                   code: "invalid_type",
@@ -514,7 +522,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(400);
           expect(res.body).toEqual(
             expect.objectContaining({
-              error: "Validation failed",
+              error: "VALIDATION_FAILED",
               issues: expect.arrayContaining([
                 expect.objectContaining({
                   code: "invalid_type",
@@ -540,7 +548,11 @@ describe("authentication tests", () => {
           });
 
           expect(res.status).toBe(403);
-          expect(res.body).toHaveProperty("error", "Invalid or expired token");
+          expect(res.body).toHaveProperty("error", "FORBIDDEN");
+          expect(res.body).toHaveProperty(
+            "message",
+            "Invalid or expired token",
+          );
         });
       });
 
@@ -554,7 +566,7 @@ describe("authentication tests", () => {
           expect(res.status).toBe(400);
           expect(res.body).toEqual(
             expect.objectContaining({
-              error: "Validation failed",
+              error: "VALIDATION_FAILED",
               issues: expect.arrayContaining([
                 expect.objectContaining({
                   code: "too_small",
@@ -625,8 +637,9 @@ describe("authentication tests", () => {
               });
 
             expect(res.status).toBe(403);
+            expect(res.body).toHaveProperty("error", "FORBIDDEN");
             expect(res.body).toHaveProperty(
-              "error",
+              "message",
               "Invalid or expired token",
             );
           });

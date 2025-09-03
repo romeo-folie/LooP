@@ -1,5 +1,5 @@
 import { db } from "../db";
-import logger from "../config/winston-config";
+import logger from "../lib/winston-config";
 import { AppRequestHandler } from "../types";
 import { IProblemRow, IReminderRow } from "../types/knex-tables";
 
