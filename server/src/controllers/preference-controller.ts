@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
-import logger from "../lib/winston-config";
 import { AppRequestHandler } from "../types";
+import AppError from "../types/errors";
 import { Settings } from "../types/knex-tables";
 
 export const upsertPreferences: AppRequestHandler<
   {},
   { message: string; settings: Settings },
   { settings: Settings }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     if (!userId) {
-      logger.warn("Unauthorized access attempt to PUT /preferences");
-      res.status(401).json({ error: "Unauthorized" });
+      req.log?.warn("Unauthorized access attempt to PUT /preferences");
+      throw new AppError("UNAUTHORIZED");
     }
 
     const { settings } = req.body;
@@ -34,7 +34,10 @@ export const upsertPreferences: AppRequestHandler<
         })
         .returning(["settings"]);
 
-      if (!updated) throw new Error("failed to update settings");
+      if (!updated) {
+        req.log?.error(`Failed to update settings for user ID ${userId}`);
+        throw new Error("Failed to update settings");
+      }
 
       res.status(200).json({
         message: "Preferences updated successfully",
@@ -51,7 +54,10 @@ export const upsertPreferences: AppRequestHandler<
         })
         .returning(["settings"]);
 
-      if (!inserted) throw new Error("failed to save settings");
+      if (!inserted) {
+        req.log?.error(`Failed to save settings for user ID ${userId}`);
+        throw new Error("Failed to save settings");
+      }
 
       res.status(201).json({
         message: "Preferences saved successfully",
@@ -59,20 +65,20 @@ export const upsertPreferences: AppRequestHandler<
       });
     }
   } catch (error: unknown) {
-    logger.error(`Error upserting preferences ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Error upserting preferences ${error}`);
+    next(error);
   }
 };
 
 export const getPreferences: AppRequestHandler<
   {},
   { settings: Settings }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     if (!userId) {
-      logger.warn("Unauthorized access attempt to GET /preferences");
-      res.status(401).json({ error: "Unauthorized" });
+      req.log?.warn("Unauthorized access attempt to GET /preferences");
+      throw new AppError("UNAUTHORIZED");
     }
 
     const existing = await db("user_preferences")
@@ -85,7 +91,7 @@ export const getPreferences: AppRequestHandler<
       res.status(200).json({ settings: {} });
     }
   } catch (error: unknown) {
-    logger.error(`Error fetching preferences ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Error fetching preferences ${error}`);
+    next(error);
   }
 };
