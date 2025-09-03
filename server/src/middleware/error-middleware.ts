@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler } from "express";
-import AppError from "../lib/errors";
+import AppError from "../types/errors";
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
@@ -21,6 +21,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
   res.status(500).json({
     error: "INTERNAL",
-    message: `Internal server error. Contact support with request ID: ${res.locals.requestId}`,
+    message: `Internal server error. Request ID: ${res.locals.requestId}`,
   });
 };

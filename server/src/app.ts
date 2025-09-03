@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import webpush from "web-push";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error-middleware";
-import AppError from "./lib/errors";
+import AppError from "./types/errors";
 import { requestId } from "./middleware/request-id";
 
 const app: Application = express();

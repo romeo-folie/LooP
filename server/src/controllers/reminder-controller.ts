@@ -1,23 +1,25 @@
 import { db } from "../db";
 import logger from "../lib/winston-config";
 import { AppRequestHandler } from "../types";
+import AppError from "../types/errors";
 import { IProblemRow, IReminderRow } from "../types/knex-tables";
 
 export const getRemindersByProblem: AppRequestHandler<
   { problem_id: string },
   { reminders: Partial<IReminderRow>[] }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
 
     if (!userId) {
-      logger.warn(`Unauthorized reminders request attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      req.log?.warn(
+        `Unauthorized reminders request attempt from IP: ${req.ip}`,
+      );
+      throw new AppError("UNAUTHORIZED");
     }
 
-    logger.info(
+    req.log?.info(
       `Fetching reminders for Problem ID ${problem_id} - User ID: ${userId}`,
     );
 
@@ -27,9 +29,8 @@ export const getRemindersByProblem: AppRequestHandler<
       .first();
 
     if (!problem) {
-      logger.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      req.log?.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
+      throw new AppError("NOT_FOUND", "Problem not found");
     }
 
     // Fetch reminders for the problem
@@ -45,34 +46,33 @@ export const getRemindersByProblem: AppRequestHandler<
         "created_at",
       );
 
-    logger.info(
+    req.log?.info(
       `Successfully fetched ${reminders.length} reminders - User ID: ${userId}`,
     );
 
     res.status(200).json({ reminders });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Error fetching reminders for Problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 export const getReminderById: AppRequestHandler<
   { reminder_id: string },
   { reminder: IReminderRow }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
 
     if (!userId) {
-      logger.warn(`Unauthorized reminder request attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      req.log?.warn(`Unauthorized reminder request attempt from IP: ${req.ip}`);
+      throw new AppError("UNAUTHORIZED");
     }
 
-    logger.info(`Fetching reminder ID: ${reminder_id} - User ID: ${userId}`);
+    req.log?.info(`Fetching reminder ID: ${reminder_id} - User ID: ${userId}`);
 
     // Fetch the reminder belonging to the authenticated user
     const reminder = await db("reminders")
@@ -80,21 +80,22 @@ export const getReminderById: AppRequestHandler<
       .first();
 
     if (!reminder) {
-      logger.warn(`Reminder ID: ${reminder_id} not found - User ID: ${userId}`);
-      res.status(404).json({ error: "Reminder not found" });
-      return;
+      req.log?.warn(
+        `Reminder ID: ${reminder_id} not found - User ID: ${userId}`,
+      );
+      throw new AppError("NOT_FOUND", "Reminder not found");
     }
 
-    logger.info(
+    req.log?.info(
       `Successfully fetched Reminder ID ${reminder_id} - User ID: ${userId}`,
     );
 
     res.status(200).json({ reminder });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Error fetching reminder ID: ${req.params.reminder_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -102,16 +103,17 @@ export const createReminder: AppRequestHandler<
   { problem_id: string },
   { message: string; reminder: Partial<IReminderRow> },
   { due_datetime: Date }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { problem_id } = req.params;
     const { due_datetime } = req.body;
 
     if (!userId) {
-      logger.warn(`Unauthorized reminder creation attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      req.log?.warn(
+        `Unauthorized reminder creation attempt from IP: ${req.ip}`,
+      );
+      throw new AppError("UNAUTHORIZED");
     }
 
     const existingProblem = await db<IProblemRow>("problems")
@@ -119,12 +121,11 @@ export const createReminder: AppRequestHandler<
       .first();
 
     if (!existingProblem) {
-      logger.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
-      res.status(404).json({ error: "Problem not found" });
-      return;
+      req.log?.warn(`Problem ID: ${problem_id} not found - User ID: ${userId}`);
+      throw new AppError("NOT_FOUND", "Problem not found");
     }
 
-    logger.info(
+    req.log?.info(
       `Creating reminder for User ID: ${userId} - ${JSON.stringify(req.body)}`,
     );
 
@@ -145,9 +146,12 @@ export const createReminder: AppRequestHandler<
         "created_at",
       ]);
 
-    if (!newReminder) throw new Error("failed to create reminder");
+    if (!newReminder) {
+      req.log?.error(`Failed to create reminder for user ID  ${userId}`);
+      throw new Error(`Failed to create reminder record`);
+    }
 
-    logger.info(
+    req.log?.info(
       `Reminder created successfully Reminder ID: ${newReminder.reminder_id} - User ID: ${userId}`,
     );
 
@@ -156,10 +160,10 @@ export const createReminder: AppRequestHandler<
       reminder: newReminder,
     });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Reminder creation error for Problem ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -167,18 +171,17 @@ export const updateReminder: AppRequestHandler<
   { reminder_id: string },
   { message: string; reminder: Partial<IReminderRow> },
   { due_datetime: Date; is_completed: boolean }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
     const { due_datetime, is_completed } = req.body;
 
     if (!userId) {
-      logger.warn(
+      req.log?.warn(
         `Unauthorized reminder update attempt for ID: ${userId} from IP: ${req.ip}`,
       );
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     const existingReminder = await db("reminders")
@@ -186,11 +189,10 @@ export const updateReminder: AppRequestHandler<
       .first();
 
     if (!existingReminder) {
-      logger.warn(
+      req.log?.warn(
         `Reminder ID: ${reminder_id} not found for User ID: ${userId}`,
       );
-      res.status(404).json({ error: "Reminder not found" });
-      return;
+      throw new AppError("NOT_FOUND", "Reminder not found");
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -215,9 +217,12 @@ export const updateReminder: AppRequestHandler<
         "updated_at",
       ]);
 
-    if (!updatedReminder) throw new Error("failed to update reminder");
+    if (!updatedReminder) {
+      req.log?.error(`Failed to update reminder for User ID: ${userId}`);
+      throw new Error("Failed to update reminder");
+    }
 
-    logger.info(
+    req.log?.info(
       `Reminder ID: ${reminder_id} successfully updated - User ID: ${userId}`,
     );
 
@@ -226,27 +231,26 @@ export const updateReminder: AppRequestHandler<
       reminder: updatedReminder,
     });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Reminder update error for ID: ${req.params.reminder_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 export const deleteReminder: AppRequestHandler<
   { reminder_id: string; problem_id: string },
   { message: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const userId = req.authUser?.userId;
     const { reminder_id } = req.params;
 
     if (!userId) {
-      logger.warn(
+      req.log?.warn(
         `Unauthorized deletion attempt reminder ID: ${reminder_id} from IP: ${req.ip}`,
       );
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     // Ensure the reminder exists and belongs to the authenticated user
@@ -255,9 +259,10 @@ export const deleteReminder: AppRequestHandler<
       .first();
 
     if (!existingReminder) {
-      logger.warn(`Reminder ID: ${reminder_id} not found - User ID: ${userId}`);
-      res.status(404).json({ error: "Reminder not found" });
-      return;
+      req.log?.warn(
+        `Reminder ID: ${reminder_id} not found - User ID: ${userId}`,
+      );
+      throw new AppError("NOT_FOUND", "Reminder not found");
     }
 
     // Delete the reminder
@@ -265,15 +270,15 @@ export const deleteReminder: AppRequestHandler<
       .where({ reminder_id: parseInt(reminder_id) })
       .del();
 
-    logger.info(
+    req.log?.info(
       `Reminder ID: ${reminder_id} successfully deleted - User ID: ${userId}`,
     );
 
     res.status(200).json({ message: "Reminder deleted successfully" });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Reminder deletion error for ID: ${req.params.problem_id} - User ID: ${req.authUser?.userId || "unknown"}: ${error instanceof Error ? error.message : error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };

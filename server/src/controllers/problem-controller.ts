@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
 import { AppRequestHandler, IProblem } from "../types";
-import sm2 from "../lib/sm2-helper";
+import sm2 from "../utils/sm2-helper";
 import { IProblemRow, IReminderRow } from "../types/knex-tables";
-import AppError from "../lib/errors";
+import AppError from "../types/errors";
 
 type ProblemWithMillis = {
   problem_id: number;
@@ -78,8 +78,8 @@ export const createProblem: AppRequestHandler<
       ]);
 
     if (!newProblem) {
-      req.log?.error(`FAILED to create problem record for User ID: ${userId}`);
-      throw new AppError("INTERNAL");
+      req.log?.error(`Failed to create problem record for User ID: ${userId}`);
+      throw new Error("Failed to create problem record");
     }
 
     const { settings } =
@@ -248,7 +248,7 @@ export const getProblemById: AppRequestHandler<
       req.log?.warn(
         `Problem ID: ${problem_id} not found for User ID: ${userId}`,
       );
-      throw new AppError("NOT_FOUND", "Problem not found");
+      throw new Error("Problem not found");
     }
 
     req.log?.info(
@@ -325,8 +325,10 @@ export const updateProblem: AppRequestHandler<
         "updated_at",
       ]);
 
-    if (!updatedProblem)
-      throw new AppError("INTERNAL", "Failed to update problem");
+    if (!updatedProblem) {
+      req.log?.error(`Failed to update problem for user ${userId}`);
+      throw new Error("Failed to update problem");
+    }
 
     req.log?.info(
       `Problem ID: ${problem_id} successfully updated for User ID: ${userId}`,
@@ -405,8 +407,7 @@ export const handlePracticeFeedback: AppRequestHandler<
     const { quality_score } = req.body; // 1–5
 
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("UNAUTHORIZED");
     }
 
     // Fetch problem & ensure ownership

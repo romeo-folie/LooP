@@ -1,6 +1,6 @@
 import webpush, { WebPushError } from "web-push";
 import { db } from "../db";
-import logger from "./winston-config";
+import logger from "../lib/winston-config";
 
 async function sendPushReminder(
   userId: number,

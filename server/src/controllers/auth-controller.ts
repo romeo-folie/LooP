@@ -10,7 +10,7 @@ import crypto from "crypto";
 import { IUserRow } from "../types/knex-tables";
 import { AppRequestHandler, GitHubOAuthAccessTokenSuccess } from "../types";
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
-import AppError from "../lib/errors";
+import AppError from "../types/errors";
 import logger from "../lib/winston-config";
 
 type AuthUser =
