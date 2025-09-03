@@ -262,13 +262,9 @@ export default function ProblemFormDialog({
       onOpenChange(false);
       reset();
       setInputValue("");
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to save problem";
+      const message = error.response?.data?.message || "Failed to save problem";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });

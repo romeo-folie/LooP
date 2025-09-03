@@ -90,12 +90,9 @@ const PasswordResetForm: React.FC = () => {
     },
     onError: (error) => {
       const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to reset password";
+        error.response?.data?.message || "Failed to reset password";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });

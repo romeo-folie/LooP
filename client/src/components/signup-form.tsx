@@ -109,14 +109,9 @@ const SignupForm: React.FC = () => {
       setTimeout(() => navigate("/auth?tab=sign-in"), 1600);
     },
     onError: (error) => {
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Signup failed";
-      console.log("Error ", message);
+      const message = error.response?.data?.message || "Signup failed";
       toast({
-        title: "Error",
+        title: error.response?.data?.error,
         description: message,
         variant: "destructive",
       });

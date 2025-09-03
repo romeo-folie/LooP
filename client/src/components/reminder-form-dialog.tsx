@@ -164,11 +164,8 @@ const ReminderFormDialog = ({
     onError: (error) => {
       console.error(error);
       toast({
-        title: "Error",
-        description:
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to save reminder",
+        title: error.response?.data?.error,
+        description: error.response?.data?.message || "Failed to save reminder",
         variant: "destructive",
       });
       onOpenChange(false);
