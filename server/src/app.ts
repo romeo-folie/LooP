@@ -7,6 +7,7 @@ import webpush from "web-push";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error-middleware";
 import AppError from "./lib/errors";
+import { requestId } from "./middleware/request-id";
 
 const app: Application = express();
 const corsOptions = {
@@ -42,6 +43,7 @@ app.use(
 );
 
 app.set("trust proxy", true);
+app.use(requestId);
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
@@ -51,7 +53,7 @@ app.use("/api/v1", v1Router);
 app.use("/api", v1Router);
 
 app.use((_req, _res, next) => {
-  next(new AppError('NOT_FOUND', 'Route not found'));
+  next(new AppError("NOT_FOUND", "Route not found"));
 });
 
 app.use(errorHandler);

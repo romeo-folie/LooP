@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { db } from "../db";
-import logger from "../config/winston-config";
+import logger from "../lib/winston-config";
 import { AppRequestHandler } from "../types";
 import { ISubscriptionRow } from "../types/knex-tables";
 

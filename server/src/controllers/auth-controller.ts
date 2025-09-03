@@ -5,12 +5,13 @@ import jwt from "jsonwebtoken";
 import axios from "axios";
 import dotenv from "dotenv";
 import { db } from "../db";
-import logger from "../config/winston-config";
-import resend from "../config/resend";
+import resend from "../lib/resend";
 import crypto from "crypto";
 import { IUserRow } from "../types/knex-tables";
 import { AppRequestHandler, GitHubOAuthAccessTokenSuccess } from "../types";
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
+import AppError from "../lib/errors";
+import logger from "../lib/winston-config";
 
 type AuthUser =
   RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"];
@@ -23,14 +24,13 @@ export const register: AppRequestHandler<
   {},
   { message?: string; user?: Partial<IUserRow> },
   { name: string; email: string; password: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     const existingUser = await db("users").where({ email }).first();
     if (existingUser) {
-      res.status(400).json({ message: "Email already in use" });
-      return;
+      throw new AppError("CONFLICT", "Email already in use");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -43,15 +43,15 @@ export const register: AppRequestHandler<
       })
       .returning(["user_id", "name", "email", "created_at"]);
 
-    logger.info(`New user registered: ${email}`);
+    req.log?.info(`New user registered: ${email}`);
 
     res.status(201).json({
       message: "User registered successfully",
       user: newUser,
     });
   } catch (error) {
-    logger.error(`Register Error: ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Register Error: ${error}`);
+    next(error);
   }
 };
 
@@ -59,21 +59,19 @@ export const login: AppRequestHandler<
   {},
   { message?: string; user?: Partial<IUserRow> & { token: string } },
   { email: string; password: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     const existingUser = await db("users").where({ email }).first();
     if (!existingUser) {
-      logger.warn(`Login failed: User not found - ${email}`);
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
+      req.log?.warn(`Login failed: User not found - ${email}`);
+      throw new AppError("UNAUTHORIZED", "Invalid Credentials");
     }
 
     const isMatch = await bcrypt.compare(password, existingUser.password);
     if (!isMatch) {
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
+      throw new AppError("UNAUTHORIZED", "Invalid Credentials");
     }
 
     const token = jwt.sign(
@@ -103,7 +101,7 @@ export const login: AppRequestHandler<
       process.env.CSRF_SECRET_KEY as string,
     );
 
-    logger.info(`Login successful for ${email} from IP: ${req.ip}`);
+    req.log?.info(`Login successful for ${email} from IP: ${req.ip}`);
 
     res.cookie("refresh_token", refreshToken, {
       domain: `.${process.env.DOMAIN as string}`,
@@ -137,26 +135,25 @@ export const login: AppRequestHandler<
       },
     });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Login error for ${req.body?.email || "unknown user"} error: ${error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 export const refreshToken: AppRequestHandler<
   {},
   { message: string; token: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refresh_token;
 
-    logger.info(`Refresh token request received from IP: ${req.ip}`);
+    req.log?.info(`Refresh token request received from IP: ${req.ip}`);
 
     if (!refreshToken) {
-      logger.warn(`Refresh token request missing token from IP: ${req.ip}`);
-      res.status(400).json({ error: "Refresh token is required" });
-      return;
+      req.log?.warn(`Refresh token request missing token from IP: ${req.ip}`);
+      throw new AppError("BAD_REQUEST", "Refresh token is required");
     }
 
     let decoded;
@@ -166,21 +163,19 @@ export const refreshToken: AppRequestHandler<
         process.env.REFRESH_SECRET as string,
       ) as { userId: string; email: string };
     } catch (err) {
-      logger.warn(
+      req.log?.warn(
         `Invalid or expired refresh token from IP: ${req.ip} error: ${err}`,
       );
-      res.status(403).json({ error: "Invalid or expired refresh token" });
-      return;
+      throw new AppError("FORBIDDEN", "Invalid or expired refresh token");
     }
 
     // Find the user
     const user = await db("users").where({ email: decoded.email }).first();
     if (!user) {
-      logger.warn(
+      req.log?.warn(
         `Refresh token failed: User not found - User ID: ${decoded.userId}`,
       );
-      res.status(403).json({ error: "Invalid or expired refresh token" });
-      return;
+      throw new AppError("FORBIDDEN", "Invalid or expired refresh token");
     }
 
     // Generate a new access token
@@ -213,7 +208,7 @@ export const refreshToken: AppRequestHandler<
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
-    logger.info(
+    req.log?.info(
       `Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`,
     );
 
@@ -222,24 +217,23 @@ export const refreshToken: AppRequestHandler<
       token: newAccessToken,
     });
   } catch (error: unknown) {
-    logger.error(`Refresh token error from IP: ${req.ip} - ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Refresh token error from IP: ${req.ip} - ${error}`);
+    next(error);
   }
 };
 
 export const getProfile: AppRequestHandler<
   {},
   { user: Partial<IUserRow> }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
-    logger.info(
+    req.log?.info(
       `Profile fetch request received for User ID: ${req.authUser?.userId} from IP: ${req.ip}`,
     );
 
     if (!req.authUser?.userId) {
-      logger.warn(`Unauthorized profile access attempt from IP: ${req.ip}`);
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      req.log?.warn(`Unauthorized profile access attempt from IP: ${req.ip}`);
+      throw new AppError("UNAUTHORIZED");
     }
 
     const { userId } = req.authUser;
@@ -250,21 +244,22 @@ export const getProfile: AppRequestHandler<
       .first();
 
     if (!user) {
-      logger.warn(`Profile fetch failed: User not found - User ID: ${userId}`);
-      res.status(404).json({ error: "User not found" });
-      return;
+      req.log?.warn(
+        `Profile fetch failed: User not found - User ID: ${userId}`,
+      );
+      throw new AppError("NOT_FOUND", "User not found");
     }
 
-    logger.info(
+    req.log?.info(
       `Profile retrieved successfully for User ID: ${userId} from IP: ${req.ip}`,
     );
 
     res.status(200).json({ user });
   } catch (error: unknown) {
-    logger.error(
+    req.log?.error(
       `Profile fetch error for User ID: ${req.authUser?.userId || "unknown"}: ${error}`,
     );
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
@@ -293,7 +288,7 @@ export const getAccessToken: AppRequestHandler<
     const { code } = req.query;
 
     if (!code) {
-      logger.warn("No code returned from GitHub");
+      req.log?.warn("No code returned from GitHub");
       throw new Error("Missing code parameter");
     }
 
@@ -312,7 +307,7 @@ export const getAccessToken: AppRequestHandler<
 
     const accessToken = tokenResponse.data.access_token;
     if (!accessToken) {
-      logger.error("No access token received from GitHub");
+      req.log?.error("No access token received from GitHub");
       throw new Error("Failed to obtain access token");
     }
 
@@ -355,11 +350,11 @@ export const getAccessToken: AppRequestHandler<
             provider_id: String(githubUser.id),
             updated_at: new Date(),
           });
-        logger.info(
+        req.log?.info(
           `Updated existing user with GitHub provider info: ${userId}`,
         );
       }
-      logger.info(`Existing user logged in via GitHub: ${userEmail}`);
+      req.log?.info(`Existing user logged in via GitHub: ${userEmail}`);
     } else {
       // Create a new user
       const displayName = githubUser.name || githubUser.login || "GitHub User";
@@ -376,7 +371,7 @@ export const getAccessToken: AppRequestHandler<
       if (!newUser) throw new Error("Failed to create new local user");
       userId = newUser.user_id;
       existingUser = newUser;
-      logger.info(`New user created via GitHub: ${userEmail}`);
+      req.log?.info(`New user created via GitHub: ${userEmail}`);
     }
 
     const refreshToken = jwt.sign(
@@ -439,7 +434,7 @@ export const getAccessToken: AppRequestHandler<
       `${process.env.CLIENT_URL}/auth/github/success?user=${encodedUser}`,
     );
   } catch (error: unknown) {
-    logger.error(`GitHub OAuth Callback Error: ${error}`);
+    req.log?.error(`GitHub OAuth Callback Error: ${error}`);
     res.redirect(`${process.env.CLIENT_URL}/auth/github/error`);
   }
 };
@@ -448,20 +443,19 @@ export const forgotPassword: AppRequestHandler<
   {},
   { message: string },
   { email: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const { email } = req.body;
 
     if (!email) {
-      logger.warn("Forgot password attempt without email");
-      res.status(400).json({ error: "Email is required" });
-      return;
+      req.log?.warn("Forgot password attempt without email");
+      throw new AppError("BAD_REQUEST", "Email is required");
     }
 
     // 1. Check if user exists
     const user = await db("users").where({ email }).first();
     if (!user) {
-      logger.warn(`Forgot password request for non-existent email: ${email}`);
+      req.log?.warn(`Forgot password request for non-existent email: ${email}`);
       res
         .status(200)
         .json({ message: "If the email exists, an OTP has been sent." });
@@ -493,17 +487,17 @@ export const forgotPassword: AppRequestHandler<
     });
 
     if (emailSent) {
-      logger.info(`Password reset OTP sent to ${user.email}`);
+      req.log?.info(`Password reset OTP sent to ${user.email}`);
     } else {
-      logger.error(`Failed to send OTP email to ${user.email}`);
+      req.log?.error(`Failed to send OTP email to ${user.email}`);
     }
 
     res
       .status(200)
       .json({ message: "If the email exists, an OTP has been sent." });
   } catch (error) {
-    logger.error("Forgot password error", error);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error("Forgot password error", error);
+    next(error);
   }
 };
 
@@ -511,21 +505,19 @@ export const verifyOtp: AppRequestHandler<
   {},
   { message: string; password_reset_token: string },
   { email: string; pin: number }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const { email, pin } = req.body;
 
     if (!email || !pin) {
-      logger.warn("OTP verification attempt without email or pin");
-      res.status(400).json({ error: "Email and OTP are required" });
-      return;
+      req.log?.warn("OTP verification attempt without email or pin");
+      throw new AppError("BAD_REQUEST", "Invalid email or OTP");
     }
 
     // 1. Find user
     const user = await db("users").where({ email }).first();
     if (!user) {
-      res.status(400).json({ error: "Invalid email or OTP" });
-      return;
+      throw new AppError("BAD_REQUEST", "Invalid email or OTP");
     }
 
     // 2. Fetch the latest OTP for this user
@@ -535,8 +527,7 @@ export const verifyOtp: AppRequestHandler<
       .first();
 
     if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
-      res.status(400).json({ error: "OTP expired or invalid" });
-      return;
+      throw new AppError("BAD_REQUEST", "OTP expired or invalid");
     }
 
     // 3. Hash the provided OTP and compare
@@ -545,8 +536,7 @@ export const verifyOtp: AppRequestHandler<
       .update(pin.toString())
       .digest("hex");
     if (hashedOtp !== otpRecord.otp_hash) {
-      res.status(400).json({ error: "Invalid OTP" });
-      return;
+      throw new AppError("BAD_REQUEST", "Invalid OTP");
     }
 
     // 4. OTP is valid - Remove it from the DB
@@ -559,7 +549,7 @@ export const verifyOtp: AppRequestHandler<
       { expiresIn: "15m" },
     );
 
-    logger.info(
+    req.log?.info(
       `OTP verified for ${user.email}. Temporary reset token generated.`,
     );
 
@@ -568,8 +558,8 @@ export const verifyOtp: AppRequestHandler<
       password_reset_token: passwordResetToken,
     });
   } catch (error) {
-    logger.error(`OTP verification error ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`OTP verification error ${error}`);
+    next(error);
   }
 };
 
@@ -577,16 +567,15 @@ export const resetPassword: AppRequestHandler<
   {},
   { message: string },
   { password_reset_token: string; new_password: string }
-> = async (req, res) => {
+> = async (req, res, next) => {
   try {
     const { password_reset_token, new_password } = req.body;
 
     if (!password_reset_token || !new_password) {
-      logger.warn(
+      req.log?.warn(
         "Password reset attempt without password_reset_token or new_password",
       );
-      res.status(400).json({ error: "Token and new password are required" });
-      return;
+      throw new AppError("BAD_REQUEST", "Token and new password are required");
     }
 
     // Verify the reset token
@@ -597,9 +586,8 @@ export const resetPassword: AppRequestHandler<
         process.env.RESET_PASSWORD_SECRET as string,
       );
     } catch (error) {
-      logger.warn(`Invalid or expired password reset token ${error}`);
-      res.status(403).json({ error: "Invalid or expired token" });
-      return;
+      req.log?.warn(`Invalid or expired password reset token ${error}`);
+      throw new AppError("FORBIDDEN", "Invalid or expired token");
     }
 
     const { userId, email } = decoded as { userId: number; email: string };
@@ -613,20 +601,21 @@ export const resetPassword: AppRequestHandler<
       updated_at: new Date(),
     });
 
-    logger.info(`Password reset successfully for ${email}`);
+    req.log?.info(`Password reset successfully for ${email}`);
 
     res
       .status(200)
       .json({ message: "Password reset successfully. You can now log in." });
   } catch (error) {
-    logger.error(`Password reset error ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Password reset error ${error}`);
+    next(error);
   }
 };
 
 export const logout: AppRequestHandler<{}, {}, { message: string }> = (
   req,
   res,
+  next,
 ) => {
   try {
     res.clearCookie("refresh_token", {
@@ -650,12 +639,12 @@ export const logout: AppRequestHandler<{}, {}, { message: string }> = (
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
-    logger.info(
+    req.log?.info(
       `User logged out - refresh and csrf tokens and cookies cleared`,
     );
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error: unknown) {
-    logger.error(`Logout error ${error}`);
-    res.status(500).json({ error: "Internal server error" });
+    req.log?.error(`Logout error ${error}`);
+    next(error);
   }
 };

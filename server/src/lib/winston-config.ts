@@ -13,13 +13,13 @@ const transports = [
     level: "debug",
     format: winston.format.combine(
       winston.format.colorize(), // Keep colors for console logs
-      winston.format.printf(({ timestamp, level, message }) => {
-        return `[${timestamp}] ${level}: ${message}`;
+      winston.format.printf(({ timestamp, level, message, requestId }) => {
+        return `${requestId} ${level}: ${message} [${timestamp}]`;
       }),
     ),
   }),
   new DailyRotateFile({
-    filename: "logs/dsa-tracker-%DATE%.log",
+    filename: "logs/loop-%DATE%.log",
     datePattern: "YYYY-MM-DD",
     maxSize: "20m",
     maxFiles: "14d",

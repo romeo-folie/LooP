@@ -2,9 +2,10 @@
 import type { Request, Response, NextFunction } from "express";
 import type { ParamsDictionary } from "express-serve-static-core";
 import type { ParsedQs } from "qs";
+import type { Logger } from "winston";
 
 export type Success<T> = T;
-export type Failure = { error: string; code?: string };
+export type Failure = { error: string; message?: string; code?: string };
 export type ApiResponse<T> = Success<T> | Failure;
 
 export interface AuthContext {
@@ -15,6 +16,8 @@ export interface AuthContext {
     "CSRF-TOKEN"?: string;
     "XSRF-TOKEN"?: string;
   };
+  requestId?: string;
+  log?: Logger;
 }
 
 export type AppRequest<
