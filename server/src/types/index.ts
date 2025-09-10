@@ -40,18 +40,21 @@ export type AppRequestHandler<
   next: NextFunction,
 ) => void | Promise<void>;
 
-export interface IReminder {
+export interface IReminderInput {
+  user_id?: number;
+  problem_id: number;
   due_datetime: Date;
-  is_completed: boolean;
+  is_completed?: boolean;
 }
 
-export interface IProblem {
+export interface IProblemInput {
+  user_id?: number;
   name: string;
   difficulty: "Easy" | "Medium" | "Hard";
   tags: string[];
   date_solved: Date;
   notes?: string;
-  reminders?: IReminder[];
+  reminders?: IReminderInput[];
 }
 
 export interface GitHubOAuthAccessTokenSuccess {
