@@ -115,7 +115,7 @@ export async function createWithReminders({
         name,
         difficulty,
         tags,
-        date_solved,
+        date_solved: new Date(date_solved),
         notes: notes,
       },
       trx,
@@ -127,7 +127,7 @@ export async function createWithReminders({
 
     // 2) Fetch user settings
     const row = await problemsRepo.getUserSettingsByUserId(userId, trx);
-    const autoRemindersEnabled = Boolean(row?.settings);
+    const autoRemindersEnabled = Boolean(row?.settings.autoReminders);
 
     // 3) Decide which reminders to insert
     let remindersToInsert: Array<
@@ -135,7 +135,7 @@ export async function createWithReminders({
     > = [];
 
     if (isFromWorker && reminders.length) {
-      // Service Worker sync path: trust incoming reminders
+      // Service Worker sync path
       remindersToInsert = reminders.map((r) => ({
         problem_id: problem.problem_id,
         user_id: userId,
@@ -258,7 +258,7 @@ export async function deleteProblem({
   }
 
   // Transactionally delete reminders then the problem
-  await (trx ?? db).transaction(async (t) => {
+  await db.transaction(async (t) => {
     await problemsRepo.deleteRemindersByProblemId(problemId, t);
     const deleted = await problemsRepo.deleteProblemById(userId, problemId, t);
     if (deleted === 0) {

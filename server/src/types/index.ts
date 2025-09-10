@@ -41,7 +41,6 @@ export type AppRequestHandler<
 ) => void | Promise<void>;
 
 export interface IReminderInput {
-  user_id?: number;
   problem_id: number;
   due_datetime: Date;
   is_completed?: boolean;
@@ -52,7 +51,7 @@ export interface IProblemInput {
   name: string;
   difficulty: "Easy" | "Medium" | "Hard";
   tags: string[];
-  date_solved: Date;
+  date_solved: string;
   notes?: string;
   reminders?: IReminderInput[];
 }

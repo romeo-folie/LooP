@@ -8,7 +8,7 @@ import {
   type ProblemUpdateBody,
   recordPracticeFeedback,
   updateProblem,
-} from "../services/problem-service";
+} from "../services/problem.service";
 import { problemsRepo } from "../repositories/problem.repo";
 import { remindersRepo } from "../repositories/reminder.repo";
 
@@ -65,7 +65,9 @@ export const handleCreateProblem: AppRequestHandler<
 
     res.status(201).json(result);
   } catch (error: unknown) {
-    req.log?.error("createProblem:failure", { userId: req.authUser?.userId });
+    req.log?.error("handleCreateProblem:failure", {
+      userId: req.authUser?.userId,
+    });
     next(error);
   }
 };
@@ -199,29 +201,32 @@ export const handleGetProblemById: AppRequestHandler<
 
     const problemIdNum = Number(problem_id);
     if (!Number.isInteger(problemIdNum) || problemIdNum <= 0) {
-      req.log?.warn("getProblemById: invalid problem_id", { problem_id });
+      req.log?.warn("handleGetProblemById: invalid problem_id", { problem_id });
       throw new AppError("BAD_REQUEST", "Invalid problem_id");
     }
 
-    req.log?.info("getProblemById:start", { userId, problemId: problemIdNum });
+    req.log?.info("handleGetProblemById:start", {
+      userId,
+      problemId: problemIdNum,
+    });
 
     const problem = await problemsRepo.findById(userId, problemIdNum);
 
     if (!problem) {
-      req.log?.warn("getProblemById:not_found", {
+      req.log?.warn("handleGetProblemById:not_found", {
         userId,
         problemId: problemIdNum,
       });
       throw new AppError("NOT_FOUND", "Problem not found");
     }
 
-    req.log?.info("getProblemById:success", {
+    req.log?.info("handleGetProblemById:success", {
       userId,
       problemId: problem.problem_id,
     });
     res.status(200).json({ problem });
   } catch (error) {
-    req.log?.error("getProblemById:error", {
+    req.log?.error("handleGetProblemById:error", {
       userId: req.authUser?.userId ?? "unknown",
       problem_id: req.params.problem_id,
       message: error instanceof Error ? error.message : String(error),
@@ -244,7 +249,7 @@ export const handleUpdateProblem: AppRequestHandler<
 
     const problemIdNum = Number(req.params.problem_id);
     if (!Number.isInteger(problemIdNum) || problemIdNum <= 0) {
-      req.log?.warn("updateProblem: invalid problem_id", {
+      req.log?.warn("handleUpdateProblem: invalid problem_id", {
         problem_id: req.params.problem_id,
       });
       throw new AppError("BAD_REQUEST", "Invalid problem_id");
@@ -262,7 +267,7 @@ export const handleUpdateProblem: AppRequestHandler<
       problem: updated,
     });
   } catch (error) {
-    req.log?.error("updateProblem:error", {
+    req.log?.error("handleUpdateProblem:error", {
       userId: req.authUser?.userId ?? "unknown",
       problem_id: req.params.problem_id,
       message: error instanceof Error ? error.message : String(error),
@@ -284,7 +289,7 @@ export const handleDeleteProblem: AppRequestHandler<
 
     const problemIdNum = Number(req.params.problem_id);
     if (!Number.isInteger(problemIdNum) || problemIdNum <= 0) {
-      req.log?.warn("deleteProblem: invalid problem_id", {
+      req.log?.warn("handleDeleteProblem: invalid problem_id", {
         problem_id: req.params.problem_id,
       });
       throw new AppError("BAD_REQUEST", "Invalid problem_id");
@@ -294,7 +299,7 @@ export const handleDeleteProblem: AppRequestHandler<
 
     res.status(200).json({ message: "Problem deleted successfully" });
   } catch (error) {
-    req.log?.error("deleteProblem:error", {
+    req.log?.error("handleDeleteProblem:error", {
       userId: req.authUser?.userId ?? "unknown",
       problem_id: req.params.problem_id,
       message: error instanceof Error ? error.message : String(error),
