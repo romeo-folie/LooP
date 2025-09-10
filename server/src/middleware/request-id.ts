@@ -10,6 +10,7 @@ export const requestId: AppRequestHandler = (req, res, next) => {
 
   req.requestId = id;
   res.locals.requestId = id;
+  res.setHeader(HEADER, id);
   req.log = logger.child({ requestId: id });
 
   next();

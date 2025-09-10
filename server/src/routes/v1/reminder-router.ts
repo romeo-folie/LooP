@@ -1,10 +1,10 @@
 import { Router } from "express";
 import {
-  createReminder,
-  deleteReminder,
-  getReminderById,
-  getRemindersByProblem,
-  updateReminder,
+  handleCreateReminder,
+  handleDeleteReminder,
+  handleGetReminderById,
+  handleListReminders,
+  handleUpdateReminder,
 } from "../../controllers/reminder-controller";
 import { authenticateJWT } from "../../middleware/auth-middleware";
 import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
@@ -13,27 +13,27 @@ import { createReminderSchema } from "../../middleware/validators";
 
 const router: Router = Router();
 
-router.get("/:problem_id", authenticateJWT, getRemindersByProblem);
-router.get("/:reminder_id", authenticateJWT, getReminderById);
+router.get("/:problem_id", authenticateJWT, handleListReminders);
+router.get("/:reminder_id", authenticateJWT, handleGetReminderById);
 router.post(
   "/:problem_id",
   verifyCsrfToken,
   authenticateJWT,
   zodValidate({ body: createReminderSchema }),
-  createReminder,
+  handleCreateReminder,
 );
 router.put(
   "/:reminder_id",
   verifyCsrfToken,
   authenticateJWT,
   zodValidate({ body: createReminderSchema }),
-  updateReminder,
+  handleUpdateReminder,
 );
 router.delete(
   "/:reminder_id",
   verifyCsrfToken,
   authenticateJWT,
-  deleteReminder,
+  handleDeleteReminder,
 );
 
 export default router;

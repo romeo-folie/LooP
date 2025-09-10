@@ -5,9 +5,8 @@ import {
   IReminderRow,
   IUserPreferencesRow,
 } from "../types/knex-tables";
-import { IProblemInput } from "../types";
 import { ProblemWithMillis } from "../controllers/problem-controller";
-import { PracticeMeta } from "../services/problem-service";
+import { PracticeMeta } from "../services/problem.service";
 
 type ListFilters = {
   userId: number;
@@ -33,7 +32,10 @@ const returnCols: (keyof IProblemRow)[] = [
 
 export interface ProblemsRepo {
   insertProblem(
-    input: IProblemInput,
+    input: Pick<
+      IProblemRow,
+      "user_id" | "name" | "difficulty" | "tags" | "date_solved" | "notes"
+    >,
     trx?: Knex.Transaction,
   ): Promise<IProblemRow | undefined>;
   findById(
