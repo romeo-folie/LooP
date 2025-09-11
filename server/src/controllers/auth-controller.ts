@@ -1,26 +1,28 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import { Request, Response, RequestHandler } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import axios from "axios";
 import dotenv from "dotenv";
 import { db } from "../db";
-import resend from "../lib/resend";
-import crypto from "crypto";
 import { IUserRow } from "../types/knex-tables";
-import { AppRequestHandler, GitHubOAuthAccessTokenSuccess } from "../types";
-import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
+import { AppRequestHandler } from "../types";
 import AppError from "../types/errors";
-import logger from "../lib/winston-config";
-
-type AuthUser =
-  RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"];
-type UserEmails =
-  RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"];
+import {
+  getUserProfile,
+  loginUser,
+  refreshAccessToken,
+  registerUser,
+} from "../services/auth.service";
+import { loginWithGitHub } from "../services/oauth.service";
+import {
+  resetPasswordWithToken,
+  sendPasswordResetOtp,
+  verifyPasswordResetOtp,
+} from "../services/password-reset.service";
+import { email } from "zod";
 
 dotenv.config();
 
-export const register: AppRequestHandler<
+export const handleRegister: AppRequestHandler<
   {},
   { message?: string; user?: Partial<IUserRow> },
   { name: string; email: string; password: string }
@@ -28,34 +30,32 @@ export const register: AppRequestHandler<
   try {
     const { name, email, password } = req.body;
 
-    const existingUser = await db("users").where({ email }).first();
-    if (existingUser) {
-      throw new AppError("CONFLICT", "Email already in use");
-    }
+    const user = await registerUser({
+      name,
+      email,
+      password,
+      log: req.log,
+    });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const [newUser] = await db("users")
-      .insert({
-        name,
-        email,
-        password: hashedPassword,
-      })
-      .returning(["user_id", "name", "email", "created_at"]);
-
-    req.log?.info(`New user registered: ${email}`);
+    req.log?.info("handleRegister:success", {
+      userId: user.user_id,
+      email: user.email,
+    });
 
     res.status(201).json({
       message: "User registered successfully",
-      user: newUser,
+      user,
     });
   } catch (error) {
-    req.log?.error(`Register Error: ${error}`);
+    req.log?.error("handleRegister:error", {
+      message: error instanceof Error ? error.message : String(error),
+      email: req.body?.email,
+    });
     next(error);
   }
 };
 
-export const login: AppRequestHandler<
+export const handleLogin: AppRequestHandler<
   {},
   { message?: string; user?: Partial<IUserRow> & { token: string } },
   { email: string; password: string }
@@ -63,556 +63,332 @@ export const login: AppRequestHandler<
   try {
     const { email, password } = req.body;
 
-    const existingUser = await db("users").where({ email }).first();
-    if (!existingUser) {
-      req.log?.warn(`Login failed: User not found - ${email}`);
-      throw new AppError("UNAUTHORIZED", "Invalid Credentials");
-    }
-
-    const isMatch = await bcrypt.compare(password, existingUser.password);
-    if (!isMatch) {
-      throw new AppError("UNAUTHORIZED", "Invalid Credentials");
-    }
-
-    const token = jwt.sign(
-      {
-        userId: existingUser.user_id,
-        email: existingUser.email,
-      },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" },
-    );
-
-    const refreshToken = jwt.sign(
-      {
-        userId: existingUser.user_id,
-        email: existingUser.email,
-      },
-      process.env.REFRESH_SECRET as string,
-      { expiresIn: "7d" },
-    );
-
-    const csrfToken = jwt.sign(
-      {
-        userId: existingUser.user_id,
-        email: existingUser.email,
-        issuedAt: Date.now(),
-      },
-      process.env.CSRF_SECRET_KEY as string,
-    );
-
-    req.log?.info(`Login successful for ${email} from IP: ${req.ip}`);
-
-    res.cookie("refresh_token", refreshToken, {
-      domain: `.${process.env.DOMAIN as string}`,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+    const { user, accessToken, refreshToken, csrfToken } = await loginUser({
+      email,
+      password,
+      log: req.log,
     });
 
-    res.cookie("CSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
-      httpOnly: true,
+    req.log?.info("handleLogin:success", {
+      userId: user.user_id,
+      email,
+      ip: req.ip,
+    });
+
+    const domainEnv = process.env.DOMAIN as string | undefined;
+    const cookieBase = {
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    } as const;
+
+    // Refresh token: HTTP-only
+    res.cookie("refresh_token", refreshToken, {
+      ...cookieBase,
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
+    });
+
+    // CSRF tokens (double submit)
+    res.cookie("CSRF-TOKEN", csrfToken, {
+      ...cookieBase,
+      httpOnly: true,
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
     res.cookie("XSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
+      ...cookieBase,
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
+    // Response contains access token
     res.status(200).json({
       message: "Login successful",
       user: {
-        user_id: existingUser.user_id,
-        name: existingUser.name,
-        email: existingUser.email,
-        token,
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        token: accessToken,
       },
     });
-  } catch (error: unknown) {
-    req.log?.error(
-      `Login error for ${req.body?.email || "unknown user"} error: ${error}`,
-    );
+  } catch (error) {
+    req.log?.error("handleLogin:error", {
+      email: req.body?.email,
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const refreshToken: AppRequestHandler<
+export const handleRefreshToken: AppRequestHandler<
   {},
   { message: string; token: string }
 > = async (req, res, next) => {
   try {
-    const refreshToken = req.cookies.refresh_token;
-
-    req.log?.info(`Refresh token request received from IP: ${req.ip}`);
+    const refreshToken = req.cookies?.refresh_token;
+    req.log?.info("handleRefreshToken:received", { ip: req.ip });
 
     if (!refreshToken) {
-      req.log?.warn(`Refresh token request missing token from IP: ${req.ip}`);
+      req.log?.warn("handleRefreshToken:missing_cookie", { ip: req.ip });
       throw new AppError("BAD_REQUEST", "Refresh token is required");
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(
-        refreshToken,
-        process.env.REFRESH_SECRET as string,
-      ) as { userId: string; email: string };
-    } catch (err) {
-      req.log?.warn(
-        `Invalid or expired refresh token from IP: ${req.ip} error: ${err}`,
-      );
-      throw new AppError("FORBIDDEN", "Invalid or expired refresh token");
-    }
+    const { accessToken, csrfToken, userId } = await refreshAccessToken({
+      refreshToken,
+      log: req.log,
+    });
 
-    // Find the user
-    const user = await db("users").where({ email: decoded.email }).first();
-    if (!user) {
-      req.log?.warn(
-        `Refresh token failed: User not found - User ID: ${decoded.userId}`,
-      );
-      throw new AppError("FORBIDDEN", "Invalid or expired refresh token");
-    }
-
-    // Generate a new access token
-    const newAccessToken = jwt.sign(
-      { userId: decoded.userId, email: decoded.email },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" },
-    );
-
-    const csrfToken = jwt.sign(
-      {
-        userId: decoded.userId,
-        email: decoded.email,
-        issuedAt: Date.now(),
-      },
-      process.env.CSRF_SECRET_KEY as string,
-    );
-
-    res.cookie("CSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
-      httpOnly: true,
+    const domainEnv = process.env.DOMAIN as string | undefined;
+    const cookieBase = {
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    } as const;
+
+    // Rotate CSRF cookies (double submit)
+    res.cookie("CSRF-TOKEN", csrfToken, {
+      ...cookieBase,
+      httpOnly: true,
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
     res.cookie("XSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
+      ...cookieBase,
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
-    req.log?.info(
-      `Access token refreshed successfully for User ID: ${decoded.userId} from IP: ${req.ip}`,
-    );
+    req.log?.info("handleRefreshToken:success", { userId, ip: req.ip });
 
     res.status(200).json({
       message: "Token refreshed successfully",
-      token: newAccessToken,
+      token: accessToken,
     });
-  } catch (error: unknown) {
-    req.log?.error(`Refresh token error from IP: ${req.ip} - ${error}`);
+  } catch (error) {
+    req.log?.error("handleRefreshToken:error", {
+      ip: req.ip,
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const getProfile: AppRequestHandler<
+export const handleGetProfile: AppRequestHandler<
   {},
-  { user: Partial<IUserRow> }
+  { user: Pick<IUserRow, "user_id" | "name" | "email" | "created_at"> }
 > = async (req, res, next) => {
   try {
-    req.log?.info(
-      `Profile fetch request received for User ID: ${req.authUser?.userId} from IP: ${req.ip}`,
-    );
+    req.log?.info("handleGetProfile:received", {
+      userId: req.authUser?.userId,
+      ip: req.ip,
+    });
 
     if (!req.authUser?.userId) {
-      req.log?.warn(`Unauthorized profile access attempt from IP: ${req.ip}`);
+      req.log?.warn(`handleGetProfile:unauthorized from IP: ${req.ip}`);
       throw new AppError("UNAUTHORIZED");
     }
 
-    const { userId } = req.authUser;
+    const user = await getUserProfile({
+      userId: req.authUser.userId,
+      log: req.log,
+    });
 
-    const user = await db("users")
-      .select("user_id", "name", "email", "created_at")
-      .where({ user_id: userId })
-      .first();
-
-    if (!user) {
-      req.log?.warn(
-        `Profile fetch failed: User not found - User ID: ${userId}`,
-      );
-      throw new AppError("NOT_FOUND", "User not found");
-    }
-
-    req.log?.info(
-      `Profile retrieved successfully for User ID: ${userId} from IP: ${req.ip}`,
-    );
+    req.log?.info("handleGetProfile:success", { userId: user.user_id });
 
     res.status(200).json({ user });
-  } catch (error: unknown) {
-    req.log?.error(
-      `Profile fetch error for User ID: ${req.authUser?.userId || "unknown"}: ${error}`,
-    );
+  } catch (error) {
+    req.log?.error("handleGetProfile:error", {
+      userId: req.authUser?.userId ?? "unknown",
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const getUserIdentity: RequestHandler = async (
-  req: Request,
-  res: Response,
-) => {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = `${process.env.SERVER_URL}/api/auth/github/callback`;
-  const scope = "read:user user:email";
+export const handleGitHubStart: AppRequestHandler = (req, res) => {
+  const clientId = process.env.GITHUB_CLIENT_ID as string | undefined;
+  const serverUrl = process.env.SERVER_URL as string | undefined;
+  if (!clientId || !serverUrl) {
+    req.log?.error("handleGitHubStart:missing_env");
+    throw new AppError("INTERNAL", "Server misconfiguration");
+  }
 
-  // GitHub OAuth authorize endpoint
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+  const redirectUri = `${serverUrl}/api/auth/github/callback`;
+  const scope = encodeURIComponent("read:user user:email");
 
-  logger.info("Redirecting to GitHub OAuth", { clientId });
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+    redirectUri,
+  )}&scope=${scope}`;
+
+  req.log?.info("Redirecting to GitHub OAuth");
   res.redirect(githubAuthUrl);
 };
 
-export const getAccessToken: AppRequestHandler<
+export const handleGitHubCallback: AppRequestHandler<
   {},
   {},
   {},
-  { code: string }
+  { code?: string }
 > = async (req, res) => {
   try {
     const { code } = req.query;
-
     if (!code) {
-      req.log?.warn("No code returned from GitHub");
-      throw new Error("Missing code parameter");
+      req.log?.warn("handleGitHubCallback:missing_code");
+      throw new AppError("BAD_REQUEST", "Missing code parameter");
     }
 
-    // Exchange code for access token
-    const tokenResponse = await axios.post<GitHubOAuthAccessTokenSuccess>(
-      "https://github.com/login/oauth/access_token",
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
+    const { user, accessToken, refreshToken, csrfToken } =
+      await loginWithGitHub({
         code,
-      },
-      {
-        headers: { Accept: "application/json" },
-      },
-    );
+        log: req.log,
+      });
 
-    const accessToken = tokenResponse.data.access_token;
-    if (!accessToken) {
-      req.log?.error("No access token received from GitHub");
-      throw new Error("Failed to obtain access token");
-    }
-
-    // Fetch user profile from GitHub
-    const userProfileResp = await axios.get<AuthUser>(
-      "https://api.github.com/user",
-      {
-        headers: { Authorization: `token ${accessToken}` },
-      },
-    );
-    const githubUser = userProfileResp.data;
-
-    // Fetch user’s email(s)
-    const emailsResp = await axios.get<UserEmails>(
-      "https://api.github.com/user/emails",
-      {
-        headers: { Authorization: `token ${accessToken}` },
-      },
-    );
-    const emails = emailsResp.data;
-    const primaryEmailObj = emails.find((obj) => obj.primary) || emails[0];
-    const userEmail = primaryEmailObj ? primaryEmailObj.email : null;
-
-    if (!userEmail) throw new Error("Failed to obtain user email");
-
-    // Check if user exists
-    let existingUser: Partial<IUserRow> | undefined = await db("users")
-      .where({ email: userEmail })
-      .first();
-
-    let userId;
-    if (existingUser) {
-      // Possibly update provider fields if user was local
-      userId = existingUser.user_id;
-      if (!existingUser.provider || existingUser.provider === "local") {
-        await db("users")
-          .where({ user_id: userId })
-          .update({
-            provider: "github",
-            provider_id: String(githubUser.id),
-            updated_at: new Date(),
-          });
-        req.log?.info(
-          `Updated existing user with GitHub provider info: ${userId}`,
-        );
-      }
-      req.log?.info(`Existing user logged in via GitHub: ${userEmail}`);
-    } else {
-      // Create a new user
-      const displayName = githubUser.name || githubUser.login || "GitHub User";
-      const [newUser] = await db("users")
-        .insert({
-          name: displayName,
-          email: userEmail || `user-${githubUser.id}@github.local`,
-          password: "",
-          provider: "github",
-          provider_id: String(githubUser.id),
-          created_at: new Date(),
-        })
-        .returning(["user_id", "email"]);
-      if (!newUser) throw new Error("Failed to create new local user");
-      userId = newUser.user_id;
-      existingUser = newUser;
-      req.log?.info(`New user created via GitHub: ${userEmail}`);
-    }
-
-    const refreshToken = jwt.sign(
-      {
-        userId: existingUser.user_id,
-        email: existingUser.email,
-      },
-      process.env.REFRESH_SECRET as string,
-      { expiresIn: "7d" },
-    );
+    // Cookies
+    const domainEnv = process.env.DOMAIN as string | undefined;
+    const cookieBase = {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    } as const;
 
     res.cookie("refresh_token", refreshToken, {
-      domain: `.${process.env.DOMAIN as string}`,
+      ...cookieBase,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
-    const newAccessToken = jwt.sign(
-      { userId: existingUser.user_id, email: existingUser.email },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" },
-    );
-
-    const csrfToken = jwt.sign(
-      {
-        userId: existingUser.user_id,
-        email: existingUser.email,
-        issuedAt: Date.now(),
-      },
-      process.env.CSRF_SECRET_KEY as string,
-    );
-
     res.cookie("CSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
+      ...cookieBase,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
     res.cookie("XSRF-TOKEN", csrfToken, {
-      domain: `.${process.env.DOMAIN as string}`,
+      ...cookieBase,
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...(domainEnv ? { domain: `.${domainEnv}` } : {}),
     });
 
-    // make a new query to get all the user's details
-    const user = {
-      user_id: existingUser.user_id,
-      name: existingUser.name,
-      email: existingUser.email,
-      token: newAccessToken,
-    };
-
-    const encodedUser = encodeURIComponent(JSON.stringify(user));
-
-    res.redirect(
-      `${process.env.CLIENT_URL}/auth/github/success?user=${encodedUser}`,
+    // Build user payload for frontend
+    const payload = encodeURIComponent(
+      JSON.stringify({
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        token: accessToken,
+      }),
     );
-  } catch (error: unknown) {
-    req.log?.error(`GitHub OAuth Callback Error: ${error}`);
-    res.redirect(`${process.env.CLIENT_URL}/auth/github/error`);
+
+    const clientUrl = process.env.CLIENT_URL as string | undefined;
+    if (!clientUrl) {
+      req.log?.error("handleGitHubCallback:missing_CLIENT_URL");
+      throw new AppError("INTERNAL", "Server misconfiguration");
+    }
+
+    res.redirect(`${clientUrl}/auth/github/success?user=${payload}`);
+  } catch (error) {
+    req.log?.error("handleGitHubCallback:error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+
+    const clientUrl = process.env.CLIENT_URL || "";
+    res.redirect(`${clientUrl}/auth/github/error`);
   }
 };
 
-export const forgotPassword: AppRequestHandler<
+export const handleForgotPassword: AppRequestHandler<
   {},
   { message: string },
   { email: string }
 > = async (req, res, next) => {
   try {
-    const { email } = req.body;
-
+    const { email } = req.body ?? {};
     if (!email) {
-      req.log?.warn("Forgot password attempt without email");
+      req.log?.warn("handleForgotPassword:missing_email");
       throw new AppError("BAD_REQUEST", "Email is required");
     }
 
-    // 1. Check if user exists
-    const user = await db("users").where({ email }).first();
-    if (!user) {
-      req.log?.warn(`Forgot password request for non-existent email: ${email}`);
-      res
-        .status(200)
-        .json({ message: "If the email exists, an OTP has been sent." });
-      return;
-    }
-
-    // 2. Generate a 6-digit OTP
-    const otpCode = crypto.randomInt(100000, 999999).toString();
-    const hashedOtp = crypto.createHash("sha256").update(otpCode).digest("hex");
-
-    // 3. Store hashed OTP and expiration (valid for 10 minutes)
-    await db("password_reset_tokens").insert({
-      user_id: user.user_id,
-      otp_hash: hashedOtp,
-      expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    });
-
-    // 4. Send OTP Email via Resend
-    const emailSent = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL as string,
-      to: user.email,
-      subject: "Your Password Reset OTP",
-      html: `
-        <p>Hello ${user.name},</p>
-        <p>Your password reset OTP is: <strong>${otpCode}</strong></p>
-        <p>This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-        <p>If you did not request this, please ignore this email.</p>
-      `,
-    });
-
-    if (emailSent) {
-      req.log?.info(`Password reset OTP sent to ${user.email}`);
-    } else {
-      req.log?.error(`Failed to send OTP email to ${user.email}`);
-    }
+    await sendPasswordResetOtp({ email, log: req.log });
 
     res
       .status(200)
       .json({ message: "If the email exists, an OTP has been sent." });
   } catch (error) {
-    req.log?.error("Forgot password error", error);
+    req.log?.error("handleForgotPassword:error", {
+      email: req.body?.email,
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const verifyOtp: AppRequestHandler<
+export const handleVerifyOtp: AppRequestHandler<
   {},
   { message: string; password_reset_token: string },
-  { email: string; pin: number }
+  { email: string; pin: number | string }
 > = async (req, res, next) => {
   try {
-    const { email, pin } = req.body;
+    const { email, pin } = req.body ?? {};
 
-    if (!email || !pin) {
-      req.log?.warn("OTP verification attempt without email or pin");
+    if (!email || pin === undefined || pin === null || pin === "") {
+      req.log?.warn("handleVerifyOtp:missing_email_or_pin");
       throw new AppError("BAD_REQUEST", "Invalid email or OTP");
     }
 
-    // 1. Find user
-    const user = await db("users").where({ email }).first();
-    if (!user) {
-      throw new AppError("BAD_REQUEST", "Invalid email or OTP");
-    }
+    const { passwordResetToken } = await verifyPasswordResetOtp({
+      email,
+      pin,
+      log: req.log,
+    });
 
-    // 2. Fetch the latest OTP for this user
-    const otpRecord = await db("password_reset_tokens")
-      .where({ user_id: user.user_id })
-      .orderBy("created_at", "desc")
-      .first();
-
-    if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
-      throw new AppError("BAD_REQUEST", "OTP expired or invalid");
-    }
-
-    // 3. Hash the provided OTP and compare
-    const hashedOtp = crypto
-      .createHash("sha256")
-      .update(pin.toString())
-      .digest("hex");
-    if (hashedOtp !== otpRecord.otp_hash) {
-      throw new AppError("BAD_REQUEST", "Invalid OTP");
-    }
-
-    // 4. OTP is valid - Remove it from the DB
-    await db("password_reset_tokens").where({ user_id: user.user_id }).del();
-
-    // 5. Generate a temporary password reset token (valid for 15 minutes)
-    const passwordResetToken = jwt.sign(
-      { userId: user.user_id, email: user.email },
-      process.env.RESET_PASSWORD_SECRET as string,
-      { expiresIn: "15m" },
-    );
-
-    req.log?.info(
-      `OTP verified for ${user.email}. Temporary reset token generated.`,
-    );
+    req.log?.info("handleVerifyOtp:success", { email });
 
     res.status(200).json({
       message: "OTP verified successfully",
       password_reset_token: passwordResetToken,
     });
   } catch (error) {
-    req.log?.error(`OTP verification error ${error}`);
+    req.log?.error("handleVerifyOtp:error", {
+      email: req.body?.email,
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const resetPassword: AppRequestHandler<
+export const handleResetPassword: AppRequestHandler<
   {},
   { message: string },
   { password_reset_token: string; new_password: string }
 > = async (req, res, next) => {
   try {
-    const { password_reset_token, new_password } = req.body;
+    const { password_reset_token, new_password } = req.body ?? {};
 
     if (!password_reset_token || !new_password) {
-      req.log?.warn(
-        "Password reset attempt without password_reset_token or new_password",
-      );
+      req.log?.warn("handleResetPassword:missing_token_or_password");
       throw new AppError("BAD_REQUEST", "Token and new password are required");
     }
 
-    // Verify the reset token
-    let decoded;
-    try {
-      decoded = jwt.verify(
-        password_reset_token,
-        process.env.RESET_PASSWORD_SECRET as string,
-      );
-    } catch (error) {
-      req.log?.warn(`Invalid or expired password reset token ${error}`);
-      throw new AppError("FORBIDDEN", "Invalid or expired token");
-    }
-
-    const { userId, email } = decoded as { userId: number; email: string };
-
-    // Hash the new password securely
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-
-    // Update password in the database
-    await db("users").where({ user_id: userId, email }).update({
-      password: hashedPassword,
-      updated_at: new Date(),
+    await resetPasswordWithToken({
+      passwordResetToken: password_reset_token,
+      newPassword: new_password,
+      log: req.log,
     });
 
-    req.log?.info(`Password reset successfully for ${email}`);
+    req.log?.info("handleResetPassword:success", { email: "redacted" });
 
     res
       .status(200)
       .json({ message: "Password reset successfully. You can now log in." });
   } catch (error) {
-    req.log?.error(`Password reset error ${error}`);
+    req.log?.error("handleResetPassword:error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };
 
-export const logout: AppRequestHandler<{}, {}, { message: string }> = (
+export const handleLogout: AppRequestHandler<{}, {}, { message: string }> = (
   req,
   res,
   next,
@@ -639,12 +415,12 @@ export const logout: AppRequestHandler<{}, {}, { message: string }> = (
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
-    req.log?.info(
-      `User logged out - refresh and csrf tokens and cookies cleared`,
-    );
+    req.log?.info("handleLogout:success", { email });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error: unknown) {
-    req.log?.error(`Logout error ${error}`);
+    req.log?.error("handleLogout:error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };

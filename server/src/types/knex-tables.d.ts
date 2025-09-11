@@ -48,7 +48,7 @@ export interface IUserPreferencesRow {
   created_at: Date;
   updated_at: Date;
 }
-export interface IPasswordResetTokensRow {
+export interface IPasswordResetTokenRow {
   id: number;
   user_id: number;
   otp_hash: string;

@@ -55,12 +55,3 @@ export interface IProblemInput {
   notes?: string;
   reminders?: IReminderInput[];
 }
-
-export interface GitHubOAuthAccessTokenSuccess {
-  access_token: string;
-  token_type: "bearer";
-  scope: string;
-  expires_in?: number; // seconds until access_token expires
-  refresh_token?: string;
-  refresh_token_expires_in?: number; // seconds until refresh_token expires
-}
