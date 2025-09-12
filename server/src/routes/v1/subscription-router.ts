@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../middleware/auth-middleware";
 import {
-  createSubscription,
-  deleteSubscription,
+  handleCreateSubscription,
+  handleDeleteSubscription,
 } from "../../controllers/subscription-controller";
 import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
 import { zodValidate } from "../../middleware/validate-request";
@@ -18,14 +18,14 @@ router.post(
   verifyCsrfToken,
   authenticateJWT,
   zodValidate({ body: createSubscriptionSchema }),
-  createSubscription,
+  handleCreateSubscription,
 );
 router.delete(
   "/",
   verifyCsrfToken,
   authenticateJWT,
   zodValidate({ body: deleteSubscriptionSchema }),
-  deleteSubscription,
+  handleDeleteSubscription,
 );
 
 export default router;
