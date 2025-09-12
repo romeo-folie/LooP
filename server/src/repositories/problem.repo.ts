@@ -111,7 +111,7 @@ export const problemsRepo: ProblemsRepo = {
     page,
     pageSize,
     trx,
-  }: ListFilters): Promise<{ rows: ProblemWithMillis[]; total: number }> {
+  }) {
     const qb = (trx ?? db)("problems").where({ user_id: userId });
 
     if (difficulty) qb.andWhere("difficulty", difficulty);
@@ -156,26 +156,12 @@ export const problemsRepo: ProblemsRepo = {
       .select("settings")
       .first();
   },
-  async listRemindersByProblemId(
-    problemId: number,
-    userId?: number,
-    trx?: Knex.Transaction,
-  ): Promise<IReminderRow[]> {
+  async listRemindersByProblemId(problemId, userId, trx) {
     const qb = (trx ?? db)("reminders").where({ problem_id: problemId });
     if (userId) qb.andWhere({ user_id: userId });
     return qb.select("*");
   },
-  async updateById(
-    userId: number,
-    problemId: number,
-    data: Partial<
-      Pick<
-        IProblemRow,
-        "name" | "difficulty" | "tags" | "date_solved" | "notes"
-      >
-    >,
-    trx?: Knex.Transaction,
-  ): Promise<IProblemRow | null> {
+  async updateById(userId, problemId, data, trx) {
     const qb = (trx ?? db)("problems");
     const [row] = await qb
       .where({ user_id: userId, problem_id: problemId })
@@ -187,27 +173,15 @@ export const problemsRepo: ProblemsRepo = {
     }
     return (row as IProblemRow) || null;
   },
-  async deleteRemindersByProblemId(
-    problemId: number,
-    trx?: Knex.Transaction,
-  ): Promise<number> {
+  async deleteRemindersByProblemId(problemId, trx) {
     const qb = (trx ?? db)("reminders");
     return qb.where({ problem_id: problemId }).del();
   },
-  async deleteProblemById(
-    userId: number,
-    problemId: number,
-    trx?: Knex.Transaction,
-  ): Promise<number> {
+  async deleteProblemById(userId, problemId, trx) {
     const qb = (trx ?? db)("problems");
     return qb.where({ user_id: userId, problem_id: problemId }).del();
   },
-  async updatePracticeMeta(
-    userId: number,
-    problemId: number,
-    practiceMeta: PracticeMeta,
-    trx?: Knex.Transaction,
-  ): Promise<IProblemRow> {
+  async updatePracticeMeta(userId, problemId, practiceMeta, trx) {
     const qb = (trx ?? db)("problems");
     const [row] = await qb
       .where({ user_id: userId, problem_id: problemId })
