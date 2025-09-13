@@ -55,6 +55,8 @@ import {
 } from "@/lib/db";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
+const notesPlaceholder =
+  "Additional notes...\nTip: Use triple backticks for code fences, e.g. ```js …```";
 
 // Zod schema for both "new" and "edit" flows
 const problemSchema = z.object({
@@ -498,7 +500,7 @@ export default function ProblemFormDialog({
               control={control}
               render={({ field }) => (
                 <Textarea
-                  placeholder="Additional Notes..."
+                  placeholder={notesPlaceholder}
                   style={{ height: "200px" }}
                   {...field}
                 />
