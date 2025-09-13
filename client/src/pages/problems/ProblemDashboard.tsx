@@ -556,7 +556,7 @@ export default function ProblemsDashboard() {
                         </span>
                       </PopoverTrigger>
                       {/* Popover Content with Problem Detail */}
-                      <PopoverContent align="start" className="min-w-[700px]">
+                      <PopoverContent align="start" className="max-w-[800px]">
                         <ProblemDetail problem={problem} tags={tags} />
                       </PopoverContent>
                     </Popover>

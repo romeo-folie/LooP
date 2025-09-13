@@ -21,6 +21,7 @@ import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import { deleteLocalReminder } from "@/lib/db";
 import { startCase } from "lodash";
+import MarkdownRenderer from "@/components/markdown-renderer";
 
 // Example color coding for difficulty
 const difficultyColors: Record<string, string> = {
@@ -146,9 +147,10 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
           </div>
 
           {/* Notes */}
-          <p className="mt-5 dark:text-gray-300 whitespace-pre-wrap max-h-72 overflow-auto pr-2 sm:max-h-[400px]">
-            {problem.notes}
-          </p>
+          <MarkdownRenderer
+            markdown={problem.notes}
+            className="mt-5 dark:text-gray-300 whitespace-pre-wrap max-h-72 overflow-auto pr-2 sm:max-h-[400px] break-words"
+          />
         </div>
 
         {/* Right Column - Edit, Difficulty & Tags (desktop only) */}
