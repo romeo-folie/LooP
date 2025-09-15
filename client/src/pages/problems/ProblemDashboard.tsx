@@ -556,7 +556,7 @@ export default function ProblemsDashboard() {
                         </span>
                       </PopoverTrigger>
                       {/* Popover Content with Problem Detail */}
-                      <PopoverContent align="start" className="max-w-[800px]">
+                      <PopoverContent align="start" className="max-w-[900px]">
                         <ProblemDetail problem={problem} tags={tags} />
                       </PopoverContent>
                     </Popover>
@@ -569,7 +569,7 @@ export default function ProblemsDashboard() {
                         {problem.name}
                       </span>
                     </CredenzaTrigger>
-                    <CredenzaContent className="px-4">
+                    <CredenzaContent className="px-4 max-h-[90vh] overflow-hidden">
                       <CredenzaHeader className="p-0">
                         <CredenzaTitle className="sr-only">
                           Hidden Title for Screen Readers

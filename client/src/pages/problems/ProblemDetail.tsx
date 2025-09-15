@@ -117,7 +117,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
       {/* Header: Title & Edit Button */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         {/* Left Column - Title and Notes */}
-        <div className="flex-auto">
+        <div className="flex-auto min-w-0">
           <h1 className="text-xl lg:text-2xl font-bold">
             {startCase(problem.name)}
           </h1>
@@ -149,7 +149,7 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
           {/* Notes */}
           <MarkdownRenderer
             markdown={problem.notes}
-            className="mt-5 dark:text-gray-300 whitespace-pre-wrap max-h-72 overflow-auto pr-2 sm:max-h-[400px] break-words"
+            className="mt-5 dark:text-gray-300 whitespace-pre-wrap max-h-96 overflow-auto pr-2 sm:max-h-[500px] break-words"
           />
         </div>
 

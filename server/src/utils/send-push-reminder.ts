@@ -21,7 +21,7 @@ async function sendPushReminder(
       },
     };
     const payload = JSON.stringify({
-      title: "DSA Revision Reminder",
+      title: "Revision Reminder",
       body: { message, meta },
     });
     try {
