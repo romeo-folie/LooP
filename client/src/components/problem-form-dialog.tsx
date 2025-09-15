@@ -293,7 +293,7 @@ export default function ProblemFormDialog({
 
   return (
     <Credenza open={isOpen} onOpenChange={onOpenChange}>
-      <CredenzaContent className="px-6 pb-8">
+      <CredenzaContent className="px-6 pb-8 max-h-[90vh]">
         <CredenzaHeader className="text-left mb-4 pl-0">
           <CredenzaTitle className="text-xl lg:text-2xl font-bold">
             {mode === "edit" ? "Edit Problem" : "New Problem"}
@@ -304,229 +304,235 @@ export default function ProblemFormDialog({
               : "Enter problem details"}
           </CredenzaDescription>
         </CredenzaHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Name Field */}
-          <div>
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  placeholder="Problem Title"
-                  className="h-10"
-                  {...field}
-                />
+        <div className="overflow-y-auto max-h-full p-1 pr-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Name Field */}
+            <div>
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    placeholder="Problem Title"
+                    className="h-10"
+                    {...field}
+                  />
+                )}
+              />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.name.message}
+                </p>
               )}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-            )}
-          </div>
+            </div>
 
-          {/* Difficulty Dropdown */}
-          <div>
-            <Controller
-              name="difficulty"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <DropdownMenu onOpenChange={handleDropdownOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full h-10"
-                      ref={dropdownTriggerRef}
-                    >
-                      {value || "Select Difficulty"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    style={{
-                      width: dropdownWidth ? `${dropdownWidth}px` : "auto",
-                    }}
-                  >
-                    {difficultyLevels.map((level) => (
-                      <DropdownMenuItem
-                        key={level}
-                        onClick={() => onChange(level)}
-                        className="h-10"
-                      >
-                        {level}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            />
-            {errors.difficulty && (
-              <p className="text-red-500 text-sm">
-                {errors.difficulty.message}
-              </p>
-            )}
-          </div>
-
-          {/* Tags Field with Custom Entry */}
-          <div>
-            <Controller
-              name="tags"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <>
-                  <Popover
-                    open={isTagOpen}
-                    onOpenChange={(open) => {
-                      setIsTagOpen(open);
-                      handleDropdownOpen(open);
-                    }}
-                    modal={true}
-                  >
-                    <PopoverTrigger asChild>
+            {/* Difficulty Dropdown */}
+            <div>
+              <Controller
+                name="difficulty"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <DropdownMenu onOpenChange={handleDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full h-10 truncate"
+                        className="w-full h-10"
+                        ref={dropdownTriggerRef}
                       >
-                        {value?.length > 0
-                          ? value.map((val) => startCase(val)).join(", ")
-                          : "Select or Add Tags"}{" "}
+                        {value || "Select Difficulty"}{" "}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="center"
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
                       style={{
                         width: dropdownWidth ? `${dropdownWidth}px` : "auto",
                       }}
                     >
-                      <Command>
-                        <CommandInput
-                          placeholder="Search or add a tag..."
-                          value={inputValue}
-                          onValueChange={(v) => setInputValue(v)}
-                        />
-                        <CommandList className="max-h-40">
-                          <CommandEmpty>No matching tags</CommandEmpty>
-                          <CommandGroup>
-                            {tagOptions.map((tag) => (
-                              <CommandItem
-                                key={tag}
-                                onSelect={() => {
-                                  if (value.includes(tag)) {
-                                    onChange(value.filter((t) => t !== tag));
-                                  } else {
-                                    onChange([...value, tag]);
-                                  }
-                                }}
-                              >
-                                {value.includes(tag) ? <CheckIcon /> : ""}
-                                {startCase(tag)}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                      {/* Button to add a new typed tag */}
-                      {inputValue && !tagOptions.includes(inputValue) && (
+                      {difficultyLevels.map((level) => (
+                        <DropdownMenuItem
+                          key={level}
+                          onClick={() => onChange(level)}
+                          className="h-10"
+                        >
+                          {level}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              />
+              {errors.difficulty && (
+                <p className="text-red-500 text-sm">
+                  {errors.difficulty.message}
+                </p>
+              )}
+            </div>
+
+            {/* Tags Field with Custom Entry */}
+            <div>
+              <Controller
+                name="tags"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <>
+                    <Popover
+                      open={isTagOpen}
+                      onOpenChange={(open) => {
+                        setIsTagOpen(open);
+                        handleDropdownOpen(open);
+                      }}
+                      modal={true}
+                    >
+                      <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full mt-2"
-                          onClick={() => handleAddNewTag(onChange, value)}
+                          className="w-full h-10 truncate"
                         >
-                          Add "{inputValue}"
+                          {value?.length > 0
+                            ? value.map((val) => startCase(val)).join(", ")
+                            : "Select or Add Tags"}{" "}
+                          <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
-                      )}
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="center"
+                        style={{
+                          width: dropdownWidth ? `${dropdownWidth}px` : "auto",
+                        }}
+                      >
+                        <Command>
+                          <CommandInput
+                            placeholder="Search or add a tag..."
+                            value={inputValue}
+                            onValueChange={(v) => setInputValue(v)}
+                          />
+                          <CommandList className="max-h-40">
+                            <CommandEmpty>No matching tags</CommandEmpty>
+                            <CommandGroup>
+                              {tagOptions.map((tag) => (
+                                <CommandItem
+                                  key={tag}
+                                  onSelect={() => {
+                                    if (value.includes(tag)) {
+                                      onChange(value.filter((t) => t !== tag));
+                                    } else {
+                                      onChange([...value, tag]);
+                                    }
+                                  }}
+                                >
+                                  {value.includes(tag) ? <CheckIcon /> : ""}
+                                  {startCase(tag)}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                        {/* Button to add a new typed tag */}
+                        {inputValue && !tagOptions.includes(inputValue) && (
+                          <Button
+                            variant="outline"
+                            className="w-full mt-2"
+                            onClick={() => handleAddNewTag(onChange, value)}
+                          >
+                            Add "{inputValue}"
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Display selected tags */}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {value?.map((tag) => (
+                        <Badge
+                          key={tag}
+                          className="flex items-center space-x-2"
+                        >
+                          {startCase(tag)}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onChange(value.filter((t) => t !== tag))
+                            }
+                          >
+                            <X className="h-3 w-3 ml-1" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
+              />
+              {errors.tags && (
+                <p className="text-red-500 text-sm">{errors.tags.message}</p>
+              )}
+            </div>
+
+            {/* Date Solved Field */}
+            <div>
+              <Controller
+                name="date_solved"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full h-10">
+                        {value ? format(value, "PPP") : "Date Solved"}{" "}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="center">
+                      <Calendar
+                        mode="single"
+                        selected={value}
+                        onSelect={(date) => onChange(date ?? undefined)}
+                      />
                     </PopoverContent>
                   </Popover>
-
-                  {/* Display selected tags */}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {value?.map((tag) => (
-                      <Badge key={tag} className="flex items-center space-x-2">
-                        {startCase(tag)}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onChange(value.filter((t) => t !== tag))
-                          }
-                        >
-                          <X className="h-3 w-3 ml-1" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </>
+                )}
+              />
+              {errors.date_solved && (
+                <p className="text-red-500 text-sm">
+                  {errors.date_solved.message}
+                </p>
               )}
-            />
-            {errors.tags && (
-              <p className="text-red-500 text-sm">{errors.tags.message}</p>
-            )}
-          </div>
+            </div>
 
-          {/* Date Solved Field */}
-          <div>
-            <Controller
-              name="date_solved"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full h-10">
-                      {value ? format(value, "PPP") : "Date Solved"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="center">
-                    <Calendar
-                      mode="single"
-                      selected={value}
-                      onSelect={(date) => onChange(date ?? undefined)}
-                    />
-                  </PopoverContent>
-                </Popover>
+            {/* Notes Field */}
+            <div>
+              <Controller
+                name="notes"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    placeholder={notesPlaceholder}
+                    style={{ height: "300px" }}
+                    {...field}
+                  />
+                )}
+              />
+              {errors.notes && (
+                <p className="text-red-500 text-sm">{errors.notes.message}</p>
               )}
-            />
-            {errors.date_solved && (
-              <p className="text-red-500 text-sm">
-                {errors.date_solved.message}
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Notes Field */}
-          <div>
-            <Controller
-              name="notes"
-              control={control}
-              render={({ field }) => (
-                <Textarea
-                  placeholder={notesPlaceholder}
-                  style={{ height: "200px" }}
-                  {...field}
-                />
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <Loader2 className="animate-spin mr-2" />
+              ) : mode === "edit" ? (
+                "Save"
+              ) : (
+                "Add Problem"
               )}
-            />
-            {errors.notes && (
-              <p className="text-red-500 text-sm">{errors.notes.message}</p>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <Loader2 className="animate-spin mr-2" />
-            ) : mode === "edit" ? (
-              "Save"
-            ) : (
-              "Add Problem"
-            )}
-          </Button>
-        </form>
+            </Button>
+          </form>
+        </div>
       </CredenzaContent>
     </Credenza>
   );

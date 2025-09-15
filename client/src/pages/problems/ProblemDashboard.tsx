@@ -43,7 +43,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   Credenza,
   CredenzaContent,
-  CredenzaDescription,
   CredenzaHeader,
   CredenzaTitle,
   CredenzaTrigger,
@@ -569,16 +568,15 @@ export default function ProblemsDashboard() {
                         {problem.name}
                       </span>
                     </CredenzaTrigger>
-                    <CredenzaContent className="px-4 max-h-[90vh] overflow-hidden">
+                    <CredenzaContent className="px-4 max-h-[90vh]">
                       <CredenzaHeader className="p-0">
                         <CredenzaTitle className="sr-only">
-                          Hidden Title for Screen Readers
+                          Problem Details
                         </CredenzaTitle>
-                        <CredenzaDescription className="sr-only">
-                          Hidden Description for Screen Readers
-                        </CredenzaDescription>
                       </CredenzaHeader>
-                      <ProblemDetail problem={problem} tags={tags} />
+                      <div className="overflow-y-auto max-h-full">
+                        <ProblemDetail problem={problem} tags={tags} />
+                      </div>
                     </CredenzaContent>
                   </Credenza>
                 )}
