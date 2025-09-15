@@ -41,8 +41,9 @@ export default function MarkdownRenderer({ markdown, className }: Props) {
     <div className={`prose max-w-none dark:prose-invert ${className ?? ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rehypePlugins={[rehypeHighlight as any]}
+        rehypePlugins={[
+          [rehypeHighlight, { detect: true, ignoreMissing: true }],
+        ]}
       >
         {markdown}
       </ReactMarkdown>
