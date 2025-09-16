@@ -304,7 +304,7 @@ export default function ProblemFormDialog({
               : "Enter problem details"}
           </CredenzaDescription>
         </CredenzaHeader>
-        <div className="overflow-y-auto max-h-full p-1 pr-2">
+        <div className="max-h-full p-1 drawer-content-wrapper">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Name Field */}
             <div>
@@ -506,7 +506,7 @@ export default function ProblemFormDialog({
                 render={({ field }) => (
                   <Textarea
                     placeholder={notesPlaceholder}
-                    style={{ height: "300px" }}
+                    style={{ height: "250px" }}
                     {...field}
                   />
                 )}

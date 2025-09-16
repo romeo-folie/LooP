@@ -574,7 +574,7 @@ export default function ProblemsDashboard() {
                           Problem Details
                         </CredenzaTitle>
                       </CredenzaHeader>
-                      <div className="overflow-y-auto max-h-full">
+                      <div className="max-h-full p-1 drawer-content-wrapper">
                         <ProblemDetail problem={problem} tags={tags} />
                       </div>
                     </CredenzaContent>

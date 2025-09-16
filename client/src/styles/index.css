@@ -133,3 +133,14 @@
     background: white !important;
   }
 }
+
+.drawer-content-wrapper {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none
+}
+
+.drawer-content-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
