@@ -144,3 +144,6 @@
   display: none;
 }
 
+.prose pre {
+  padding: 0;
+}
