@@ -293,7 +293,7 @@ export default function ProblemFormDialog({
 
   return (
     <Credenza open={isOpen} onOpenChange={onOpenChange}>
-      <CredenzaContent className="px-6 pb-8 max-h-[90vh]">
+      <CredenzaContent className="px-6 pb-8 max-h-[95vh]">
         <CredenzaHeader className="text-left mb-4 pl-0">
           <CredenzaTitle className="text-xl lg:text-2xl font-bold">
             {mode === "edit" ? "Edit Problem" : "New Problem"}

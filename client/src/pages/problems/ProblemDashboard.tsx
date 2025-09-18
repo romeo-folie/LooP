@@ -680,7 +680,7 @@ export default function ProblemsDashboard() {
                         {problem.name}
                       </span>
                     </CredenzaTrigger>
-                    <CredenzaContent className="px-4 max-h-[90vh]">
+                    <CredenzaContent className="px-4 max-h-[95vh]">
                       <CredenzaHeader className="p-0">
                         <CredenzaTitle className="sr-only">
                           Problem Details
