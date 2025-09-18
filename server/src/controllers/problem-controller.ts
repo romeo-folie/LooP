@@ -34,6 +34,7 @@ type ProblemWithReminders = ProblemWithMillis & {
 };
 
 type ProblemsQuery = {
+  queryStr?: string;
   difficulty?: string;
   tags?: string;
   date_solved?: string;
@@ -94,6 +95,7 @@ export const handleGetProblems: AppRequestHandler<
     }
 
     const {
+      queryStr,
       difficulty,
       tags,
       date_solved,
@@ -126,6 +128,7 @@ export const handleGetProblems: AppRequestHandler<
 
     const { rows: problems, total } = await problemsRepo.listByUserWithFilters({
       userId,
+      queryStr,
       difficulty,
       tags: tagsArray,
       date_solved,
