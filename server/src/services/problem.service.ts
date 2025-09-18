@@ -235,6 +235,10 @@ export async function updateProblem({
     throw new AppError("BAD_REQUEST", "No updatable fields provided");
   }
 
+  if (patch.tags) {
+    patch.tags = patch.tags.map((t) => t.toLowerCase().trim());
+  }
+
   const updated = await problemsRepo.updateById(userId, problemId, patch, trx);
 
   if (!updated) throw new AppError("NOT_FOUND", "Problem Not Found");
