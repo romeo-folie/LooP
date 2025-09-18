@@ -107,6 +107,9 @@ export async function createWithReminders({
     remindersCount: reminders.length,
   });
 
+  // make all tags lowercase before saving
+  const tagList = tags.map((t) => t.toLowerCase().trim());
+
   return await db.transaction(async (trx: Knex.Transaction) => {
     // 1) Insert problem
     const problem = await problemsRepo.insertProblem(
@@ -114,7 +117,7 @@ export async function createWithReminders({
         user_id: userId,
         name,
         difficulty,
-        tags,
+        tags: tagList,
         date_solved: new Date(date_solved),
         notes: notes,
       },

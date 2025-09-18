@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,9 @@ import {
   ArrowLeft,
   ArrowRight,
   RotateCcw,
+  ListFilter,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import ProblemFormDialog from "@/components/problem-form-dialog";
 import { AxiosError, AxiosInstance } from "axios";
 import {
@@ -31,7 +32,11 @@ import {
   APISuccessResponse,
   useAxios,
 } from "@/hooks/use-axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import ProblemDetail from "./ProblemDetail";
 import NotificationPermissionDialog from "@/components/notification-permission-dialog";
@@ -50,8 +55,8 @@ import {
 import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
 import {
-  bulkAddProblems,
-  clearOldProblems,
+  // bulkAddProblems,
+  // clearOldProblems,
   deleteLocalProblem,
   getAllProblems,
   ReminderSchema,
@@ -96,6 +101,23 @@ export interface Problem {
   notes: string;
 }
 
+type PageShape = {
+  problems: ProblemResponse[];
+  meta: {
+    page: number;
+    totalPages: number;
+    pageSize: number;
+    totalItems: number;
+  };
+};
+
+type QueryFilters = {
+  queryStr?: string;
+  difficulty?: string;
+  tag?: string;
+  date_solved?: string;
+};
+
 const difficultyColors: Record<string, string> = {
   Easy: "bg-green-500",
   Medium: "bg-yellow-500",
@@ -106,6 +128,9 @@ const fetchProblems = async (
   apiClient: AxiosInstance,
   isOnline: boolean,
   lastFetchRef: React.RefObject<number>,
+  page: number,
+  pageSize: number,
+  queryFilters: QueryFilters,
 ) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
@@ -114,7 +139,9 @@ const fetchProblems = async (
       return { problems };
     }
 
-    const { data } = await apiClient.get("/problems");
+    const { data } = await apiClient.get("/problems", {
+      params: { page, pageSize, ...queryFilters },
+    });
     lastFetchRef.current = Date.now();
     return data;
   } catch (error) {
@@ -185,13 +212,24 @@ export default function ProblemsDashboard() {
   const [dropdownWidth, setDropdownWidth] = useState<number | null>(null);
   const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  // const [currentPage, setCurrentPage] = useState(1);
   const [showNotificationRequestDialog, setShowNotificationRequestDialog] =
     useState(false);
   const [isProblemFeedbackOpen, setIsProblemFeedbackOpen] = useState(false);
   const [feedbackId, setFeedbackId] = useState<number | null>(null);
+  const [appliedFilters, setAppliedFilters] = useState<QueryFilters>({});
 
-  const lastLocalUpdateRef = useRef<number>(0);
+  const filtersForQuery = useMemo<QueryFilters>(
+    () => ({
+      queryStr: appliedFilters.queryStr || undefined,
+      difficulty: appliedFilters.difficulty || undefined,
+      tag: appliedFilters.tag || undefined,
+      date_solved: appliedFilters.date_solved || undefined,
+    }),
+    [appliedFilters],
+  );
+
+  // const lastLocalUpdateRef = useRef<number>(0);
   const lastFetchRef = useRef<number>(0);
 
   useEffect(() => {
@@ -235,52 +273,148 @@ export default function ProblemsDashboard() {
     setShowNotificationRequestDialog(false);
   };
 
+  const problemsPerPage = isDesktop ? 10 : 5;
+
+  const fetchProblemsPage = async ({ pageParam }: { pageParam?: unknown }) => {
+    const page =
+      typeof pageParam === "number" ? pageParam : Number(pageParam ?? 1);
+    const resp = await fetchProblems(
+      apiClient,
+      isOnline,
+      lastFetchRef,
+      page,
+      problemsPerPage,
+      filtersForQuery,
+    );
+    return resp as PageShape;
+  };
   // Problem Dashboard
-  const { data, isError, isSuccess, error, refetch } = useQuery<
-    { problems: ProblemResponse[] },
-    AxiosError<APIErrorResponse>
-  >({
-    queryKey: ["problems"],
-    queryFn: () => fetchProblems(apiClient, isOnline, lastFetchRef),
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-  });
+  const {
+    data,
+    error,
+    isSuccess,
+    isError,
+    isFetchingNextPage,
+    isFetchingPreviousPage,
+    fetchNextPage,
+    fetchPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+    refetch,
+  } = useInfiniteQuery<PageShape, AxiosError<APIErrorResponse>>(
+    // query key depends on applied filters + per-page so cache entries are separate
+    {
+      queryKey: ["problems", filtersForQuery, problemsPerPage],
+      queryFn: fetchProblemsPage,
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) =>
+        lastPage.meta.page < lastPage.meta.totalPages
+          ? lastPage.meta.page + 1
+          : undefined,
+      getPreviousPageParam: (firstPage) =>
+        firstPage.meta.page > 1 ? firstPage.meta.page - 1 : undefined,
+      enabled: isOnline,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      staleTime: 1000 * 60 * 2,
+    },
+  );
 
   // trigger problems query when device goes offline
+  // useEffect(() => {
+  //   if (!isOnline) {
+  //     refetch();
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [isOnline]);
+
+  // derive pagination info
+  const pages = data?.pages ?? [];
+  const totalPages = pages.length > 0 ? pages[0].meta.totalPages : 1;
+
+  const [currentPageIndex, setCurrentPageIndex] = useState<number>(() =>
+    pages.length > 0 ? pages.length - 1 : 0,
+  );
+
+  // sync pointer to last-loaded page on initial load / filters change
   useEffect(() => {
-    if (!isOnline) {
-      refetch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOnline]);
+    setCurrentPageIndex(pages.length > 0 ? pages.length - 1 : 0);
+    // depend on pages.length (and filter deps if you reset filters externally)
+  }, [pages.length]);
 
-  let problems: ProblemResponse[] = [];
+  const currentPageObj = pages[currentPageIndex];
+  const currentPage = currentPageObj?.meta.page ?? 1;
+  const currentPageProblems = currentPageObj?.problems ?? [];
 
-  if (isSuccess) {
-    problems = data.problems;
-    if (
-      isOnline &&
-      lastFetchRef.current > lastLocalUpdateRef.current &&
-      problems.length
-    ) {
-      logger.info("saving problems locally");
-      clearOldProblems()
-        .then(() => {
-          logger.info("sucessfully cleared old problems from local DB");
-          bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
-            .then(() => {
-              lastLocalUpdateRef.current = Date.now();
-              logger.info("successfully added problems to local DB");
-            })
-            .catch((error) => {
-              logger.error(`error saving problems to local DB ${error}`);
-            });
-        })
-        .catch((error) => {
-          logger.error(`error clearing old problems from local DB ${error}`);
-        });
+  const handlePrev = async () => {
+    // If we already have a previous page cached, just move the pointer left
+    if (currentPageIndex > 0) {
+      setCurrentPageIndex((i) => i - 1);
+      return;
     }
-  }
+
+    // Otherwise, request the previous page from the server (will be prepended)
+    if (hasPreviousPage && !isFetchingPreviousPage) {
+      await fetchPreviousPage();
+      // newly fetched page is prepended at index 0; set pointer to 0 so UI shows it
+      setCurrentPageIndex(0);
+    }
+  };
+
+  const handleNext = async () => {
+    // If we already have next page cached, just move the pointer right
+    if (currentPageIndex < pages.length - 1) {
+      setCurrentPageIndex((i) => i + 1);
+      return;
+    }
+
+    // Otherwise, request next page (will be appended)
+    if (hasNextPage && !isFetchingNextPage) {
+      await fetchNextPage();
+      // increment pointer to the appended page
+      setCurrentPageIndex((i) => i + 1);
+    }
+  };
+
+  const allFetchedProblems = useMemo(() => {
+    if (!isSuccess || !data?.pages) return [];
+    return data.pages.flatMap((p) => p.problems);
+  }, [data?.pages, isSuccess]);
+
+  const tags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const p of allFetchedProblems) {
+      (p.tags || []).forEach((t) => tagSet.add(t.toLowerCase().trim()));
+    }
+    return Array.from(tagSet).sort();
+  }, [allFetchedProblems]);
+
+  // OFFLINE STORAGE
+  // if (isSuccess) {
+  // problems = data.problems;
+  // if (
+  //   isOnline &&
+  //   lastFetchRef.current > lastLocalUpdateRef.current &&
+  //   problems.length
+  // ) {
+  //   logger.info("saving problems locally");
+  //   clearOldProblems()
+  //     .then(() => {
+  //       logger.info("sucessfully cleared old problems from local DB");
+  //       bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
+  //         .then(() => {
+  //           lastLocalUpdateRef.current = Date.now();
+  //           logger.info("successfully added problems to local DB");
+  //         })
+  //         .catch((error) => {
+  //           logger.error(`error saving problems to local DB ${error}`);
+  //         });
+  //     })
+  //     .catch((error) => {
+  //       logger.error(`error clearing old problems from local DB ${error}`);
+  //     });
+  // }
+  // }
 
   if (isError) {
     const message =
@@ -288,19 +422,6 @@ export default function ProblemsDashboard() {
       error.response?.data?.error ||
       "Error fetching problems. Reload the page";
     toast({ title: "Error", description: message, variant: "destructive" });
-  }
-
-  // retrieve all problem tags
-  let tags: string[] = [];
-  if (problems.length) {
-    tags = problems.reduce((accumulator: string[], problem) => {
-      accumulator.push(
-        ...problem.tags.filter((tag) => !accumulator.includes(tag)),
-      );
-      return accumulator;
-    }, []);
-  } else {
-    tags = ["Array", "HashMap", "Sliding Window", "Heap", "Linked List"];
   }
 
   const deleteMutation = useMutation<
@@ -361,22 +482,6 @@ export default function ProblemsDashboard() {
     practiceMutation.mutate(qualityScore);
   };
 
-  // Sync filters with URL query params
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setSearch(params.get("search") || "");
-    setSelectedDifficulty(params.get("difficulty") || null);
-    setSelectedTag(
-      decodeURIComponent((params.get("tag") as string) || "") || null,
-    );
-    setSelectedDate(
-      params.get("date_solved")
-        ? parseISO(params.get("date_solved")!)
-        : undefined,
-    );
-    setCurrentPage(Number(params.get("page")) || 1);
-  }, [location.search]);
-
   // Update URL when filters change
   const updateQueryParams = () => {
     const params = new URLSearchParams();
@@ -405,28 +510,26 @@ export default function ProblemsDashboard() {
     setSelectedDifficulty(null);
     setSelectedTag(null);
     setSelectedDate(undefined);
-    setCurrentPage(1);
-    navigate(`/problems?page=${currentPage}`);
+    setAppliedFilters({});
+    refetch();
   };
 
-  const filteredProblems = problems.filter((problem) => {
-    return (
-      problem.name.toLowerCase().includes(search.toLowerCase()) &&
-      (!selectedDifficulty || problem.difficulty === selectedDifficulty) &&
-      (!selectedTag || problem.tags.includes(selectedTag)) &&
-      (!selectedDate ||
-        format(new Date(problem.date_solved!), "yyyy-MM-dd") ===
-          format(selectedDate, "yyyy-MM-dd"))
-    );
-  });
+  const applyFilters = () => {
+    const newFilters: QueryFilters = {};
+    if (search.trim()) newFilters.queryStr = search.trim();
+    if (selectedDifficulty) newFilters.difficulty = selectedDifficulty;
+    if (selectedTag) newFilters.tag = selectedTag;
+    if (selectedDate)
+      newFilters.date_solved = format(selectedDate, "yyyy-MM-dd");
 
-  // Pagination Logic
-  const problemsPerPage = isDesktop ? 10 : 5;
-  const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
-  const paginatedProblems = filteredProblems.slice(
-    (currentPage - 1) * problemsPerPage,
-    currentPage * problemsPerPage,
-  );
+    const same = JSON.stringify(newFilters) === JSON.stringify(appliedFilters);
+    if (!same) {
+      setAppliedFilters(newFilters);
+      // queryKey changed -> useInfiniteQuery will start fetching from initialPageParam automatically
+    } else {
+      refetch();
+    }
+  };
 
   return (
     <div className="p-4 space-y-6 pb-8 min-h-screen max-w-screen">
@@ -533,13 +636,22 @@ export default function ProblemsDashboard() {
           >
             <RotateCcw className="h-4 w-4" /> Reset
           </Button>
+
+          <Button
+            variant="outline"
+            className="flex items-center flex-1"
+            size="lg"
+            onClick={applyFilters}
+          >
+            <ListFilter className="h-4 w-4" /> Apply
+          </Button>
         </div>
       </div>
       {/* Problems List */}
-      {paginatedProblems.length ? (
+      {currentPageProblems.length ? (
         <>
           <div className="border rounded-md">
-            {paginatedProblems.map((problem) => (
+            {currentPageProblems.map((problem) => (
               <div
                 key={problem.problem_id ?? problem.local_id}
                 className="flex items-center justify-between px-4 py-3 border-b last:border-none hover:bg-muted transition cursor-pointer"
@@ -634,23 +746,33 @@ export default function ProblemsDashboard() {
             ))}
           </div>
 
-          {/* Pagination Controls */}
+          {/* Pagination controls */}
           {totalPages > 1 && (
             <div className="flex justify-center sm:justify-end items-center gap-4 mt-4">
               <Button
                 variant="outline"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
+                onClick={handlePrev}
+                disabled={
+                  !(currentPageIndex > 0 || hasPreviousPage) ||
+                  isFetchingPreviousPage
+                }
+                className="btn-outline"
               >
                 <ArrowLeft className="h-4 w-4" /> Prev
               </Button>
+
               <span className="text-sm font-medium">
                 {currentPage} of {totalPages}
               </span>
+
               <Button
                 variant="outline"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
+                onClick={handleNext}
+                disabled={
+                  !(currentPageIndex < pages.length - 1 || hasNextPage) ||
+                  isFetchingNextPage
+                }
+                className="btn-outline"
               >
                 Next <ArrowRight className="h-4 w-4" />
               </Button>

@@ -9,7 +9,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
-import { Bell, BellDot, Moon, Sun } from "lucide-react";
+import { Bell, BellDot, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import NotificationCard from "./notification-card";
 import { useNotifications } from "@/context/notification-provider";
@@ -76,9 +76,13 @@ export default function Navbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => navigate("/settings")}>
+              <Settings />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={logout}>
+              <LogOut />
+              Logout
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </nav>

@@ -10,6 +10,7 @@ import { PracticeMeta } from "../services/problem.service";
 
 type ListFilters = {
   userId: number;
+  queryStr?: string;
   difficulty?: string;
   tags?: string[];
   date_solved?: string; // 'YYYY-MM-DD'
@@ -45,6 +46,7 @@ export interface ProblemsRepo {
   ): Promise<IProblemRow | null>;
   listByUserWithFilters({
     userId,
+    queryStr,
     difficulty,
     tags,
     date_solved,
@@ -105,6 +107,7 @@ export const problemsRepo: ProblemsRepo = {
   },
   async listByUserWithFilters({
     userId,
+    queryStr,
     difficulty,
     tags,
     date_solved,
@@ -114,6 +117,14 @@ export const problemsRepo: ProblemsRepo = {
   }) {
     const qb = (trx ?? db)("problems").where({ user_id: userId });
 
+    function escapeLike(input: string) {
+      return input.replace(/([%_\\])/g, "\\$1");
+    }
+
+    if (queryStr) {
+      const safeQs = escapeLike(queryStr);
+      qb.andWhereILike("name", `%${safeQs}%`);
+    }
     if (difficulty) qb.andWhere("difficulty", difficulty);
     if (tags?.length) qb.andWhereRaw("tags @> ?", [tags]);
     if (date_solved) qb.andWhere("date_solved", date_solved);
