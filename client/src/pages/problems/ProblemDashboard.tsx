@@ -57,8 +57,8 @@ import { logger } from "@/lib/logger";
 import {
   // bulkAddProblems,
   // clearOldProblems,
-  deleteLocalProblem,
-  getAllProblems,
+  // deleteLocalProblem,
+  // getAllProblems,
   ReminderSchema,
 } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
@@ -134,10 +134,10 @@ const fetchProblems = async (
 ) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
-    if (!isOnline) {
-      const problems = await getAllProblems();
-      return { problems };
-    }
+    // if (!isOnline) {
+    //   const problems = await getAllProblems();
+    //   return { problems };
+    // }
 
     const { data } = await apiClient.get("/problems", {
       params: { page, pageSize, ...queryFilters },
@@ -153,15 +153,15 @@ const fetchProblems = async (
 const deleteProblem = async function (
   problemId: number | string,
   apiClient: AxiosInstance,
-  isOnline: boolean,
+  // isOnline: boolean,
 ): Promise<APISuccessResponse> {
   try {
-    if (!isOnline) {
-      await deleteLocalProblem(problemId);
-      return {
-        message: "Problem deleted offline",
-      };
-    }
+    // if (!isOnline) {
+    //   await deleteLocalProblem(problemId);
+    //   return {
+    //     message: "Problem deleted offline",
+    //   };
+    // }
 
     const { data } = await apiClient.delete(`/problems/${problemId}`);
     return data;

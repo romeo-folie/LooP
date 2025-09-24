@@ -20,6 +20,8 @@ import {
 } from "../../controllers/auth-controller";
 import { authenticateJWT } from "../../middleware/auth-middleware";
 import { zodValidate } from "../../middleware/validate-request";
+import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
+import { limiter } from "../../middleware/rate-limiter";
 
 const router = Router();
 
@@ -41,7 +43,13 @@ router.post(
   zodValidate({ body: resetPasswordSchema }),
   handleResetPassword,
 );
-router.get("/profile", authenticateJWT, handleGetProfile);
+router.get(
+  "/profile",
+  verifyCsrfToken,
+  authenticateJWT,
+  limiter(),
+  handleGetProfile,
+);
 router.get("/github", handleGitHubStart);
 router.get("/github/callback", handleGitHubCallback);
 router.post("/logout", handleLogout);

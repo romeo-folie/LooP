@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { authenticateJWT } from "../../middleware/auth-middleware";
 import {
   handlePracticeFeedback,
   handleCreateProblem,
@@ -9,48 +8,40 @@ import {
   handleDeleteProblem,
   handleListRemindersByProblemId,
 } from "../../controllers/problem-controller";
-import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
 import { zodValidate } from "../../middleware/validate-request";
 import {
   createProblemSchema,
   practiceFeedbackSchema,
 } from "../../middleware/validators";
+import { limiter } from "../../middleware/rate-limiter";
 
 const router: Router = Router();
 
-router.get("/", authenticateJWT, handleListProblems);
+router.get("/", limiter(), handleListProblems);
 router.get(
   "/:problem_id/reminders",
-  authenticateJWT,
+  limiter(),
   handleListRemindersByProblemId,
 );
-router.get("/:problem_id", authenticateJWT, handleGetProblemById);
+router.get("/:problem_id", limiter(), handleGetProblemById);
 router.post(
   "/",
-  verifyCsrfToken,
-  authenticateJWT,
+  limiter({ cost: 2 }),
   zodValidate({ body: createProblemSchema }),
   handleCreateProblem,
 );
 router.put(
   "/:problem_id",
-  verifyCsrfToken,
-  authenticateJWT,
+  limiter({ cost: 2 }),
   zodValidate({ body: createProblemSchema }),
   handleUpdateProblem,
 );
 router.put(
   "/:problem_id/practice",
-  verifyCsrfToken,
-  authenticateJWT,
+  limiter({ cost: 5 }),
   zodValidate({ body: practiceFeedbackSchema }),
   handlePracticeFeedback,
 );
-router.delete(
-  "/:problem_id",
-  verifyCsrfToken,
-  authenticateJWT,
-  handleDeleteProblem,
-);
+router.delete("/:problem_id", limiter({ cost: 3 }), handleDeleteProblem);
 
 export default router;

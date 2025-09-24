@@ -5,36 +5,28 @@ import {
   handleGetReminderById,
   handleUpdateReminder,
 } from "../../controllers/reminder-controller";
-import { authenticateJWT } from "../../middleware/auth-middleware";
-import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
 import { zodValidate } from "../../middleware/validate-request";
 import {
   createReminderSchema,
   updateReminderSchema,
 } from "../../middleware/validators";
+import { limiter } from "../../middleware/rate-limiter";
 
 const router: Router = Router();
 
-router.get("/:reminder_id", authenticateJWT, handleGetReminderById);
+router.get("/:reminder_id", limiter(), handleGetReminderById);
 router.post(
   "/:problem_id",
-  verifyCsrfToken,
-  authenticateJWT,
+  limiter({ cost: 3 }),
   zodValidate({ body: createReminderSchema }),
   handleCreateReminder,
 );
 router.put(
   "/:reminder_id",
-  verifyCsrfToken,
-  authenticateJWT,
+  limiter({ cost: 2 }),
   zodValidate({ body: updateReminderSchema }),
   handleUpdateReminder,
 );
-router.delete(
-  "/:reminder_id",
-  verifyCsrfToken,
-  authenticateJWT,
-  handleDeleteReminder,
-);
+router.delete("/:reminder_id", limiter({ cost: 2 }), handleDeleteReminder);
 
 export default router;

@@ -3,16 +3,16 @@ import {
   handleGetPreferences,
   handleUpsertPreferences,
 } from "../../controllers/preference-controller";
-import { authenticateJWT } from "../../middleware/auth-middleware";
 import { zodValidate } from "../../middleware/validate-request";
 import { preferenceSchema } from "../../middleware/validators";
+import { limiter } from "../../middleware/rate-limiter";
 
 const router = Router();
 
-router.get("/", authenticateJWT, handleGetPreferences);
+router.get("/", handleGetPreferences);
 router.put(
   "/",
-  authenticateJWT,
+  limiter({ cost: 2 }),
   zodValidate({ body: preferenceSchema }),
   handleUpsertPreferences,
 );
