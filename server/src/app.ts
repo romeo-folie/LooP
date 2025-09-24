@@ -55,7 +55,7 @@ app.use(cookieParser());
 app.use(httpLogger);
 
 app.use("/api/v1", v1Router);
-app.use("/api", v1Router);
+app.use("/api", v1Router); //fallback
 
 app.use((_req, _res, next) => {
   next(new AppError("NOT_FOUND", "Route not found"));
