@@ -69,22 +69,7 @@ export type PracticeMeta = {
   quality_score: number; // 1–5
 };
 
-export type ProblemUpdateBody = Partial<Pick<IProblemRow, UpdatableProblemKey>>;
-
-function pickDefined<T extends object, K extends readonly (keyof T)[]>(
-  src: T,
-  keys: K,
-): Partial<Pick<T, K[number]>> {
-  const out: Partial<Pick<T, K[number]>> = {};
-  for (const k of keys) {
-    const v = src[k];
-    if (v !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (out as any)[k] = v;
-    }
-  }
-  return out;
-}
+export type ProblemUpdateBody = Pick<IProblemRow, UpdatableProblemKey>;
 
 export async function createWithReminders({
   userId,
@@ -227,10 +212,7 @@ export async function updateProblem({
   }
 
   // Build strictly-typed update payload
-  const patch = pickDefined<ProblemUpdateBody, typeof updatableProblemKeys>(
-    data,
-    updatableProblemKeys,
-  );
+  const patch = data as ProblemUpdateBody;
 
   if (Object.keys(patch).length === 0) {
     log?.warn("updateProblem:no_fields", { userId, problemId });
