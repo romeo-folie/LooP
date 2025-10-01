@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { db } from "../db";
 import { IUserRow } from "../types/knex-tables";
 import { AppRequestHandler } from "../types";
 import AppError from "../types/errors";

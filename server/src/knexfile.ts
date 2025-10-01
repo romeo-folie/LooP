@@ -1,18 +1,17 @@
-// Update with your config settings.
 import path from "path";
 import { Knex } from "knex";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const BASE_CONFIG: Knex.Config = {
   client: "pg",
   migrations: {
-    directory: path.resolve(__dirname, "../migrations"),
+    directory: path.resolve(__dirname, "./migrations"),
     extension: "ts",
   },
   seeds: {
-    directory: path.resolve(__dirname, "../seeds"),
+    directory: path.resolve(__dirname, "./seeds"),
   },
 };
 
@@ -33,10 +32,17 @@ const config: { [key: string]: Knex.Config } = {
       filename: ":memory:",
     },
     useNullAsDefault: true,
+    pool: {
+      min: 1,
+      max: 1,
+    },
     migrations: {
-      directory: path.resolve(__dirname, "../migrations"),
+      directory: path.resolve(__dirname, "../tests/db/migrations"),
       extension: "ts",
     },
+    // seeds: {
+    //   directory: path.resolve(__dirname, "../tests/db/seeds"),
+    // },
   },
 
   production: {

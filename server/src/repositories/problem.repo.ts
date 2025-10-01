@@ -7,6 +7,11 @@ import {
 } from "../types/knex-tables";
 import { ProblemWithMillis } from "../controllers/problem-controller";
 import { PracticeMeta } from "../services/problem.service";
+import {
+  normalizeProblemRowFromDb,
+  normalizeUserPreferencesRow,
+  prepareProblemForInsert,
+} from "../utils/db-serializers";
 
 type ListFilters = {
   userId: number;
@@ -43,7 +48,7 @@ export interface ProblemsRepo {
     userId: number,
     problemId: number,
     trx?: Knex.Transaction,
-  ): Promise<IProblemRow | null>;
+  ): Promise<IProblemRow | undefined>;
   listByUserWithFilters({
     userId,
     queryStr,
@@ -92,18 +97,23 @@ export interface ProblemsRepo {
 }
 
 export const problemsRepo: ProblemsRepo = {
-  async insertProblem(input, trx) {
-    const baseQuery = (trx ?? db)("problems");
-    const [row] = await baseQuery.insert(input).returning("*");
-    return row;
+  async insertProblem(input, trx?: Knex) {
+    const knexInstance = trx ?? db;
+    // Prepare input for DB depending on client (sqlite tests vs postgres)
+    const prepared = prepareProblemForInsert(input, knexInstance as Knex);
+
+    const baseQuery = (knexInstance as Knex)("problems");
+    const [row] = await baseQuery.insert(prepared).returning("*");
+    // Normalize tags field when returning to app code
+    return normalizeProblemRowFromDb(row, knexInstance as Knex);
   },
   async findById(userId, problemId, trx) {
-    const baseQuery = (trx ?? db)("problems");
-    return (
-      (await baseQuery
-        .where({ user_id: userId, problem_id: problemId })
-        .first()) ?? null
-    );
+    const knexInstance = trx ?? db;
+    const baseQuery = (knexInstance as Knex)("problems");
+    const row = await baseQuery
+      .where({ user_id: userId, problem_id: problemId })
+      .first();
+    return normalizeProblemRowFromDb(row, knexInstance as Knex);
   },
   async listByUserWithFilters({
     userId,
@@ -161,11 +171,14 @@ export const problemsRepo: ProblemsRepo = {
     return { rows, total };
   },
   async getUserSettingsByUserId(userId, trx) {
-    const baseQuery = (trx ?? db)("user_preferences");
-    return await baseQuery
+    const knexInstance = trx ?? db;
+    const baseQuery = (knexInstance as Knex)("user_preferences");
+    const row = await baseQuery
       .where({ user_id: userId })
       .select("settings")
       .first();
+    const { settings } = normalizeUserPreferencesRow(row, knexInstance as Knex);
+    return { settings };
   },
   async listRemindersByProblemId(problemId, userId, trx) {
     const qb = (trx ?? db)("reminders").where({ problem_id: problemId });

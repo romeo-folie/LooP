@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+process.env.NODE_ENV = "test";
+
 import request from "supertest";
-import app from "../src/app";
-import { db } from "../src/db";
 import {
   generateExpiredRefreshToken,
   generatePasswordResetToken,
@@ -9,16 +9,22 @@ import {
 } from "../src/lib/jwt";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-
-process.env.NODE_ENV = "test";
+import app from "../src/app";
+import { db as testDb } from "../src/db";
 
 beforeAll(async () => {
-  await db.migrate.latest();
-  // await db.seed.run();
+  try {
+    console.log("Applying test migrations...");
+    await testDb.migrate.latest();
+    console.log("✅ Test migrations applied successfully.");
+  } catch (error) {
+    console.error("❌ Error applying test migrations:", error);
+    throw error;
+  }
 });
 
 afterAll(async () => {
-  await db.destroy();
+  await testDb.destroy();
 });
 
 describe("authentication tests", () => {
@@ -310,8 +316,10 @@ describe("authentication tests", () => {
             "If the email exists, an OTP has been sent.",
           );
 
-          const user = await db("users").where({ email: validEmail }).first();
-          const otpRecord = await db("password_reset_tokens")
+          const user = await testDb("users")
+            .where({ email: validEmail })
+            .first();
+          const otpRecord = await testDb("password_reset_tokens")
             .where({ user_id: user!.user_id })
             .orderBy("created_at", "desc")
             .first();
@@ -328,10 +336,10 @@ describe("authentication tests", () => {
 
           expect(firstRes.status).toBe(200);
 
-          const countBefore = await db("password_reset_tokens")
+          const countBefore = await testDb("password_reset_tokens")
             .select<{
               otpRecordCountBefore: number;
-            }>(db.raw('COUNT(*) AS "otpRecordCountBefore"'))
+            }>(testDb.raw('COUNT(*) AS "otpRecordCountBefore"'))
             .first();
 
           // Immediately request again
@@ -341,10 +349,10 @@ describe("authentication tests", () => {
 
           expect(secondRes.status).toBe(200);
 
-          const countAfter = await db("password_reset_tokens")
+          const countAfter = await testDb("password_reset_tokens")
             .select<{
               otpRecordCountAfter: number;
-            }>(db.raw('COUNT(*) AS "otpRecordCountAfter"'))
+            }>(testDb.raw('COUNT(*) AS "otpRecordCountAfter"'))
             .first();
 
           expect(
@@ -407,14 +415,16 @@ describe("authentication tests", () => {
 
       describe("OTP Expired", () => {
         it("should return 400 if the OTP record has passed its expires_at time", async () => {
-          const user = await db("users").where({ email: validEmail2 }).first();
+          const user = await testDb("users")
+            .where({ email: validEmail2 })
+            .first();
 
           const hashedOtp = crypto
             .createHash("sha256")
             .update("222222")
             .digest("hex");
 
-          await db("password_reset_tokens").insert({
+          await testDb("password_reset_tokens").insert({
             user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
@@ -432,14 +442,16 @@ describe("authentication tests", () => {
 
       describe("OTP Mismatch", () => {
         it("should return 400 if provided OTP does not match stored hash", async () => {
-          const user = await db("users").where({ email: validEmail3 }).first();
+          const user = await testDb("users")
+            .where({ email: validEmail3 })
+            .first();
 
           const hashedOtp = crypto
             .createHash("sha256")
             .update("555555")
             .digest("hex");
 
-          await db("password_reset_tokens").insert({
+          await testDb("password_reset_tokens").insert({
             user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() + 10 * 60 * 1000),
@@ -457,14 +469,16 @@ describe("authentication tests", () => {
 
       describe("Valid OTP", () => {
         it("should return 200 and include a password_reset_token if OTP is correct", async () => {
-          const user = await db("users").where({ email: validEmail4 }).first();
+          const user = await testDb("users")
+            .where({ email: validEmail4 })
+            .first();
 
           const hashedOtp = crypto
             .createHash("sha256")
             .update("333333")
             .digest("hex");
 
-          await db("password_reset_tokens").insert({
+          await testDb("password_reset_tokens").insert({
             user_id: user!.user_id,
             otp_hash: hashedOtp,
             expires_at: new Date(Date.now() + 10 * 60 * 1000),
@@ -616,7 +630,7 @@ describe("authentication tests", () => {
               "Password reset successfully. You can now log in.",
             );
 
-            const user = await db("users").where({ user_id: 4 }).first();
+            const user = await testDb("users").where({ user_id: 4 }).first();
             const match = await bcrypt.compare(newPass, user!.password);
             expect(match).toBe(true);
           });

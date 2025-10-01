@@ -37,7 +37,7 @@ export async function upsertUserPreferences({
   const created = !existing;
   log?.info("upsertUserPreferences:success", { userId, created });
 
-  return { settings: savedSettings, created };
+  return { settings: savedSettings as Settings, created };
 }
 
 export async function getUserPreferences({
@@ -51,5 +51,5 @@ export async function getUserPreferences({
   const settings = row?.settings ?? {};
 
   log?.info("getUserPreferences:success", { userId, hasSettings: !!row });
-  return settings;
+  return settings as Settings;
 }

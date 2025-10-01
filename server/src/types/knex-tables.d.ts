@@ -18,7 +18,7 @@ export interface IProblemRow {
   user_id: number;
   name: string;
   difficulty: "Easy" | "Medium" | "Hard";
-  tags: string[] | null;
+  tags: string | string[] | null;
   date_solved: Date;
   notes?: string | null;
   created_at: Date;
@@ -29,7 +29,7 @@ export interface IReminderRow {
   reminder_id: number;
   problem_id: number;
   user_id: number;
-  due_datetime: Date;
+  due_datetime: Date | string;
   is_sent: boolean;
   sent_at?: Date | null;
   is_completed?: boolean;
@@ -44,7 +44,7 @@ export type Settings = {
 export interface IUserPreferencesRow {
   preference_id: number;
   user_id: number;
-  settings: Settings;
+  settings: Settings | string;
   created_at: Date;
   updated_at: Date;
 }

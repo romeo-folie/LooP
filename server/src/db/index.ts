@@ -1,10 +1,9 @@
 import pgPromise from "pg-promise";
 import dotenv from "dotenv";
 import knex from "knex";
-import knexConfig from "./knexfile";
+import knexConfig from "../knexfile";
 import cron from "node-cron";
 import reminderJob from "../jobs/reminder-job";
-
 dotenv.config();
 
 const environment = process.env.NODE_ENV as string;
@@ -28,7 +27,11 @@ const runMigrations = async () => {
 };
 
 export const connectDB = function () {
-  // Test Database Connection
+  if (environment === "test") {
+    console.log("Skipping connectDB in test environment.");
+    return;
+  }
+
   postgres
     .connect()
     .then(async (obj) => {
