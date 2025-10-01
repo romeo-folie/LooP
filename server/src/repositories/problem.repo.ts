@@ -71,11 +71,9 @@ export interface ProblemsRepo {
   updateById(
     userId: number,
     problemId: number,
-    data: Partial<
-      Pick<
-        IProblemRow,
-        "name" | "difficulty" | "tags" | "date_solved" | "notes"
-      >
+    data: Pick<
+      IProblemRow,
+      "name" | "difficulty" | "tags" | "date_solved" | "notes"
     >,
     trx?: Knex.Transaction,
   ): Promise<IProblemRow | null>;
@@ -186,16 +184,21 @@ export const problemsRepo: ProblemsRepo = {
     return qb.select("*");
   },
   async updateById(userId, problemId, data, trx) {
-    const qb = (trx ?? db)("problems");
+    const knexInstance = trx ?? db;
+    const qb = knexInstance("problems");
+    const prepared = prepareProblemForInsert(data, knexInstance as Knex);
     const [row] = await qb
       .where({ user_id: userId, problem_id: problemId })
-      .update(data)
+      .update(prepared)
       .returning(returnCols as string[]);
 
     if (!row) {
       throw new Error("Problem update failed or not found");
     }
-    return (row as IProblemRow) || null;
+    return (
+      normalizeProblemRowFromDb(row as IProblemRow, knexInstance as Knex) ||
+      null
+    );
   },
   async deleteRemindersByProblemId(problemId, trx) {
     const qb = (trx ?? db)("reminders");

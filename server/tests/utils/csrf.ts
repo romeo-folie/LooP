@@ -1,5 +1,8 @@
 import { Application } from "express";
 import request from "supertest";
+import TestAgent from "supertest/lib/agent";
+
+export type HttpMethod = "get" | "post" | "put" | "delete";
 
 /**
  * Parse cookies from supertest response.set-cookie array
@@ -70,4 +73,46 @@ export async function postWithCsrf(
 
   if (accessToken) req.set("Authorization", `Bearer ${accessToken}`);
   return req;
+}
+
+export async function reqWithCsrf(
+  app: Application,
+  method: HttpMethod,
+  path: string,
+  accessToken: string | null,
+  cookieHeader: string | undefined,
+  csrfTokenValue: string | undefined,
+  body?: string | object,
+) {
+  if (!method) method = "post";
+  const agent = request(app) as TestAgent;
+
+  // ensure lowercase method
+  const m = method.toLowerCase() as HttpMethod;
+
+  // defensive: ensure agent supports the method
+  if (typeof agent[m] !== "function") {
+    throw new Error(`Unsupported HTTP method: ${method}`);
+  }
+
+  // create request builder dynamically
+  const reqBuilder = agent[m](path);
+
+  if (cookieHeader) {
+    reqBuilder.set("Cookie", cookieHeader);
+  }
+
+  if (csrfTokenValue) {
+    reqBuilder.set("x-csrf-token", csrfTokenValue);
+  }
+
+  if (accessToken) {
+    reqBuilder.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  if (typeof body !== "undefined") {
+    reqBuilder.send(body);
+  }
+
+  return await reqBuilder;
 }

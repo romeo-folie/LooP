@@ -79,9 +79,11 @@ export function deserializeSettingsFromDb(
 }
 
 export function prepareProblemForInsert(
-  input: Pick<
-    IProblemRow,
-    "user_id" | "name" | "difficulty" | "tags" | "date_solved" | "notes"
+  input: Partial<
+    Pick<
+      IProblemRow,
+      "user_id" | "name" | "difficulty" | "tags" | "date_solved" | "notes"
+    >
   >,
   knex?: Knex,
 ) {
@@ -90,7 +92,7 @@ export function prepareProblemForInsert(
   if (copied.tags && Array.isArray(copied.tags)) {
     copied.tags = copied.tags.map((t: string) => t.toLowerCase().trim());
   }
-  copied.tags = serializeTagsForDb(copied.tags, knex);
+  copied.tags = serializeTagsForDb(copied.tags!, knex);
   // date_solved: ensure Date or ISO string acceptable
   if (copied.date_solved && !(copied.date_solved instanceof Date)) {
     copied.date_solved = new Date(copied.date_solved);
