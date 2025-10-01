@@ -42,7 +42,7 @@ export type AppRequestHandler<
 
 export interface IReminderInput {
   problem_id: number;
-  due_datetime: Date;
+  due_datetime: Date | string;
   is_completed?: boolean;
 }
 

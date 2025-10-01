@@ -127,7 +127,7 @@ export async function createReminder({
     {
       problem_id: problemId,
       user_id: userId,
-      due_datetime: due,
+      due_datetime: due.toISOString(),
     },
     trx,
   );
@@ -170,7 +170,7 @@ export async function updateReminder({
     if (Number.isNaN(due.getTime())) {
       throw new AppError("BAD_REQUEST", "Invalid due_datetime");
     }
-    patch.due_datetime = due;
+    patch.due_datetime = due.toISOString();
   }
 
   if (data.is_completed !== undefined) {

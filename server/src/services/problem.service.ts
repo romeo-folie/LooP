@@ -1,7 +1,7 @@
 import { Knex } from "knex";
 import { db } from "../db";
 import { problemsRepo } from "../repositories/problem.repo";
-import { IProblemRow, IReminderRow } from "../types/knex-tables";
+import { IProblemRow, IReminderRow, Settings } from "../types/knex-tables";
 import { IProblemInput } from "../types";
 import { Logger } from "winston";
 import AppError from "../types/errors";
@@ -130,7 +130,9 @@ export async function createWithReminders({
 
     // 2) Fetch user settings
     const row = await problemsRepo.getUserSettingsByUserId(userId, trx);
-    const autoRemindersEnabled = Boolean(row?.settings.autoReminders);
+    const autoRemindersEnabled = Boolean(
+      (row?.settings as Settings).autoReminders,
+    );
 
     // 3) Decide which reminders to insert
     let remindersToInsert: Array<
@@ -149,12 +151,12 @@ export async function createWithReminders({
       const intervals = [3, 7, 15];
       remindersToInsert = intervals.map((d) => {
         const due = new Date(base);
-        due.setDate(due.getDate() + d);
-        due.setHours(9, 0, 0, 0);
+        due.setUTCDate(due.getUTCDate() + d);
+        due.setUTCHours(9, 0, 0, 0);
         return {
           problem_id: problem.problem_id,
           user_id: userId,
-          due_datetime: due,
+          due_datetime: due.toISOString(),
         };
       });
     }
@@ -236,7 +238,7 @@ export async function updateProblem({
   }
 
   if (patch.tags) {
-    patch.tags = patch.tags.map((t) => t.toLowerCase().trim());
+    patch.tags = (patch.tags as string[]).map((t) => t.toLowerCase().trim());
   }
 
   const updated = await problemsRepo.updateById(userId, problemId, patch, trx);
@@ -340,7 +342,7 @@ export async function recordPracticeFeedback({
       {
         problem_id: problemId,
         user_id: userId,
-        due_datetime: nextDue,
+        due_datetime: nextDue.toISOString(),
       },
       tx,
     );

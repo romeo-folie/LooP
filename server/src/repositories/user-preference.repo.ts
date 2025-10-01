@@ -1,6 +1,7 @@
 import { Knex } from "knex";
 import { db } from "../db";
 import { IUserPreferencesRow, Settings } from "../types/knex-tables";
+import { serializeSettingsForDb } from "../utils/db-serializers";
 
 export interface UserPreferencesRepo {
   findByUserId(
@@ -24,11 +25,14 @@ export const userPreferencesRepo: UserPreferencesRepo = {
   },
 
   async upsertReturningSettings(userId, settings, trx) {
-    const qb = (trx ?? db)("user_preferences");
+    const knexInstance = trx ?? db;
+    const qb = knexInstance("user_preferences");
     const [ret] = await qb
       .insert({
         user_id: userId,
-        settings,
+        settings: serializeSettingsForDb(settings, knexInstance as Knex) as
+          | Settings
+          | string,
         created_at: db.fn.now(),
         updated_at: db.fn.now(),
       })

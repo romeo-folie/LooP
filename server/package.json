@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "NODE_ENV=test jest",
     "dev": "nodemon",
     "lint": "eslint \"src/**/*.{ts,js}\"",
     "lint:fix": "npm run lint -- --fix",
