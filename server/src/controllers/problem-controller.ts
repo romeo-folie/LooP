@@ -11,6 +11,7 @@ import {
 } from "../services/problem.service";
 import { problemsRepo } from "../repositories/problem.repo";
 import { remindersRepo } from "../repositories/reminder.repo";
+import { getRemindersByProblemId } from "../services/reminder.service";
 
 export type ProblemWithMillis = Pick<
   IProblemRow,
@@ -73,7 +74,7 @@ export const handleCreateProblem: AppRequestHandler<
   }
 };
 
-export const handleGetProblems: AppRequestHandler<
+export const handleListProblems: AppRequestHandler<
   {},
   {
     problems: ProblemWithReminders[];
@@ -185,6 +186,46 @@ export const handleGetProblems: AppRequestHandler<
         error instanceof Error ? error.message : error
       }`,
     );
+    next(error);
+  }
+};
+
+export const handleListRemindersByProblemId: AppRequestHandler<
+  { problem_id: string },
+  { reminders: Partial<IReminderRow>[] }
+> = async (req, res, next) => {
+  try {
+    const userId = req.authUser?.userId;
+    const { problem_id } = req.params;
+
+    if (!userId) {
+      req.log?.warn(
+        `Unauthorized reminders request attempt from IP: ${req.ip}`,
+      );
+      throw new AppError("UNAUTHORIZED");
+    }
+
+    const problemIdNum = Number(problem_id);
+    if (!Number.isInteger(problemIdNum) || problemIdNum <= 0) {
+      req.log?.warn("handleListRemindersByProblemId: invalid problem_id", {
+        problem_id,
+      });
+      throw new AppError("BAD_REQUEST", "Invalid problem_id");
+    }
+
+    const reminders = await getRemindersByProblemId({
+      userId,
+      problemId: problemIdNum,
+      log: req.log,
+    });
+
+    res.status(200).json({ reminders });
+  } catch (error) {
+    req.log?.error("handleListRemindersByProblemId:error", {
+      userId: req.authUser?.userId ?? "unknown",
+      problem_id: req.params.problem_id,
+      message: error instanceof Error ? error.message : String(error),
+    });
     next(error);
   }
 };

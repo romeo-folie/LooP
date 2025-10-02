@@ -54,6 +54,15 @@ export const createReminderSchema = z.object({
   is_completed: z.boolean("is_completed must be a boolean").optional(),
 });
 
+export const updateReminderSchema = z.object({
+  due_datetime: z.iso
+    .datetime(
+      "due_datetime is required and must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)",
+    )
+    .optional(),
+  is_completed: z.boolean("is_completed must be a boolean").optional(),
+});
+
 export const createSubscriptionSchema = z.object({
   endpoint: z.string("Endpoint is required"),
   public_key: z.string("Public key is required"),

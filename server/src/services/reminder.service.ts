@@ -175,7 +175,7 @@ export async function updateReminder({
 
   if (data.is_completed !== undefined) {
     patch.is_completed = data.is_completed;
-    patch.completed_at = data.is_completed ? now : null;
+    patch.completed_at = data.is_completed ? now.toISOString() : null;
   }
 
   if (Object.keys(patch).length === 0) {

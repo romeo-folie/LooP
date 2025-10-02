@@ -5,91 +5,20 @@ import path from "path";
 import { jest } from "@jest/globals";
 import { loginAndGetCsrf, postWithCsrf, reqWithCsrf } from "../utils/csrf";
 import { db as testDb } from "../../src/db";
-import bcrypt from "bcrypt";
 import type { ProblemsRepo } from "../../src/repositories/problem.repo";
 import app from "../../src/app";
-import { IProblemRow, IUserRow } from "../../src/types/knex-tables";
+import { IProblemRow } from "../../src/types/knex-tables";
+import {
+  createTestProblem,
+  createTestUser,
+  TEST_USER,
+  VALID_PASSWORD,
+} from "../utils/create-test-entities";
 
 const PROBLEMS_REPO_PATH = path.resolve(
   __dirname,
   "../../src/repositories/problem.repo",
 );
-
-const VALID_EMAIL = "testuser@example.com";
-const VALID_PASSWORD = "testPassw0rD%";
-
-async function createTestUser(
-  name?: string,
-  email?: string,
-  password?: string,
-) {
-  if (!testDb) throw new Error("testDb not initialized");
-
-  const HASHED_PASSWORD = await bcrypt.hash(password ?? VALID_PASSWORD, 10);
-
-  const [user] = await testDb("users").insert(
-    {
-      name: name ?? "Test User",
-      email: email ?? VALID_EMAIL,
-      password: HASHED_PASSWORD,
-      provider: "local",
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-    ["user_id", "email", "name"],
-  );
-
-  return user;
-}
-
-async function createTestProblem({
-  user,
-  accessToken,
-  cookieHeader,
-  csrfTokenValue,
-  opts = {},
-}: {
-  user: { user_id: number; email: string; name: string };
-  accessToken: string;
-  cookieHeader: string | undefined;
-  csrfTokenValue: string;
-  opts?: Partial<{
-    name: string;
-    difficulty: string;
-    tags: string[];
-    date_solved: string;
-    notes: string;
-    autoReminders?: boolean;
-  }>;
-}) {
-  const autoReminders = opts.autoReminders ?? false;
-  await testDb("user_preferences").insert({
-    user_id: user.user_id,
-    settings: JSON.stringify({ autoReminders }),
-    created_at: new Date(),
-    updated_at: new Date(),
-  });
-
-  const body = {
-    name: opts.name ?? "Seed Problem",
-    difficulty: opts.difficulty ?? "Easy",
-    tags: opts.tags ?? ["dp"],
-    date_solved: opts.date_solved ?? "2025-09-01",
-    notes: opts.notes ?? "seed",
-  };
-
-  const createRes = await postWithCsrf(
-    app,
-    "/api/problems",
-    accessToken,
-    cookieHeader as string,
-    csrfTokenValue,
-    body,
-  );
-
-  expect(createRes.status).toBe(201);
-  return createRes.body.problem as Partial<IProblemRow>;
-}
 
 beforeAll(async () => {
   try {
@@ -117,15 +46,13 @@ afterEach(async () => {
     await testDb.raw("ALTER SEQUENCE users_user_id_seq RESTART WITH 1");
   } catch (e) {}
 });
+
 describe("problem integration tests", () => {
   describe("POST /api/problems", () => {
     test("Create problem (happy path) — creates problem and 3 default reminders when autoReminders true", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
 
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
@@ -196,10 +123,7 @@ describe("problem integration tests", () => {
     test("Validation: missing required fields -> 400 and no DB insert", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
         user.email,
@@ -246,10 +170,7 @@ describe("problem integration tests", () => {
     test("Tags normalization -> tags saved lowercased & trimmed", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
         user.email,
@@ -297,10 +218,7 @@ describe("problem integration tests", () => {
     test("Simulated DB failure -> returns 500", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
 
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
@@ -358,22 +276,19 @@ describe("problem integration tests", () => {
     test("returns the problem (happy path)", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
         user.email,
         VALID_PASSWORD,
       );
-      const csrf = cookies["CSRF-TOKEN"];
+      const csrf = cookies["CSRF-TOKEN"] as string;
 
       const created = await createTestProblem({
         user,
         accessToken,
         cookieHeader,
-        csrfTokenValue: csrf!,
+        csrfTokenValue: csrf,
         opts: {
           name: "ReadMe",
           tags: ["arrays", "graphs"],
@@ -402,10 +317,7 @@ describe("problem integration tests", () => {
     test("404 for non-existent id", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken } = await loginAndGetCsrf(
         app,
         user.email,
@@ -424,10 +336,7 @@ describe("problem integration tests", () => {
     test("update (normalize tags)", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
         user.email,
@@ -476,10 +385,7 @@ describe("problem integration tests", () => {
     test("invalid payload returns 400 and DB unchanged", async () => {
       if (!testDb) throw new Error("testDb not initialized");
 
-      const user = (await createTestUser()) as Pick<
-        IUserRow,
-        "user_id" | "name" | "email"
-      >;
+      const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
         app,
         user.email,
@@ -520,10 +426,7 @@ describe("problem integration tests", () => {
   test("DELETE /api/problems/:id — deletes problem and cascade-deletes reminders", async () => {
     if (!testDb) throw new Error("testDb not initialized");
 
-    const user = (await createTestUser()) as Pick<
-      IUserRow,
-      "user_id" | "name" | "email"
-    >;
+    const user = (await createTestUser()) as TEST_USER;
     const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(
       app,
       user.email,
@@ -571,10 +474,7 @@ describe("problem integration tests", () => {
   test("Authorization: user B cannot read/put/delete user A's problem", async () => {
     if (!testDb) throw new Error("testDb not initialized");
 
-    const userA = (await createTestUser()) as Pick<
-      IUserRow,
-      "user_id" | "name" | "email"
-    >;
+    const userA = (await createTestUser()) as TEST_USER;
     const {
       accessToken: tokenA,
       cookies: cookiesA,
@@ -603,7 +503,7 @@ describe("problem integration tests", () => {
       "Test User2",
       "testuser2@example.com",
       VALID_PASSWORD,
-    )) as Pick<IUserRow, "user_id" | "name" | "email">;
+    )) as TEST_USER;
     const {
       accessToken: tokenB,
       cookies: cookiesB,

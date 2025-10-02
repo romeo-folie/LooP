@@ -10,8 +10,8 @@ export interface IUserRow {
   provider?: string | null;
   provider_id?: string | null;
   is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 export interface IProblemRow {
   problem_id: number;
@@ -21,8 +21,8 @@ export interface IProblemRow {
   tags: string | string[] | null;
   date_solved: Date;
   notes?: string | null;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | string;
+  updated_at: Date | string;
   practice_meta?: Record<string, any>;
 }
 export interface IReminderRow {
@@ -33,9 +33,9 @@ export interface IReminderRow {
   is_sent: boolean;
   sent_at?: Date | null;
   is_completed?: boolean;
-  completed_at?: Date | null;
-  created_at: Date;
-  updated_at: Date;
+  completed_at?: Date | string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export type Settings = {
@@ -45,15 +45,15 @@ export interface IUserPreferencesRow {
   preference_id: number;
   user_id: number;
   settings: Settings | string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 export interface IPasswordResetTokenRow {
   id: number;
   user_id: number;
   otp_hash: string;
   expires_at: Date | string;
-  created_at: Date;
+  created_at: Date | string;
 }
 
 export interface ISubscriptionRow {
@@ -62,8 +62,8 @@ export interface ISubscriptionRow {
   endpoint: string;
   public_key: string;
   auth: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | string;
+  updated_at: Date | string;
   is_active: boolean;
 }
 

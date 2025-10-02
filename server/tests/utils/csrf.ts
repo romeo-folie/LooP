@@ -11,11 +11,11 @@ export function parseSetCookie(setCookie: string[] | undefined) {
   if (!setCookie) return {};
   return setCookie.reduce<Record<string, string>>((acc, cookie) => {
     // cookieStr example: "CSRF-TOKEN=eyJhb...; Path=/; HttpOnly; SameSite=Lax"
-    const nameValuePair = cookie.split(";")[0]; // "name=value"
-    const idx = nameValuePair!.indexOf("=");
+    const nameValuePair = cookie.split(";")[0] as string; // "name=value"
+    const idx = nameValuePair.indexOf("=");
     if (idx === -1) return acc;
-    const name = nameValuePair!.slice(0, idx).trim();
-    const value = nameValuePair!.slice(idx + 1).trim();
+    const name = nameValuePair.slice(0, idx).trim();
+    const value = nameValuePair.slice(idx + 1).trim();
     acc[name] = value;
     return acc;
   }, {});
