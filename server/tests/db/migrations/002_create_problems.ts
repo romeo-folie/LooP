@@ -11,7 +11,7 @@ export async function up(knex: Knex): Promise<void> {
       .onDelete("CASCADE");
     table.string("name", 255).notNullable();
     table.enu("difficulty", ["Easy", "Medium", "Hard"]).nullable();
-    table.specificType("tags", "text[]").nullable();
+    table.text("tags").nullable();
     table.date("date_solved").nullable();
     table.text("notes").nullable();
     table.text("practice_meta").nullable();

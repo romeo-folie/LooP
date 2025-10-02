@@ -5,47 +5,8 @@ import {
   createReminder,
   deleteReminder,
   getReminderById,
-  getRemindersByProblemId,
   updateReminder,
 } from "../services/reminder.service";
-
-export const handleListReminders: AppRequestHandler<
-  { problem_id: string },
-  { reminders: Partial<IReminderRow>[] }
-> = async (req, res, next) => {
-  try {
-    const userId = req.authUser?.userId;
-    const { problem_id } = req.params;
-
-    if (!userId) {
-      req.log?.warn(
-        `Unauthorized reminders request attempt from IP: ${req.ip}`,
-      );
-      throw new AppError("UNAUTHORIZED");
-    }
-
-    const problemIdNum = Number(problem_id);
-    if (!Number.isInteger(problemIdNum) || problemIdNum <= 0) {
-      req.log?.warn("handleListReminders: invalid problem_id", { problem_id });
-      throw new AppError("BAD_REQUEST", "Invalid problem_id");
-    }
-
-    const reminders = await getRemindersByProblemId({
-      userId,
-      problemId: problemIdNum,
-      log: req.log,
-    });
-
-    res.status(200).json({ reminders });
-  } catch (error) {
-    req.log?.error("handleListReminders:error", {
-      userId: req.authUser?.userId ?? "unknown",
-      problem_id: req.params.problem_id,
-      message: error instanceof Error ? error.message : String(error),
-    });
-    next(error);
-  }
-};
 
 export const handleGetReminderById: AppRequestHandler<
   { reminder_id: string },

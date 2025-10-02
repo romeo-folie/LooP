@@ -3,10 +3,11 @@ import { authenticateJWT } from "../../middleware/auth-middleware";
 import {
   handlePracticeFeedback,
   handleCreateProblem,
-  handleGetProblems,
+  handleListProblems,
   handleGetProblemById,
   handleUpdateProblem,
   handleDeleteProblem,
+  handleListRemindersByProblemId,
 } from "../../controllers/problem-controller";
 import { verifyCsrfToken } from "../../middleware/verify-csrf-token";
 import { zodValidate } from "../../middleware/validate-request";
@@ -17,7 +18,12 @@ import {
 
 const router: Router = Router();
 
-router.get("/", authenticateJWT, handleGetProblems);
+router.get("/", authenticateJWT, handleListProblems);
+router.get(
+  "/:problem_id/reminders",
+  authenticateJWT,
+  handleListRemindersByProblemId,
+);
 router.get("/:problem_id", authenticateJWT, handleGetProblemById);
 router.post(
   "/",

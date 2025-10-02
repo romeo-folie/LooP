@@ -11,7 +11,7 @@ const returnCols: (keyof IReminderRow)[] = [
   "is_sent",
   "sent_at",
   "is_completed",
-  // 'completed_at',
+  "completed_at",
   "created_at",
   "updated_at",
 ];
