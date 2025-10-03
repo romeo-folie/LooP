@@ -1,17 +1,17 @@
 import request from "supertest";
 import path from "path";
 import { jest } from "@jest/globals";
-import { loginAndGetCsrf, reqWithCsrf } from "../utils/csrf";
-import { db as testDb } from "../../src/db";
-import type { ProblemsRepo } from "../../src/repositories/problem.repo";
-import app from "../../src/app";
-import { IProblemRow } from "../../src/types/knex-tables";
+import { loginAndGetCsrf, reqWithCsrf } from "./utils/csrf";
+import { db as testDb } from "../src/db";
+import type { ProblemsRepo } from "../src/repositories/problem.repo";
+import app from "../src/app";
+import { IProblemRow } from "../src/types/knex-tables";
 import {
   createTestProblem,
   createTestUser,
   TEST_USER,
   VALID_PASSWORD,
-} from "../utils/create-test-entities";
+} from "./utils/create-test-entities";
 
 const PROBLEMS_REPO_PATH = path.resolve(
   __dirname,
