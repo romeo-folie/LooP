@@ -1,13 +1,13 @@
-import app from "../../src/app";
-import { db as testDb } from "../../src/db";
-import { IReminderRow } from "../../src/types/knex-tables";
+import app from "../src/app";
+import { db as testDb } from "../src/db";
+import { IReminderRow } from "../src/types/knex-tables";
 import {
   createTestUser,
   VALID_PASSWORD,
   createTestProblem,
   TEST_USER,
-} from "../utils/create-test-entities";
-import { loginAndGetCsrf, reqWithCsrf } from "../utils/csrf";
+} from "./utils/create-test-entities";
+import { loginAndGetCsrf, reqWithCsrf } from "./utils/csrf";
 import request from "supertest";
 
 beforeAll(async () => {
