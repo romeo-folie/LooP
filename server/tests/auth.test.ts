@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-process.env.NODE_ENV = "test";
-
 import request from "supertest";
 import {
   generateExpiredRefreshToken,
@@ -50,7 +48,7 @@ describe("authentication tests", () => {
             expect.objectContaining({
               code: "invalid_format",
               message: "Password must contain at least one uppercase letter",
-              path: "password", // if your middleware flattens to string
+              path: "password",
             }),
             expect.objectContaining({
               code: "invalid_format",
@@ -496,16 +494,63 @@ describe("authentication tests", () => {
           expect(res.body).toHaveProperty("password_reset_token");
         });
       });
+
+      describe("OTP Reuse", () => {
+        it("should not allow the same OTP to be reused after successful verification", async () => {
+          // seed an OTP for validEmail4
+          const user = await testDb("users")
+            .where({ email: validEmail4 })
+            .first();
+
+          const hashedOtp = crypto
+            .createHash("sha256")
+            .update("444444")
+            .digest("hex");
+
+          await testDb("password_reset_tokens").insert({
+            user_id: user!.user_id,
+            otp_hash: hashedOtp,
+            expires_at: new Date(Date.now() + 10 * 60 * 1000),
+          });
+
+          // first verification - should succeed and return a password_reset_token
+          const first = await request(app)
+            .post("/api/auth/verify-otp")
+            .send({ email: validEmail4, pin: "444444" });
+
+          expect(first.status).toBe(200);
+          expect(first.body).toHaveProperty(
+            "message",
+            "OTP verified successfully",
+          );
+          expect(first.body).toHaveProperty("password_reset_token");
+
+          // ensure OTP rows were removed for this user
+          const remaining = await testDb("password_reset_tokens").where({
+            user_id: user!.user_id,
+          });
+          expect(remaining.length).toBe(0);
+
+          // second verification with the same OTP should fail
+          const second = await request(app)
+            .post("/api/auth/verify-otp")
+            .send({ email: validEmail4, pin: "444444" });
+
+          expect(second.status).toBe(400);
+          expect(second.body).toHaveProperty("error", "BAD_REQUEST");
+          expect(second.body).toHaveProperty(
+            "message",
+            "OTP expired or invalid",
+          );
+        });
+      });
     });
 
     describe("Resetting Password", () => {
-      const validToken = generatePasswordResetToken(
-        {
-          userId: 4,
-          email: validEmail4,
-        },
-        "1s",
-      );
+      const VALID_TOKEN = generatePasswordResetToken({
+        userId: 4,
+        email: validEmail4,
+      });
 
       describe("No Reset Token or No New Password", () => {
         it("should return 400 if token is missing", async () => {
@@ -573,7 +618,7 @@ describe("authentication tests", () => {
       describe("Password Strength Validation", () => {
         it("should return 400 if new password is too weak", async () => {
           const res = await request(app).post("/api/auth/reset-password").send({
-            password_reset_token: validToken,
+            password_reset_token: VALID_TOKEN,
             new_password: "abc",
           });
 
@@ -633,29 +678,6 @@ describe("authentication tests", () => {
             const user = await testDb("users").where({ user_id: 4 }).first();
             const match = await bcrypt.compare(newPass, user!.password);
             expect(match).toBe(true);
-          });
-        });
-
-        describe("Token Reuse", () => {
-          it("should fail if attempting to reuse the same token again", async () => {
-            // TODO:Might cause failures
-            // set token to expire after a second, so should be expired by the test runner gets here
-            // not the best implementation but works for now
-            const usedToken = validToken;
-
-            const res = await request(app)
-              .post("/api/auth/reset-password")
-              .send({
-                password_reset_token: usedToken,
-                new_password: "AnotherStrongPass1!",
-              });
-
-            expect(res.status).toBe(403);
-            expect(res.body).toHaveProperty("error", "FORBIDDEN");
-            expect(res.body).toHaveProperty(
-              "message",
-              "Invalid or expired token",
-            );
           });
         });
       });
