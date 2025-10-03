@@ -1,9 +1,7 @@
-process.env.NODE_ENV = "test";
-
 import request from "supertest";
 import path from "path";
 import { jest } from "@jest/globals";
-import { loginAndGetCsrf, postWithCsrf, reqWithCsrf } from "../utils/csrf";
+import { loginAndGetCsrf, reqWithCsrf } from "../utils/csrf";
 import { db as testDb } from "../../src/db";
 import type { ProblemsRepo } from "../../src/repositories/problem.repo";
 import app from "../../src/app";
@@ -77,8 +75,9 @@ describe("problem integration tests", () => {
         notes: "Classic problem",
       };
 
-      const res = await postWithCsrf(
+      const res = await reqWithCsrf(
         app,
+        "post",
         "/api/problems",
         accessToken,
         cookieHeader,
@@ -137,8 +136,9 @@ describe("problem integration tests", () => {
         // missing name and date_solved
       };
 
-      const res = await postWithCsrf(
+      const res = await reqWithCsrf(
         app,
+        "post",
         "/api/problems",
         accessToken,
         cookieHeader,
@@ -193,8 +193,9 @@ describe("problem integration tests", () => {
         notes: "Classic",
       };
 
-      const res = await postWithCsrf(
+      const res = await reqWithCsrf(
         app,
+        "post",
         "/api/problems",
         accessToken,
         cookieHeader,
@@ -253,8 +254,9 @@ describe("problem integration tests", () => {
           notes: "",
         };
 
-        const res = await postWithCsrf(
+        const res = await reqWithCsrf(
           app,
+          "post",
           "/api/problems",
           accessToken,
           cookieHeader,

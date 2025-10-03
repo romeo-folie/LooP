@@ -1,5 +1,3 @@
-process.env.NODE_ENV = "test";
-
 import app from "../../src/app";
 import { db as testDb } from "../../src/db";
 import { IReminderRow } from "../../src/types/knex-tables";
@@ -668,7 +666,7 @@ describe("Reminder integration tests", () => {
     });
   });
 
-  describe("DELETE /api/reminders/:reminder_id (integration)", () => {
+  describe("DELETE /api/reminders", () => {
     test("success: deletes reminder and returns 200", async () => {
       const user = (await createTestUser()) as TEST_USER;
       const { accessToken, cookies, cookieHeader } = await loginAndGetCsrf(

@@ -1,7 +1,7 @@
 import { db as testDb } from "../../src/db";
 import bcrypt from "bcrypt";
 import { IProblemRow, IUserRow } from "../../src/types/knex-tables";
-import { postWithCsrf } from "./csrf";
+import { reqWithCsrf } from "./csrf";
 import app from "../../src/app";
 
 export const VALID_EMAIL = "testuser@example.com";
@@ -68,8 +68,9 @@ export async function createTestProblem({
     notes: opts.notes ?? "seed",
   };
 
-  const createRes = await postWithCsrf(
+  const createRes = await reqWithCsrf(
     app,
+    "post",
     "/api/problems",
     accessToken,
     cookieHeader as string,

@@ -53,28 +53,6 @@ export async function loginAndGetCsrf(
   return { accessToken, cookies, cookieHeader };
 }
 
-/**
- * Example helper to perform an authenticated request with CSRF set
- */
-export async function postWithCsrf(
-  app: Application,
-  path: string,
-  accessToken: string | null,
-  cookieHeader: string,
-  csrfTokenValue: string,
-  body: string | object | undefined,
-) {
-  const agent = request(app);
-  const req = agent
-    .post(path)
-    .set("Cookie", cookieHeader)
-    .set("x-csrf-token", csrfTokenValue)
-    .send(body);
-
-  if (accessToken) req.set("Authorization", `Bearer ${accessToken}`);
-  return req;
-}
-
 export async function reqWithCsrf(
   app: Application,
   method: HttpMethod,
@@ -84,7 +62,6 @@ export async function reqWithCsrf(
   csrfTokenValue: string | undefined,
   body?: string | object,
 ) {
-  if (!method) method = "post";
   const agent = request(app) as TestAgent;
 
   // ensure lowercase method
