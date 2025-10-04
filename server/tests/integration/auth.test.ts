@@ -4,11 +4,11 @@ import {
   generateExpiredRefreshToken,
   generatePasswordResetToken,
   generateRefreshToken,
-} from "../src/lib/jwt";
+} from "../../src/lib/jwt";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import app from "../src/app";
-import { db as testDb } from "../src/db";
+import app from "../../src/app";
+import { db as testDb } from "../../src/db";
 
 beforeAll(async () => {
   try {
