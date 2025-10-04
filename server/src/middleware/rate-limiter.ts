@@ -86,7 +86,7 @@ export function createPerUserRateLimiter(opts: RateLimiterOptions) {
   function limiter(routeOpts: RouteLimiterOptions = {}) {
     const cost = routeOpts.cost ?? 1;
 
-    return async function perRouteLimiterMiddleware(
+    return async function perUserLimiterMiddleware(
       req: AppRequest,
       res: Response,
       next: NextFunction,

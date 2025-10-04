@@ -45,9 +45,9 @@ router.post(
 );
 router.get(
   "/profile",
-  verifyCsrfToken,
   authenticateJWT,
   limiter(),
+  verifyCsrfToken,
   handleGetProfile,
 );
 router.get("/github", handleGitHubStart);

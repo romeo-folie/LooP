@@ -1,17 +1,17 @@
 import request from "supertest";
 import path from "path";
 import { jest } from "@jest/globals";
-import { loginAndGetCsrf, reqWithCsrf } from "./utils/csrf";
-import { db as testDb } from "../src/db";
-import type { ProblemsRepo } from "../src/repositories/problem.repo";
-import app from "../src/app";
-import { IProblemRow } from "../src/types/knex-tables";
+import { loginAndGetCsrf, reqWithCsrf } from "../utils/csrf";
+import { db as testDb } from "../../src/db";
+import type { ProblemsRepo } from "../../src/repositories/problem.repo";
+import app from "../../src/app";
+import { IProblemRow } from "../../src/types/knex-tables";
 import {
   createTestProblem,
   createTestUser,
   TEST_USER,
   VALID_PASSWORD,
-} from "./utils/create-test-entities";
+} from "../utils/create-test-entities";
 
 const PROBLEMS_REPO_PATH = path.resolve(
   __dirname,
@@ -152,7 +152,7 @@ describe("problem integration tests", () => {
       expect(rows.length).toBe(0);
     });
 
-    test("Unauthorized: missing CSRF token -> 403", async () => {
+    test("Unauthorized: missing Access token -> 401", async () => {
       const body = {
         name: "Sample",
         difficulty: "Easy",
@@ -163,7 +163,7 @@ describe("problem integration tests", () => {
       const res = await request(app)
         .post("/api/problems")
         .send(body)
-        .expect(403);
+        .expect(401);
       expect(res.body).toHaveProperty("error");
     });
 
