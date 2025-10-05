@@ -168,8 +168,8 @@ export function createPerUserRateLimiter(opts: RateLimiterOptions) {
   return limiter;
 }
 
-const capacity = 12; // allow bursts up to capacity
-const hourlyQuota = 300;
+const capacity = 20; // allow bursts up to capacity
+const hourlyQuota = 600;
 const refillPerSecond = hourlyQuota / 3600; // tokens per second
 const redis = new Redis(process.env.REDIS_URL as string);
 
