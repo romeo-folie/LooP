@@ -1,13 +1,12 @@
-import type Redis from "ioredis";
-
+import { Result } from "ioredis";
 declare module "ioredis" {
-  interface Redis {
+  interface RedisCommander<Context> {
     consumeTokens(
       key: string,
       capacity: string,
       refillPerSecond: string,
       cost: string,
       ttlSeconds: string,
-    ): Promise<[string, string, string, string]>;
+    ): Result<[string, string, string, string], Context>;
   }
 }
