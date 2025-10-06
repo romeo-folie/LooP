@@ -24,14 +24,16 @@ npx web-push generate-vapid-keys
  RESET_PASSWORD_SECRET=
  GITHUB_CLIENT_ID=
  GITHUB_CLIENT_SECRET=
- CLIENT_URL=
- SERVER_URL=
+ CLIENT_URL=http://localhost:5173
+ SERVER_URL=http://localhost:5999
  RESEND_API_KEY=
  RESEND_FROM_EMAIL=
  VAPID_PUBLIC_KEY=
  VAPID_PRIVATE_KEY=
  CONTACT_EMAIL=
  CSRF_SECRET_KEY=
+ DOMAIN=localhost
+ REDIS_URL=redis://localhost:6379
 ```
 
 **4. Install dependencies and run**
@@ -47,6 +49,17 @@ npm run dev
 version: '3.9'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: loop-redis-container
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
   server:
     build: .
     container_name: loop-server-container
@@ -73,8 +86,11 @@ services:
       - VAPID_PRIVATE_KEY=
       - CONTACT_EMAIL=
       - CSRF_SECRET_KEY=
+      - DOMAIN=localhost
+      - REDIS_URL=redis://127.0.0.1:6379
     depends_on:
       - db
+      - redis
 
   db:
     image: postgres:15-alpine
@@ -90,6 +106,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 ```
 
 **2. Build the images and start the containers**
