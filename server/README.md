@@ -79,15 +79,15 @@ services:
       - GITHUB_CLIENT_ID=
       - GITHUB_CLIENT_SECRET=
       - CLIENT_URL=
-      - SERVER_URL=
+      - SERVER_URL=http://server:5999
       - RESEND_API_KEY=
       - RESEND_FROM_EMAIL=
       - VAPID_PUBLIC_KEY=
       - VAPID_PRIVATE_KEY=
       - CONTACT_EMAIL=
       - CSRF_SECRET_KEY=
-      - DOMAIN=localhost
-      - REDIS_URL=redis://127.0.0.1:6379
+      - DOMAIN=
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - db
       - redis
