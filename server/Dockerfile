@@ -4,6 +4,9 @@ FROM node:20-alpine AS build
 # Set the working directory
 WORKDIR /app
 
+# Add build deps needed for node-gyp / native modules on Alpine
+RUN apk add --no-cache python3 make g++ gcc libc-dev linux-headers
+
 # Copy package and lock files
 COPY package*.json ./
 
