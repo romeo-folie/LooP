@@ -38,11 +38,13 @@ export default async function syncOutbox() {
         headers: { "X-SYNC-ORIGIN": "service-worker" },
         method,
         url,
-        data: record.payload,
+        data: payload,
       });
       await db.outbox.delete(record.id);
+      if (resource === ResourceType.Problem)
+        await db.problems.delete(payload.id);
       logger.info(
-        `successfully synced ${resource as string} with id ${record.id}`,
+        `successfully synced ${resource as string} with id ${payload.id}`,
       );
     } catch (error) {
       logger.error(
