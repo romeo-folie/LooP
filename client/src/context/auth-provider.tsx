@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const navigate = useNavigate();
 
-  const bc = useMemo(() => new BroadcastChannel("auth"), []);
+  const authBC = useMemo(() => new BroadcastChannel("auth"), []);
 
   const encryptAccessToken = async function (token: string) {
     try {
@@ -172,9 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logger.error(message);
     } finally {
       localLogout();
-      bc.postMessage({ type: "LOGOUT" });
+      authBC.postMessage({ type: "LOGOUT" });
     }
-  }, [bc, localLogout]);
+  }, [authBC, localLogout]);
 
   const login = useCallback(
     async (user: User) => {
@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await saveUserLocally(user);
         navigate("/");
         await retrieveLocalUser();
-        bc.postMessage({ type: "LOGIN" });
+        authBC.postMessage({ type: "LOGIN" });
       } catch (error) {
         logger.error(`error logging in user ${user.email}, error: ${error}`);
         localLogout();
@@ -195,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthLoading(false);
       }
     },
-    [bc, localLogout, navigate, retrieveLocalUser, saveUserLocally],
+    [authBC, localLogout, navigate, retrieveLocalUser, saveUserLocally],
   );
 
   const saveEmail = (email: string) => {
@@ -212,7 +212,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    bc.onmessage = (event) => {
+    authBC.onmessage = (event) => {
       if (event.data?.type === "LOGOUT") {
         localLogout();
       }
@@ -221,7 +221,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         refreshTokens();
       }
     };
-  }, [bc, localLogout, navigate, refreshTokens]);
+
+    return () => authBC.close();
+  }, [authBC, localLogout, navigate, refreshTokens]);
 
   useEffect(() => {
     async function handleGithubLogin() {
@@ -249,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     // If redirected from GitHub OAuth login
     handleGithubLogin();
-  }, [navigate, bc, login]);
+  }, [navigate, authBC, login]);
 
   useEffect(() => {
     // should only run on mount if user is in auth page

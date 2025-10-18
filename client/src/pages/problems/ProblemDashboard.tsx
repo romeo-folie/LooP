@@ -55,25 +55,25 @@ import {
 import { startCase } from "lodash";
 import { logger } from "@/lib/logger";
 import {
-  // bulkAddProblems,
-  // clearOldProblems,
   deleteLocalProblem,
-  getAllProblems,
+  getProblemsPageFromDB,
   ReminderSchema,
+  saveFetchedProblemsToLocalDB,
 } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 import ProblemFeedbackDialog from "@/components/problem-feedback-dialog";
 import { useNotifications } from "@/context/notification-provider";
 
 export interface ReminderResponse {
-  message?: string;
+  id?: number;
+  isOffline?: number;
   reminder_id: number;
   problem_id: number;
   local_id?: string;
   due_datetime: Date;
   is_sent: boolean;
-  sent_at: Date;
-  created_at: number;
+  sent_at: Date | string;
+  created_at_millis: number;
 }
 
 export interface ReminderResponseData {
@@ -81,6 +81,8 @@ export interface ReminderResponseData {
   reminder: ReminderResponse | ReminderSchema;
 }
 export interface ProblemResponse {
+  id?: number;
+  isOffline?: number;
   problem_id: number;
   local_id?: string;
   user_id: number;
@@ -89,7 +91,8 @@ export interface ProblemResponse {
   tags: string[];
   date_solved: Date;
   notes: string;
-  created_at: number;
+  created_at: Date | string;
+  created_at_millis: number;
   reminders: ReminderResponse[];
 }
 
@@ -101,7 +104,7 @@ export interface Problem {
   notes: string;
 }
 
-type PageShape = {
+export type PageShape = {
   problems: ProblemResponse[];
   meta: {
     page: number;
@@ -111,7 +114,7 @@ type PageShape = {
   };
 };
 
-type QueryFilters = {
+export type AppQueryFilters = {
   queryStr?: string;
   difficulty?: string;
   tag?: string;
@@ -130,19 +133,20 @@ const fetchProblems = async (
   lastFetchRef: React.RefObject<number>,
   page: number,
   pageSize: number,
-  queryFilters: QueryFilters,
+  queryFilters: AppQueryFilters,
 ) => {
   logger.info(`fetching problems, isOnline: ${isOnline}`);
   try {
     if (!isOnline) {
-      const problems = await getAllProblems();
-      return { problems };
+      return await getProblemsPageFromDB({ ...queryFilters }, page, pageSize);
     }
 
     const { data } = await apiClient.get("/problems", {
       params: { page, pageSize, ...queryFilters },
     });
     lastFetchRef.current = Date.now();
+
+    saveFetchedProblemsToLocalDB(data.problems);
     return data;
   } catch (error) {
     logger.error(`error fetching problems ${error}`);
@@ -217,9 +221,9 @@ export default function ProblemsDashboard() {
     useState(false);
   const [isProblemFeedbackOpen, setIsProblemFeedbackOpen] = useState(false);
   const [feedbackId, setFeedbackId] = useState<number | null>(null);
-  const [appliedFilters, setAppliedFilters] = useState<QueryFilters>({});
+  const [appliedFilters, setAppliedFilters] = useState<AppQueryFilters>({});
 
-  const filtersForQuery = useMemo<QueryFilters>(
+  const filtersForQuery = useMemo<AppQueryFilters>(
     () => ({
       queryStr: appliedFilters.queryStr || undefined,
       difficulty: appliedFilters.difficulty || undefined,
@@ -229,7 +233,6 @@ export default function ProblemsDashboard() {
     [appliedFilters],
   );
 
-  // const lastLocalUpdateRef = useRef<number>(0);
   const lastFetchRef = useRef<number>(0);
 
   useEffect(() => {
@@ -321,12 +324,9 @@ export default function ProblemsDashboard() {
   );
 
   // trigger problems query when device goes offline
-  // useEffect(() => {
-  //   if (!isOnline) {
-  //     refetch();
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [isOnline]);
+  useEffect(() => {
+    if (!isOnline) refetch();
+  }, [isOnline, refetch]);
 
   // derive pagination info
   const pages = data?.pages ?? [];
@@ -389,33 +389,6 @@ export default function ProblemsDashboard() {
     return Array.from(tagSet).sort();
   }, [allFetchedProblems]);
 
-  // OFFLINE STORAGE
-  // if (isSuccess) {
-  // problems = data.problems;
-  // if (
-  //   isOnline &&
-  //   lastFetchRef.current > lastLocalUpdateRef.current &&
-  //   problems.length
-  // ) {
-  //   logger.info("saving problems locally");
-  //   clearOldProblems()
-  //     .then(() => {
-  //       logger.info("sucessfully cleared old problems from local DB");
-  //       bulkAddProblems(problems.map((prob) => ({ ...prob, isOffline: 0 })))
-  //         .then(() => {
-  //           lastLocalUpdateRef.current = Date.now();
-  //           logger.info("successfully added problems to local DB");
-  //         })
-  //         .catch((error) => {
-  //           logger.error(`error saving problems to local DB ${error}`);
-  //         });
-  //     })
-  //     .catch((error) => {
-  //       logger.error(`error clearing old problems from local DB ${error}`);
-  //     });
-  // }
-  // }
-
   if (isError) {
     const message =
       error.response?.data?.message ||
@@ -432,7 +405,11 @@ export default function ProblemsDashboard() {
     mutationFn: (problem_id: number | string) =>
       deleteProblem(problem_id, apiClient, isOnline),
     onSuccess: ({ message }) => {
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      if (!isOnline) {
+        refetch();
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+      }
       toast({ title: "Success", description: message });
     },
     onError: (error) => {
@@ -515,7 +492,7 @@ export default function ProblemsDashboard() {
   };
 
   const applyFilters = () => {
-    const newFilters: QueryFilters = {};
+    const newFilters: AppQueryFilters = {};
     if (search.trim()) newFilters.queryStr = search.trim();
     if (selectedDifficulty) newFilters.difficulty = selectedDifficulty;
     if (selectedTag) newFilters.tag = selectedTag;
