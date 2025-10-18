@@ -25,6 +25,7 @@ import {
   addLocalReminder,
   ReminderSchema,
   updateLocalReminder,
+  upsertProblemInInfinitePageCache,
 } from "@/lib/db";
 import { useNetworkStatus } from "@/context/network-status-provider";
 
@@ -53,10 +54,10 @@ async function createReminder(
         isOffline: 1,
         local_id: `offline-${Date.now()}`,
       } as ReminderSchema;
-      await addLocalReminder(problemId, localReminder);
+      const createdReminder = await addLocalReminder(problemId, localReminder);
       return {
         message: "Reminder created offline",
-        reminder: localReminder,
+        reminder: createdReminder as ReminderSchema,
       };
     }
 
@@ -78,10 +79,14 @@ async function updateReminder(
   const payload = { due_datetime: formData.due_datetime };
   try {
     if (!isOnline) {
-      await updateLocalReminder(reminderId, problemId, payload);
+      const updatedReminder = await updateLocalReminder(
+        reminderId,
+        problemId,
+        payload,
+      );
       return {
         message: "Reminder updated offline",
-        reminder: {} as ReminderSchema,
+        reminder: updatedReminder as ReminderSchema,
       };
     }
     const { data } = await apiClient.put(`/reminders/${reminderId}`, payload);
@@ -152,10 +157,17 @@ const ReminderFormDialog = ({
         return createReminder(problemId, formData, apiClient, isOnline);
       }
     },
-    onSuccess: ({ message }) => {
+    onSuccess: ({ message, reminder }) => {
+      if (!isOnline) {
+        upsertProblemInInfinitePageCache(
+          queryClient,
+          reminder.problem_id as number,
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+      }
       reset();
       onOpenChange(false);
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast({
         title: "Success",
         description: message,

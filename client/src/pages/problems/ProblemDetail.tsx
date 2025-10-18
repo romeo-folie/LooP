@@ -19,7 +19,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 import { useNetworkStatus } from "@/context/network-status-provider";
-import { deleteLocalReminder } from "@/lib/db";
+import {
+  deleteLocalReminder,
+  upsertProblemInInfinitePageCache,
+} from "@/lib/db";
 import { startCase } from "lodash";
 import MarkdownRenderer from "@/components/markdown-renderer";
 
@@ -92,7 +95,11 @@ const ProblemDetail: React.FC<ProblemDetailProps> = ({ problem, tags }) => {
         isOnline,
       ),
     onSuccess: ({ message }) => {
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      if (!isOnline) {
+        upsertProblemInInfinitePageCache(queryClient, problem.id as number);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+      }
       toast({ title: "Success", description: message });
     },
     onError: (error) => {

@@ -52,7 +52,9 @@ import {
   getLocalProblem,
   ProblemSchema,
   updateLocalProblem,
+  upsertProblemInInfinitePageCache,
 } from "@/lib/db";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"] as const;
 const notesPlaceholder =
@@ -82,13 +84,13 @@ export type ProblemFormData = z.infer<typeof problemSchema>;
 
 interface ProblemResponseData {
   message: string;
-  problem: ProblemResponse | ProblemSchema;
+  problem: Partial<ProblemResponse>;
 }
 
 async function createProblem(
   formData: ProblemFormData,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -102,12 +104,12 @@ async function createProblem(
         ...payload,
         isOffline: 1,
         local_id: `offline-${Date.now()}`,
-        created_at: Date.now(),
+        created_at: new Date().toISOString(),
       } as ProblemSchema;
-      await addLocalProblem(localProblem);
+      const createdProblem = await addLocalProblem(localProblem);
       return {
         message: "Problem created offline",
-        problem: localProblem,
+        problem: createdProblem as ProblemSchema,
       };
     }
 
@@ -123,7 +125,7 @@ async function updateProblem(
   problemId: number | string,
   formData: ProblemFormData,
   apiClient: AxiosInstance,
-  isOnline: boolean
+  isOnline: boolean,
 ): Promise<ProblemResponseData> {
   const payload = {
     ...formData,
@@ -139,12 +141,12 @@ async function updateProblem(
         {
           ...payload,
           isOffline: 1,
-        }
+        },
       );
-      await updateLocalProblem(problemWithUpdates);
+      const updatedProblem = await updateLocalProblem(problemWithUpdates);
       return {
         message: "Problem updated offline",
-        problem: {} as ProblemSchema,
+        problem: updatedProblem as ProblemSchema,
       };
     }
     const { data } = await apiClient.put(`/problems/${problemId}`, payload);
@@ -174,6 +176,7 @@ export default function ProblemFormDialog({
   const apiClient = useAxios();
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // We use a single schema for both new & edit
   // We'll set defaultValues based on `problem` if mode=edit
@@ -211,7 +214,7 @@ export default function ProblemFormDialog({
             date_solved: undefined,
             notes: "",
           },
-    [mode, problem]
+    [mode, problem],
   );
 
   // React Hook Form setup
@@ -248,14 +251,22 @@ export default function ProblemFormDialog({
           (problem.problem_id as number) || (problem.local_id as string),
           formData,
           apiClient,
-          isOnline
+          isOnline,
         );
       } else {
         return createProblem(formData, apiClient, isOnline);
       }
     },
-    onSuccess: ({ message }) => {
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
+    onSuccess: ({ message, problem }) => {
+      if (!isOnline) {
+        upsertProblemInInfinitePageCache(
+          queryClient,
+          problem.id as number,
+          isDesktop ? 10 : 5,
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+      }
       onOpenChange(false);
       reset();
       setInputValue("");
@@ -284,7 +295,7 @@ export default function ProblemFormDialog({
   // Add typed tag
   const handleAddNewTag = (
     onChange: (tags: string[]) => void,
-    currentTags: string[]
+    currentTags: string[],
   ) => {
     const val = inputValue.trim();
     if (val && !tagOptions.includes(val)) {

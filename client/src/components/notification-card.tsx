@@ -18,12 +18,14 @@ import { ScrollArea } from "./ui/scroll-area";
 import { useAxios } from "@/hooks/use-axios";
 import browserStore from "@/lib/browser-storage";
 import { toast } from "@/hooks/use-toast";
+import { useNetworkStatus } from "@/context/network-status-provider";
 
 type CardProps = React.ComponentProps<typeof Card>;
 
 const NotificationCard = ({ className, ...props }: CardProps) => {
   const apiClient = useAxios();
   const navigate = useNavigate();
+  const { isOnline } = useNetworkStatus();
   const {
     notifications,
     notificationsAllowed,
@@ -99,18 +101,20 @@ const NotificationCard = ({ className, ...props }: CardProps) => {
                   </div>
 
                   {/* Action Button with Check Icon */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-foreground"
-                    onClick={() => {
-                      navigate(
-                        `/problems?feedback_id=${notification.body.meta.problem_id}`,
-                      );
-                    }}
-                  >
-                    <Check className="h-6 w-6" />
-                  </Button>
+                  {isOnline && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="text-foreground"
+                      onClick={() => {
+                        navigate(
+                          `/problems?feedback_id=${notification.body.meta.problem_id}`,
+                        );
+                      }}
+                    >
+                      <Check className="h-6 w-6" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
