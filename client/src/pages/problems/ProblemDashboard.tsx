@@ -328,6 +328,10 @@ export default function ProblemsDashboard() {
     if (!isOnline) refetch();
   }, [isOnline, refetch]);
 
+  useEffect(() => {
+    refetch();
+  }, [filtersForQuery, refetch]);
+
   // derive pagination info
   const pages = data?.pages ?? [];
   const totalPages = pages.length > 0 ? pages[0].meta.totalPages : 1;
@@ -501,10 +505,8 @@ export default function ProblemsDashboard() {
 
     const same = JSON.stringify(newFilters) === JSON.stringify(appliedFilters);
     if (!same) {
+      queryClient.removeQueries({ queryKey: ["problems"] });
       setAppliedFilters(newFilters);
-      // queryKey changed -> useInfiniteQuery will start fetching from initialPageParam automatically
-    } else {
-      refetch();
     }
   };
 
