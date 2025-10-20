@@ -43,7 +43,7 @@ export default async function syncOutbox() {
       await db.outbox.delete(record.id);
       if (resource === ResourceType.Problem)
         await db.problems.delete(payload.id);
-      logger.info(
+      logger.debug(
         `successfully synced ${resource as string} with id ${payload.id}`,
       );
     } catch (error) {

@@ -264,7 +264,7 @@ export async function saveFetchedProblemsToLocalDB(
       await setMeta("lastLocalDBUpdate", Date.now());
     });
 
-    logger.info("successfully upserted fetched problems into local DB");
+    logger.debug("successfully upserted fetched problems into local DB");
   } catch (error) {
     logger.error(`error saving fetched problems to local DB: ${error}`);
   }
@@ -293,7 +293,7 @@ export async function saveFetchedProblemsToLocalDB(
   if (successCount > 0) {
     try {
       await setMeta("lastLocalDBUpdate", Date.now());
-      logger.info(
+      logger.debug(
         `upserted ${successCount} fetched problems into local DB (partial).`,
       );
     } catch (metaErr) {

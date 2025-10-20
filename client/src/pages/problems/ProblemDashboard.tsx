@@ -135,7 +135,7 @@ const fetchProblems = async (
   pageSize: number,
   queryFilters: AppQueryFilters,
 ) => {
-  logger.info(`fetching problems, isOnline: ${isOnline}`);
+  logger.debug(`fetching problems, isOnline: ${isOnline}`);
   try {
     if (!isOnline) {
       return await getProblemsPageFromDB({ ...queryFilters }, page, pageSize);

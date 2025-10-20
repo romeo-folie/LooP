@@ -14,7 +14,7 @@ export function createAxiosInstance(
   });
 
   instance.interceptors.request.use((config) => {
-    logger.info({ method: config.method, url: config.url }, "API Request");
+    logger.debug("API Request", { method: config.method, url: config.url });
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -28,20 +28,17 @@ export function createAxiosInstance(
 
   instance.interceptors.response.use(
     (response) => {
-      logger.info(
-        { status: response.status, url: response.config.url },
-        "API Response",
-      );
+      logger.debug("API Response", {
+        status: response.status,
+        url: response.config.url,
+      });
       return response;
     },
     (error) => {
-      logger.error(
-        {
-          error: error.response?.data?.message || error.response?.data?.error,
-          url: error.config?.url,
-        },
-        "API Error",
-      );
+      logger.error("API Error", {
+        error: error.response?.data?.message || error.response?.data?.error,
+        url: error.config?.url,
+      });
       if (error.response?.status === 401) {
         if (logoutFn) logoutFn();
       }

@@ -46,7 +46,7 @@ async function updatePreferences(
 }
 
 async function fetchPreferences(apiClient: AxiosInstance) {
-  logger.info(`fetching user preferences`);
+  logger.debug(`fetching user preferences`);
   try {
     const { data } = await apiClient.get("/preferences");
     return data;
