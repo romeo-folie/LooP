@@ -1,5 +1,6 @@
 import app from "../../src/app";
 import { db as testDb } from "../../src/db";
+import { shutdownRedis } from "../../src/middleware/rate-limiter";
 import { IReminderRow } from "../../src/types/knex-tables";
 import {
   createTestUser,
@@ -20,7 +21,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  console.log("Destroying Test DB");
   await testDb.destroy();
+  shutdownRedis();
 });
 
 afterEach(async () => {

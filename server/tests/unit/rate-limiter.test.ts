@@ -3,7 +3,7 @@ import request from "supertest";
 import {
   createPerUserRateLimiter,
   RateLimiterOptions,
-} from "../../src/middleware/rate-limiter";
+} from "../../src/lib/create-rate-limiter";
 import type Redis from "ioredis";
 
 type ConsumeArgs = [string, string, string, string, string];

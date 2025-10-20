@@ -12,6 +12,7 @@ import {
   TEST_USER,
   VALID_PASSWORD,
 } from "../utils/create-test-entities";
+import { shutdownRedis } from "../../src/middleware/rate-limiter";
 
 const PROBLEMS_REPO_PATH = path.resolve(
   __dirname,
@@ -32,6 +33,7 @@ beforeAll(async () => {
 afterAll(async () => {
   console.log("Destroying Test DB");
   await testDb.destroy();
+  await shutdownRedis();
 });
 
 afterEach(async () => {

@@ -9,6 +9,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import app from "../../src/app";
 import { db as testDb } from "../../src/db";
+import { shutdownRedis } from "../../src/middleware/rate-limiter";
 
 beforeAll(async () => {
   try {
@@ -22,7 +23,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  console.log("Destroying Test DB");
   await testDb.destroy();
+  await shutdownRedis();
 });
 
 describe("authentication tests", () => {

@@ -1,0 +1,85 @@
+name: run-ci-tests
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+env:
+  CI: true
+  PORT: ${{ secrets.PORT }}
+  SERVER_URL: ${{ secrets.SERVER_URL }}
+  NODE_ENV: test
+  DATABASE_URL: ":memory:"
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
+  CSRF_SECRET_KEY: ${{ secrets.CSRF_SECRET_KEY }}
+  RESET_PASSWORD_SECRET: ${{ secrets.RESET_PASSWORD_SECRET }}
+  VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+  VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+  DOMAIN: ${{ secrets.DOMAIN }}
+  REDIS_URL: ${{ secrets.REDIS_URL }}
+  GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+  GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+  CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+
+jobs:
+  server-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install packages
+        run: |
+          if ! command -v redis-cli >/dev/null 2>&1; then
+            echo "redis-cli not found, installing redis-tools..."
+            sudo apt-get update -y
+            sudo apt-get install -y redis-tools
+          fi
+        shell: bash
+
+      - name: Install server dependencies
+        working-directory: './server'
+        run: npm ci
+          
+      - name: Wait for Redis to be ready
+        run: |
+          echo "Waiting 30s for redis..."
+          for i in $(seq 1 30); do
+            if redis-cli -h 127.0.0.1 ping >/dev/null 2>&1; then
+              echo "redis ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "redis not ready after 30s"
+          exit 1
+        shell: bash
+
+      - name: Run tests
+        working-directory: './server'
+        run: npm test -- --runInBand --detectOpenHandles --verbose
