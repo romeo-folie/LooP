@@ -1,15 +1,8 @@
-#!/usr/bin/env sh
-source "$(dirname "$0")/_/husky.sh"
-
 npm run format
 
 ( cd server && npm run lint ) || exit 1
 ( cd client && npm run lint ) || exit 1
 
-if [ "$BRANCH" = "main" ]; then
-  echo "running tests…"
-  ( cd packages/server && npm test ) || exit 1
-  # ( cd packages/client && npm test ) || exit 1
-else
-  echo "Skipping tests on branch: $BRANCH"
-fi
+echo "running tests…"
+( cd server && npm test ) || exit 1
+# ( cd client && npm test ) || exit 1

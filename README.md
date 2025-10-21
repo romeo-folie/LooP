@@ -6,7 +6,7 @@ From DSA drills to everyday challenges, LooP lets you log problems and nudges yo
 
 - 📱 Minimal, Themed, and Fully responsive UI with drawer-based mobile UX.
 - 🔒 Authentication via GitHub OAuth and Email.
-- ✅ Log problems with difficulty levels and tags.
+- ✅ Log problems with difficulty levels, tags, and notes in markdown or plain text.
 - 🧠 Smart filters (search, tags, difficulty, and solve date).
 - 🔔 Receive intelligent reminders for problems based on previous recall feedback fed to the SM-2 algorithm.
 - 🔔 Set manual reminders for problems (push notifications supported).
