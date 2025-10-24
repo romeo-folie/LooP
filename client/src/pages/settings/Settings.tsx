@@ -15,6 +15,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@/context/theme-provider";
 import { useEffect, useState } from "react";
+import { useNetworkStatus } from "@/context/network-status-provider";
 
 const settingsSchema = z.object({
   autoReminders: z.boolean().optional(),
@@ -61,6 +62,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { notificationsAllowed, setNotificationsAllowed } = useNotifications();
   const { isDark } = useTheme();
+  const { isOnline } = useNetworkStatus();
 
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
 
@@ -84,6 +86,7 @@ export default function SettingsPage() {
     queryKey: ["settings"],
     queryFn: () => fetchPreferences(apiClient),
     refetchOnWindowFocus: false,
+    enabled: isOnline,
   });
 
   useEffect(() => {
@@ -202,7 +205,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="mt-8">
-          <Button className="w-full">Save Changes</Button>
+          <Button className="w-full" disabled={!isOnline || mutation.isPending}>
+            Save Changes
+          </Button>
         </div>
       </div>
     </form>
