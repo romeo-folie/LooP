@@ -13,7 +13,13 @@
     "lint": "npm run lint:client",
     "install:client": "cd client && npm install",
     "install:server": "cd server && npm install",
-    "install-deps": "npm install && npm run install:client && npm run install:server"
+    "install-deps": "npm install && npm run install:client && npm run install:server",
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,json}": [
+      "prettier --write"
+    ]
   },
   "repository": {
     "type": "git",
@@ -28,6 +34,7 @@
   "homepage": "https://github.com/romeo-folie/LooP#readme",
   "devDependencies": {
     "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.5.3"
   }
 }

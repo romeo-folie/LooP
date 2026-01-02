@@ -7,6 +7,33 @@ const hourlyQuota = 600;
 const refillPerSecond = hourlyQuota / 3600; // tokens per second
 export const redisClient = new Redis(process.env.REDIS_URL as string);
 
+// Log Redis connection events
+redisClient.on("connect", () => {
+  logger.info("✅ Connected to Redis", {
+    host: redisClient.options.host,
+    port: redisClient.options.port,
+  });
+});
+
+redisClient.on("ready", () => {
+  logger.info("✅ Redis client ready");
+});
+
+redisClient.on("error", (err) => {
+  logger.error("❌ Redis connection error", {
+    error: err.message,
+    stack: err.stack,
+  });
+});
+
+redisClient.on("close", () => {
+  logger.warn("⚠️ Redis connection closed");
+});
+
+redisClient.on("reconnecting", () => {
+  logger.info("🔄 Redis reconnecting...");
+});
+
 export const limiter = createPerUserRateLimiter({
   redis: redisClient,
   logger,

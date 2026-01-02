@@ -18,6 +18,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     res
       .status(status)
       .json({ error: err.code, message: err.message ?? err.code });
+    return;
   }
   res.status(500).json({
     error: "INTERNAL",

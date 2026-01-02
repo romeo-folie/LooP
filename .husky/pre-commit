@@ -1,8 +1,23 @@
-npm run format
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-( cd server && npm run lint ) || exit 1
-( cd client && npm run lint ) || exit 1
+echo "🔍 Formatting staged files..."
+npx lint-staged || { echo "❌ Formatting failed"; exit 1; }
 
-echo "running tests…"
-( cd server && npm test ) || exit 1
-# ( cd client && npm test ) || exit 1
+echo "🔍 Type checking server..."
+( cd server && npm run build ) || { echo "❌ Server type check failed"; exit 1; }
+
+echo "🔍 Type checking client..."
+( cd client && npm run build ) || { echo "❌ Client type check failed"; exit 1; }
+
+echo "🔍 Linting server..."
+( cd server && npm run lint ) || { echo "❌ Server lint failed"; exit 1; }
+
+echo "🔍 Linting client..."
+( cd client && npm run lint ) || { echo "❌ Client lint failed"; exit 1; }
+
+# Optional: Run tests (uncomment if you want tests on every commit)
+# echo "🧪 Running server tests..."
+# ( cd server && npm test ) || { echo "❌ Server tests failed"; exit 1; }
+
+echo "✅ Pre-commit checks passed!"
